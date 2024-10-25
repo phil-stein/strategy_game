@@ -3,6 +3,37 @@ package core
 import linalg "core:math/linalg/glsl"
 import gl     "vendor:OpenGL"
 
+
+debug_draw_sphere :: proc( pos, scl, color: linalg.vec3 )
+{
+  mesh := assetm_get_mesh(data.mesh_idxs.sphere)
+	// w, h := window_get_size()
+
+  model := make_model( pos, linalg.vec3{ 0, 0, 0 }, scl )
+  
+  gl.Disable( gl.DEPTH_TEST )
+  gl.Disable( gl.CULL_FACE )
+	
+  shader_use( data.basic_shader )
+	gl.ActiveTexture( gl.TEXTURE0 )
+	gl.BindTexture(gl.TEXTURE_2D, assetm_get_texture( data.texture_idxs.blank ).handle )
+	shader_set_i32( data.basic_shader,  "tex", 0 )
+	shader_set_vec3( data.basic_shader, "tint", color )
+	
+	shader_set_mat4(data.basic_shader, "model", &model[0][0] )
+	shader_set_mat4(data.basic_shader, "view",  &data.cam.view_mat[0][0] )
+	shader_set_mat4(data.basic_shader, "proj",  &data.cam.pers_mat[0][0] )
+  
+  gl.BindVertexArray( mesh.vao )
+  gl.DrawElements( gl.TRIANGLES,           // Draw triangles.
+                   i32(mesh.indices_len),  // indices length
+                   gl.UNSIGNED_INT,        // Data type of the indices.
+                   rawptr(uintptr(0)) )    // Pointer to indices. (Not needed.)
+
+  gl.Enable( gl.DEPTH_TEST )
+  gl.Enable( gl.CULL_FACE )
+}
+
 debug_draw_line :: proc(pos0, pos1, tint: linalg.vec3, width: f32)
 {
 	// ---- mvp ----

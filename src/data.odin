@@ -78,8 +78,6 @@ data_t :: struct
   quad_vao : u32,
   quad_vbo : u32,
 
-  // line_vao : u32,
-  // line_vbo : u32,
   line_mesh : mesh_t,
 
   skybox_vao : u32,
@@ -146,6 +144,7 @@ data_t :: struct
   mesh_idxs : struct
   {
     cube    : int,
+    sphere  : int,
     suzanne : int,
   },
 
@@ -261,7 +260,7 @@ data_init :: proc()
 	gl.VertexAttribPointer( 0, 3, gl.FLOAT, gl.FALSE, 3 * size_of(f32), 0 )
   // ----------------------------------------------------------------------------------------------
 
-  // line mesh-------------------------------------------------------------------------------------
+  // line mesh ------------------------------------------------------------------------------------
 
   line_verts := [?]f32 {
     // // pos    uvs  
@@ -289,9 +288,8 @@ data_init :: proc()
 	gl.EnableVertexAttribArray( 3 ) // tangents 
 	gl.VertexAttribPointer( 3, 3, gl.FLOAT, gl.FALSE, F32_PER_VERT * size_of(f32), 8 * size_of(f32) )
 
-  // line_indices := [2]u32 { 0, 1 }
-  // data.line_mesh = mesh_make( &line_verts[0], len(line_verts), &line_indices[0], len(line_indices) )
   // ----------------------------------------------------------------------------------------------
+  
 
 
   data.basic_shader          = shader_make( #load( "../assets/basic.vert", string ), 

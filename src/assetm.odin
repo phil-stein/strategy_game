@@ -73,7 +73,7 @@ assetm_init :: proc()
   //                                   } )
   
   data.mesh_idxs.cube    = assetm_load_mesh( "cube.fbx" )
-  // = mesh_load_fbx( "assets/sphere.fbx" ), 
+  data.mesh_idxs.sphere  = assetm_load_mesh( "sphere.fbx" ) 
   data.mesh_idxs.suzanne = assetm_load_mesh( "suzanne_02.fbx" )
 }
 
