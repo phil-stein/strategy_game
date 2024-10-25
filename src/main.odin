@@ -1,0 +1,404 @@
+package core
+
+import        "core:fmt"
+import        "core:math"
+import linalg "core:math/linalg/glsl"
+import        "core:os"
+import        "vendor:glfw"
+import gl     "vendor:OpenGL"
+import        "core:image"
+import        "core:image/png"
+
+
+
+main :: proc() 
+{
+  // ---- init ----
+
+  if ( !window_create( 1500, 1075, "title", WINDOW_TYPE.MINIMIZED, true ) ) // /* 1000, 750, */
+  {
+    fmt.print( "ERROR: failed to create window\n" )
+    return;
+  }
+  input_init()
+  // hide cursor
+  input_center_cursor()
+  input_set_cursor_visibile( false )
+
+  // ---- setup ----
+
+  data_init()
+
+  assetm_init()
+
+
+  
+  // -- add entities --
+
+  append( &data.entity_arr, entity_t{ pos = {  0, 2, 0 }, rot = { 0, 180, 0 }, scl = { 1, 1, 1 },
+                                      mesh_idx = data.mesh_idxs.suzanne, 
+                                      mat_idx  = data.material_idxs.metal_01
+                                    } )
+
+
+  // --- create map ---
+
+  TILE_ARR_X_MAX :: 10
+  TILE_ARR_Z_MAX :: 10
+  tile_00_str := 
+  "XXXXXXXXXX"+
+  "X.XXXX..XX"+
+  "XXX.X.XXXX"+
+  "X.XXXX...X"+
+  "X..XXXXX.X"+
+  "X..XXXXX.X"+
+  "X...XXXX.X"+
+  "X.XXXXXXXX"+
+  "XXXXX.X..X"+
+  "XXXXXXXXXX"
+
+  tile_01_str := 
+  "XXXXXX..XX"+
+  "X..X......"+
+  "X.......X."+
+  "..XX.....X"+
+  "...X...X.X"+
+  "...X......"+
+  "X.....XX.."+
+  "...X...XXX"+
+  "XX....X..."+
+  "XXXXX....."
+
+  tile_str_arr := []string{ tile_00_str, tile_01_str }
+
+  // for z in 0 ..< TILE_ARR_Z_MAX
+  for y := 0; y < len(tile_str_arr); y += 1
+  {
+    tile_str := tile_str_arr[y]
+
+    for z := TILE_ARR_Z_MAX -1; z >= 0; z -= 1    // reversed so the str aligns with the created map
+    {
+      for x := TILE_ARR_X_MAX -1; x >= 0; x -= 1  // reversed so the str aligns with the created map
+      {
+        // tile_str_idx := x + (z*TILE_ARR_X_MAX)
+        tile_str_idx := ( TILE_ARR_X_MAX * TILE_ARR_Z_MAX ) - ( x + (z*TILE_ARR_X_MAX) +1 ) // reversed idx so the str aligns with the created map
+
+        if tile_str[tile_str_idx] == 'X'
+        {
+          // idx := len(data.entity_arr)
+          append( &data.entity_arr, 
+                  entity_t{ pos = { f32(x) * 2 - f32(TILE_ARR_X_MAX) +1, 
+                                    f32(y) * 2, 
+                                    f32(z) * 2 - f32(TILE_ARR_Z_MAX) +1
+                                  }, 
+                            rot = { 0, 0, 0 }, scl = { 1, 1, 1 },
+                            mesh_idx = data.mesh_idxs.cube, 
+                            mat_idx  = data.material_idxs.brick 
+                          } )
+          // fmt.println( "idx: ", idx, "pos: ", data.entity_arr[idx].pos, 
+          //              " \t| x, z: ", x, z, "MAX: ", TILE_ARR_X_MAX, TILE_ARR_Z_MAX ,
+          //              ", ", f32(x) * 2 - f32(TILE_ARR_X_MAX) , f32(z) * 2 - f32(TILE_ARR_Z_MAX))
+        }
+      }
+    }
+  }
+
+  
+  // -- set opengl state --
+  renderer_init()
+	
+
+  // ---- main loop ----
+  for !window_should_close()
+  {
+    glfw.PollEvents();
+      
+    data_pre_updated()
+      
+    camera_rotate_by_mouse()
+    camera_move_by_keys()
+
+    if ( keystates[KEY.ESCAPE].pressed )
+    { break }
+
+    if ( keystates[KEY.TAB].pressed )
+    { data.wireframe_mode_enabled  = !data.wireframe_mode_enabled }
+
+    // wireframe mode
+    if ( data.wireframe_mode_enabled == true )
+	  { gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE) }
+	  else
+	  { gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL) }
+
+    if ( keystates[KEY.ENTER].pressed )
+    {
+      fmt.println( "data.cam.pos:   ", data.cam.pos )
+      fmt.println( "data.cam.pitch: ", data.cam.pitch_rad )
+      fmt.println( "data.cam.yaw:   ", data.cam.yaw_rad )
+    }
+    
+    renderer_update()
+
+
+    // {
+    //   min := linalg.vec3{ -1, -1, -1 }
+    //   max := linalg.vec3{  1,  1,  1 }
+    //   ray : ray_t
+    //   ray.pos    = data.cam.pos
+    //   ray.dir = camera_get_front()
+    //   hit := ray_intersect_aabb( ray, min, max )
+    //   debug_draw_aabb( min, max, hit.hit ? linalg.vec3{ 1, 0, 1 } : linalg.vec3{ 1, 1, 1 }, 15 )
+    // }
+    any_hits    := false
+    closest_hit := linalg.vec3{ 10000000, 1000000, 1000000 }
+    for y := 0; y < len(tile_str_arr); y += 1
+    {
+      tile_str := tile_str_arr[y]
+      for z := TILE_ARR_Z_MAX -1; z >= 0; z -= 1    // reversed so the str aligns with the created map
+      {
+        for x := TILE_ARR_X_MAX -1; x >= 0; x -= 1  // reversed so the str aligns with the created map
+        {
+          tile_str_idx := ( TILE_ARR_X_MAX * TILE_ARR_Z_MAX ) - ( x + (z*TILE_ARR_X_MAX) +1 ) // reversed idx so the str aligns with the created map
+
+          if tile_str[tile_str_idx] == 'X'
+          {
+            pos := linalg.vec3{ 
+                    f32(x) * 2 - f32(TILE_ARR_X_MAX) +1,
+                    f32(y) * 2, 
+                    f32(z) * 2 - f32(TILE_ARR_Z_MAX) +1
+                   }
+
+            min := pos + linalg.vec3{ -1, -1, -1 }
+            max := pos + linalg.vec3{  1,  1,  1 }
+            ray : ray_t
+            ray.pos    = data.cam.pos
+            ray.dir = camera_get_front()
+            hit := ray_intersect_aabb( ray, min, max )
+            if hit.hit
+            {
+              any_hits = true
+              if linalg.distance( data.cam.pos, pos ) < linalg.distance( data.cam.pos, closest_hit )
+              {
+                closest_hit = pos
+              }
+              debug_draw_aabb( min, max, 
+                               hit.hit ? linalg.vec3{ 1, 0, 1 } : linalg.vec3{ 1, 1, 1 }, 
+                               hit.hit ? 15 : 5 )
+            }
+          }
+        }
+      }
+    }
+    if any_hits
+    { 
+      // draw red target indicator line
+      debug_draw_line( closest_hit + linalg.vec3{ 0, 0.5, 0 }, closest_hit + linalg.vec3{ 0, 1.5, 0 }, linalg.vec3{ 1, 0, 0 }, 25 ) 
+      // draw blue line from character
+      debug_draw_line( data.entity_arr[0].pos + linalg.vec3{ 0, 0, 0 }, closest_hit + linalg.vec3{ 0, 1.5, 0 }, linalg.vec3{ 0.6, 0.8, 1 }, 15 )
+    }
+
+
+    // // draw the gbuffer and lighting buffer onto screen as quads
+    // quad_size :: linalg.vec2{ 0.25, -0.25 }
+    // renderer_draw_quad( linalg.vec2{ -0.75,  0.75 }, quad_size, data.fb_deferred.buffer01 )
+    // renderer_draw_quad( linalg.vec2{ -0.75,  0.25 }, quad_size, data.fb_deferred.buffer02 )
+    // renderer_draw_quad( linalg.vec2{ -0.75, -0.25 }, quad_size, data.fb_deferred.buffer03 )
+    // renderer_draw_quad( linalg.vec2{ -0.75, -0.75 }, quad_size, data.fb_deferred.buffer04 )
+    // renderer_draw_quad( linalg.vec2{ -0.25,  0.75 }, quad_size, data.fb_lighting.buffer01 )
+
+    glfw.SwapBuffers( data.window )
+    
+    data_post_update()
+    input_update()
+  }
+
+  glfw.DestroyWindow( data.window )
+  glfw.Terminate()
+}
+
+
+
+gl_format_str :: proc( format: i32 ) -> string
+{
+  return format == gl.R8         ? "R8"         :
+         format == gl.SRGB8      ? "SRGB8"      :
+         format == gl.RED        ? "RED"        :
+         format == gl.RGB        ? "RGB"        :
+         format == gl.SRGB       ? "SRGB"       :
+         format == gl.RGBA       ? "RGBA"       :
+         format == gl.SRGB_ALPHA ? "SRGB_ALPHA" :
+         "unknown" 
+}
+make_texture :: proc( path: string, srgb: bool ) -> ( handle: u32 )
+{
+  // Load image at compile time
+  // image_file_bytes := #load( "../assets/texture_01.png" )
+  image_file_bytes, ok := os.read_entire_file( path, context.allocator )
+  if( !ok ) 
+  {
+    // Print error to stderr and exit with errorcode
+    fmt.eprintln("could not read texture file: ", path)
+    os.exit(1)
+  }
+  defer delete( image_file_bytes, context.allocator )
+
+  // Load image  Odin's core:image library.
+  image_ptr :  ^image.Image
+  err       :   image.Error
+  // options   :=  image.Options { .alpha_add_if_missing }
+  options   :=  image.Options { }
+
+  image_ptr, err =  png.load_from_bytes( image_file_bytes, options )
+  defer png.destroy( image_ptr )
+  image_w := i32( image_ptr.width )
+  image_h := i32( image_ptr.height )
+
+  if ( err != nil )
+  {
+      fmt.println("ERROR: Image failed to load.")
+  }
+
+  // Copy bytes from icon buffer into slice.
+  pixels := make( []u8, len(image_ptr.pixels.buf) )
+  for b, i in image_ptr.pixels.buf 
+  {
+      pixels[i] = b
+  }
+  gl.GenTextures( 1, &handle )
+  gl.BindTexture( gl.TEXTURE_2D, handle )
+
+  // Texture wrapping options.
+  gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+  gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+  
+  // Texture filtering options.
+  gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+  gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+
+
+  gl_internal_format : i32 = srgb ? gl.SRGB_ALPHA : gl.RGBA
+  gl_format          : u32 = gl.RGBA
+  switch image_ptr.channels
+  {
+    case 1:
+      gl_internal_format = srgb ? gl.SRGB8 : gl.R8
+      gl_format = gl.RED
+      break;
+    // case 2:
+    //   gl_internal_format = gl.RG8
+    //   gl_format = gl.RG
+    //   // P_INFO("gl.RGB");
+    //   break;
+    case 3:
+      gl_internal_format = srgb ? gl.SRGB : gl.RGB
+      gl_format = gl.RGB
+      break;
+    case 4:
+      gl_internal_format = srgb ? gl.SRGB_ALPHA : gl.RGBA
+      gl_format = gl.RGBA
+      break;
+    case:
+      fmt.eprintln( "texture has incorrect channel amount: ", image_ptr.channels )
+      os.exit( 1 )
+  }
+  assert( image_ptr.channels >= 1 && image_ptr.channels <= 4, "texture has incorrect channel amount" )
+
+  // Describe texture.
+  gl.TexImage2D(
+      gl.TEXTURE_2D,      // texture type
+      0,                  // level of detail number (default = 0)
+      gl_internal_format, // gl.RGBA, // texture format
+      image_w,            // width
+      image_h,            // height
+      0,                  // border, must be 0
+      gl_format,          // gl.RGBA, // pixel data format
+      gl.UNSIGNED_BYTE,   // data type of pixel data
+      &pixels[0],         // image data
+  )
+
+  // must be called after glTexImage2D
+  gl.GenerateMipmap(gl.TEXTURE_2D);
+
+  return handle
+}
+
+texture_free_handle :: proc( _handle: u32 )
+{
+  handle := _handle
+  if handle == 0 { return }
+	gl.DeleteTextures( 1, &handle )
+  handle = 0;
+}
+
+make_brdf_lut :: proc () -> ( handle: u32 )
+{
+  width  :: 512
+  height :: 512
+
+  // gen framebuffer ---------------------------------------------------------------------
+
+  capture_fbo, capture_rbo : u32
+  gl.GenFramebuffers( 1, &capture_fbo )
+  gl.GenRenderbuffers( 1, &capture_rbo )
+
+  gl.BindFramebuffer( gl.FRAMEBUFFER, capture_fbo )
+  gl.BindRenderbuffer( gl.RENDERBUFFER, capture_rbo )
+  gl.RenderbufferStorage( gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, width, height )
+  gl.FramebufferRenderbuffer( gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, capture_fbo )
+
+  // gen brdf lut ------------------------------------------------------------------------
+  
+  brdf_lut : u32 
+  gl.GenTextures( 1, &brdf_lut )
+
+  gl.BindTexture( gl.TEXTURE_2D, brdf_lut )
+  gl.TexImage2D( gl.TEXTURE_2D, 0, gl.RG16F, width, height, 0, gl.RG, gl.FLOAT, nil )
+  gl.TexParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.TexParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.TexParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.TexParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+  gl.BindFramebuffer( gl.FRAMEBUFFER, capture_fbo )
+  gl.BindRenderbuffer( gl.RENDERBUFFER, capture_rbo )
+  gl.RenderbufferStorage( gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, width, height )
+  gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, brdf_lut, 0 )
+
+  gl.Viewport( 0, 0, width, height )
+  gl.UseProgram( data.brdf_lut_shader )
+  gl.Clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT )
+  
+	gl.BindVertexArray( data.quad_vao )
+	gl.DrawArrays( gl.TRIANGLES, 0, 6 )
+  gl.BindFramebuffer( gl.FRAMEBUFFER, 0 )
+
+  gl.DeleteFramebuffers( 1, &capture_fbo )
+  gl.DeleteRenderbuffers( 1, &capture_rbo )
+
+  // @TODO: need to save this as float instead of 8bit
+
+  // const int channel_nr = 2;
+  // u32 pixels_len = 0;
+  // texture_t t;
+  // t.handle     = brdf_lut;
+  // t.width      = width;
+  // t.height     = height;
+  // t.channel_nr = channel_nr;
+  // #ifdef EDITOR
+  // int t_path_len = (int)strlen(path);
+  // char* tex_name = (char*)&path[t_path_len - 1];
+  // for (int i = t_path_len - 1; i >= 0; --i)
+  // {
+  //   if (path[i] == '\\' || path[i] == '/') { break; }
+  //   tex_name = (char*)&path[i];
+  // }
+  // ASSERT(strlen(tex_name) < TEXTURE_T_NAME_MAX);
+  // STRCPY(t.name, tex_name);
+  // #endif // EDITOR
+  // asset_io_texture_write_pixels_to_file(&t,  GL_RG, path);
+
+  // pixels_len++; // so gcc doesnt complain about unused variable
+
+    
+  return brdf_lut
+}
+
