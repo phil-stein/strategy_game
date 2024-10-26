@@ -15,7 +15,7 @@ main :: proc()
 {
   // ---- init ----
 
-  if ( !window_create( 1500, 1075, "title", WINDOW_TYPE.MINIMIZED, true ) ) // /* 1000, 750, */
+  if ( !window_create( 1500, 1075, "title", WINDOW_TYPE.MINIMIZED, vsync=true ) ) // /* 1000, 750, */
   {
     fmt.print( "ERROR: failed to create window\n" )
     return;
@@ -181,9 +181,9 @@ main :: proc()
               {
                 closest_hit = pos
               }
-              debug_draw_aabb( min, max, 
-                               hit.hit ? linalg.vec3{ 1, 0, 1 } : linalg.vec3{ 1, 1, 1 }, 
-                               hit.hit ? 15 : 5 )
+              // debug_draw_aabb( min, max, 
+              //                  hit.hit ? linalg.vec3{ 1, 0, 1 } : linalg.vec3{ 1, 1, 1 }, 
+              //                  hit.hit ? 15 : 5 )
             }
           }
         }
