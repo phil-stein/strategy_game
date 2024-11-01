@@ -58,6 +58,8 @@ cubemap_t :: struct
   intensity   : f32,
 }
 
+TILE_ARR_X_MAX :: 10
+TILE_ARR_Z_MAX :: 10
 
 data_t :: struct
 {
@@ -130,23 +132,31 @@ data_t :: struct
 
   texture_idxs : struct
   {
-    blank           : int,
-    brick_albedo    : int,
-    brick_normal    : int,  
-    brick_roughness : int,
+    blank            : int,
+    brick_albedo     : int,
+    brick_normal     : int,  
+    brick_roughness  : int,
+    dirt_cube_albedo : int,
   },
   material_idxs : struct
   {
-    default  : int,
-    metal_01 : int,
-    brick    : int,
+    default   : int,
+    metal_01  : int,
+    brick     : int,
+    dirt_cube : int,
   },
   mesh_idxs : struct
   {
-    cube    : int,
-    sphere  : int,
-    suzanne : int,
+    cube      : int,
+    sphere    : int,
+    suzanne   : int,
+    dirt_cube : int,
   },
+
+  tile_00_str : string,
+  tile_01_str : string,
+
+  tile_str_arr : [2]string,
 
 }
 data : data_t =
@@ -175,11 +185,39 @@ data : data_t =
     // yaw_rad   = 14.2,
     pitch_rad = -0.78397244,
     yaw_rad   = 14.130187,
-  }
+  },
+
+  tile_00_str = 
+  "XXXXXXXXXX"+
+  "X.XXXX..XX"+
+  "XXX.X.XXXX"+
+  "X.XXXX...X"+
+  "X..XXXXX.X"+
+  "X..XXXXX.X"+
+  "X...XXXX.X"+
+  "X.XXXXXXXX"+
+  "XXXXX.X..X"+
+  "XXXXXXXXXX",
+  
+  tile_01_str = 
+  "XXXXXX..XX"+
+  "X..X......"+
+  "X.......X."+
+  "..XX.....X"+
+  "...X...X.X"+
+  "...X......"+
+  "X.....XX.."+
+  "...X...XXX"+
+  "XX....X..."+
+  "XXXXX.....",
 }
 
 data_init :: proc()
 {
+
+  data.tile_str_arr[0] = data.tile_00_str
+  data.tile_str_arr[1] = data.tile_01_str
+
   // screen quad 
 	quad_verts := [?]f32{ 
 	  // pos       // uv 
@@ -350,5 +388,49 @@ data_post_update :: proc()
 {
   data.mouse_delta_x = 0.0
   data.mouse_delta_y = 0.0
+}
+
+data_create_map :: proc()
+{
+  // for z in 0 ..< TILE_ARR_Z_MAX
+  for y := 0; y < len(data.tile_str_arr); y += 1
+  {
+    tile_str := data.tile_str_arr[y]
+
+    for z := TILE_ARR_Z_MAX -1; z >= 0; z -= 1    // reversed so the str aligns with the created map
+    {
+      for x := TILE_ARR_X_MAX -1; x >= 0; x -= 1  // reversed so the str aligns with the created map
+      {
+        // data.tile_str_idx := x + (z*TILE_ARR_X_MAX)
+        tile_str_idx := ( TILE_ARR_X_MAX * TILE_ARR_Z_MAX ) - ( x + (z*TILE_ARR_X_MAX) +1 ) // reversed idx so the str aligns with the created map
+
+        if tile_str[tile_str_idx] == 'X'
+        {
+          // idx := len(data.entity_arr)
+          // append( &data.entity_arr, 
+          //         entity_t{ pos = { f32(x) * 2 - f32(TILE_ARR_X_MAX) +1, 
+          //                           f32(y) * 2, 
+          //                           f32(z) * 2 - f32(TILE_ARR_Z_MAX) +1
+          //                         }, 
+          //                   rot = { 0, 0, 0 }, scl = { 1, 1, 1 },
+          //                   mesh_idx = data.mesh_idxs.cube, 
+          //                   mat_idx  = data.material_idxs.brick 
+          //                 } )
+          append( &data.entity_arr, 
+                  entity_t{ pos = { f32(x) * 2 - f32(TILE_ARR_X_MAX) +1, 
+                                    f32(y) * 2, 
+                                    f32(z) * 2 - f32(TILE_ARR_Z_MAX) +1
+                                  }, 
+                            rot = { 0, 0, 0 }, scl = { 1, 1, 1 },
+                            mesh_idx = data.mesh_idxs.dirt_cube, 
+                            mat_idx  = data.material_idxs.dirt_cube
+                          } )
+          // fmt.println( "idx: ", idx, "pos: ", data.entity_arr[idx].pos, 
+          //              " \t| x, z: ", x, z, "MAX: ", TILE_ARR_X_MAX, TILE_ARR_Z_MAX ,
+          //              ", ", f32(x) * 2 - f32(TILE_ARR_X_MAX) , f32(z) * 2 - f32(TILE_ARR_Z_MAX))
+        }
+      }
+    }
+  }
 }
 

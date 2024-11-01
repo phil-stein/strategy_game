@@ -11,7 +11,7 @@ assetm_init :: proc()
   // blank_tex       := make_texture( "assets/blank.png", false )
   // // black_blank_tex := make_texture( "assets/blank_black.png", false )
   // blank_tex_idx := assetm_load_texture( "blank.png", false )
-  data.texture_idxs.blank = assetm_load_texture( "blank.png", false )
+  data.texture_idxs.blank = assetm_load_texture( "textures/blank.png", false )
 
   cube_mat  := material_t{ 
                  albedo_idx    = data.texture_idxs.blank, 
@@ -52,10 +52,25 @@ assetm_init :: proc()
 
            tint        = linalg.vec3{ 1.0, 1.0, 1.0 },
            roughness_f = 1.0,
-           metallic_f  = 0.1,
+           metallic_f  = 0.0,
          }
   // brick_mat_idx := assetm_add_material( brick_mat )
   data.material_idxs.brick = assetm_add_material( brick_mat )
+
+  data.texture_idxs.dirt_cube_albedo = assetm_load_texture( "textures/dirt_path_sphax_01.png", false )
+
+  dirt_cube_mat  := material_t{ 
+           albedo_idx    = data.texture_idxs.dirt_cube_albedo, 
+           roughness_idx = data.texture_idxs.blank, 
+           metallic_idx  = data.texture_idxs.blank, 
+           normal_idx    = data.texture_idxs.blank, 
+
+           tint        = linalg.vec3{ 1.0, 1.0, 1.0 },
+           roughness_f = 1.0,
+           metallic_f  = 0.0,
+         }
+  // brick_mat_idx := assetm_add_material( brick_mat )
+  data.material_idxs.dirt_cube = assetm_add_material( dirt_cube_mat )
 
   // sphere_idx := len(data.entity_arr)
   // append( &data.entity_arr, entity_t{ pos = {  2, 2, 0 }, rot = { 0, 0, 0 }, scl = { 1, 1, 1 },
@@ -72,9 +87,10 @@ assetm_init :: proc()
   //                                            },
   //                                   } )
   
-  data.mesh_idxs.cube    = assetm_load_mesh( "cube.fbx" )
-  data.mesh_idxs.sphere  = assetm_load_mesh( "sphere.fbx" ) 
-  data.mesh_idxs.suzanne = assetm_load_mesh( "suzanne_02.fbx" )
+  data.mesh_idxs.cube      = assetm_load_mesh( "cube.fbx" )
+  data.mesh_idxs.sphere    = assetm_load_mesh( "sphere.fbx" ) 
+  data.mesh_idxs.suzanne   = assetm_load_mesh( "suzanne_02.fbx" )
+  data.mesh_idxs.dirt_cube = assetm_load_mesh( "dirt_cube.fbx" )
 }
 
 

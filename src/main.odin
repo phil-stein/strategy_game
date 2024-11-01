@@ -43,65 +43,8 @@ main :: proc()
 
   // --- create map ---
 
-  TILE_ARR_X_MAX :: 10
-  TILE_ARR_Z_MAX :: 10
-  tile_00_str := 
-  "XXXXXXXXXX"+
-  "X.XXXX..XX"+
-  "XXX.X.XXXX"+
-  "X.XXXX...X"+
-  "X..XXXXX.X"+
-  "X..XXXXX.X"+
-  "X...XXXX.X"+
-  "X.XXXXXXXX"+
-  "XXXXX.X..X"+
-  "XXXXXXXXXX"
-
-  tile_01_str := 
-  "XXXXXX..XX"+
-  "X..X......"+
-  "X.......X."+
-  "..XX.....X"+
-  "...X...X.X"+
-  "...X......"+
-  "X.....XX.."+
-  "...X...XXX"+
-  "XX....X..."+
-  "XXXXX....."
-
-  tile_str_arr := []string{ tile_00_str, tile_01_str }
-
-  // for z in 0 ..< TILE_ARR_Z_MAX
-  for y := 0; y < len(tile_str_arr); y += 1
-  {
-    tile_str := tile_str_arr[y]
-
-    for z := TILE_ARR_Z_MAX -1; z >= 0; z -= 1    // reversed so the str aligns with the created map
-    {
-      for x := TILE_ARR_X_MAX -1; x >= 0; x -= 1  // reversed so the str aligns with the created map
-      {
-        // tile_str_idx := x + (z*TILE_ARR_X_MAX)
-        tile_str_idx := ( TILE_ARR_X_MAX * TILE_ARR_Z_MAX ) - ( x + (z*TILE_ARR_X_MAX) +1 ) // reversed idx so the str aligns with the created map
-
-        if tile_str[tile_str_idx] == 'X'
-        {
-          // idx := len(data.entity_arr)
-          append( &data.entity_arr, 
-                  entity_t{ pos = { f32(x) * 2 - f32(TILE_ARR_X_MAX) +1, 
-                                    f32(y) * 2, 
-                                    f32(z) * 2 - f32(TILE_ARR_Z_MAX) +1
-                                  }, 
-                            rot = { 0, 0, 0 }, scl = { 1, 1, 1 },
-                            mesh_idx = data.mesh_idxs.cube, 
-                            mat_idx  = data.material_idxs.brick 
-                          } )
-          // fmt.println( "idx: ", idx, "pos: ", data.entity_arr[idx].pos, 
-          //              " \t| x, z: ", x, z, "MAX: ", TILE_ARR_X_MAX, TILE_ARR_Z_MAX ,
-          //              ", ", f32(x) * 2 - f32(TILE_ARR_X_MAX) , f32(z) * 2 - f32(TILE_ARR_Z_MAX))
-        }
-      }
-    }
-  }
+  data_create_map()
+  nav_arr := game_build_nav_struct()
 
   
   // -- set opengl state --
@@ -139,66 +82,53 @@ main :: proc()
     
     renderer_update()
 
+    game_find_tile_hit_by_camera()
 
-    // {
-    //   min := linalg.vec3{ -1, -1, -1 }
-    //   max := linalg.vec3{  1,  1,  1 }
-    //   ray : ray_t
-    //   ray.pos    = data.cam.pos
-    //   ray.dir = camera_get_front()
-    //   hit := ray_intersect_aabb( ray, min, max )
-    //   debug_draw_aabb( min, max, hit.hit ? linalg.vec3{ 1, 0, 1 } : linalg.vec3{ 1, 1, 1 }, 15 )
-    // }
-    any_hits    := false
-    closest_hit := linalg.vec3{ 10000000, 1000000, 1000000 }
-    for y := 0; y < len(tile_str_arr); y += 1
+    // for level_idx in 0 ..< len(data.tile_str_arr)
+    level_idx := 0
     {
-      tile_str := tile_str_arr[y]
-      for z := TILE_ARR_Z_MAX -1; z >= 0; z -= 1    // reversed so the str aligns with the created map
+
+      // for z := TILE_ARR_Z_MAX -1; z >= 0; z -= 1    // reversed so the str aligns with the created map
+      // {
+      //   for x := TILE_ARR_X_MAX -1; x >= 0; x -= 1  // reversed so the str aligns with the created map
+      for z := 0; z < TILE_ARR_Z_MAX; z += 1
       {
-        for x := TILE_ARR_X_MAX -1; x >= 0; x -= 1  // reversed so the str aligns with the created map
+        for x := 0; x < TILE_ARR_X_MAX; x += 1
         {
-          tile_str_idx := ( TILE_ARR_X_MAX * TILE_ARR_Z_MAX ) - ( x + (z*TILE_ARR_X_MAX) +1 ) // reversed idx so the str aligns with the created map
+          nav_type := nav_arr[level_idx][x][z]
 
-          if tile_str[tile_str_idx] == 'X'
+          pos := linalg.vec3{ 
+                  f32(x) * 2 - f32(TILE_ARR_X_MAX) +1,
+                  f32(level_idx) * 2, 
+                  f32(z) * 2 - f32(TILE_ARR_Z_MAX) +1
+                 }
+          min := pos + linalg.vec3{ -1, -1, -1 }
+          max := pos + linalg.vec3{  1,  1,  1 }
+          switch nav_type
           {
-            pos := linalg.vec3{ 
-                    f32(x) * 2 - f32(TILE_ARR_X_MAX) +1,
-                    f32(y) * 2, 
-                    f32(z) * 2 - f32(TILE_ARR_Z_MAX) +1
-                   }
-
-            min := pos + linalg.vec3{ -1, -1, -1 }
-            max := pos + linalg.vec3{  1,  1,  1 }
-            ray : ray_t
-            ray.pos    = data.cam.pos
-            ray.dir = camera_get_front()
-            hit := ray_intersect_aabb( ray, min, max )
-            if hit.hit
-            {
-              any_hits = true
-              if linalg.distance( data.cam.pos, pos ) < linalg.distance( data.cam.pos, closest_hit )
-              {
-                closest_hit = pos
-              }
+            case Nav_Type.EMPTY:
               // debug_draw_aabb( min, max, 
-              //                  hit.hit ? linalg.vec3{ 1, 0, 1 } : linalg.vec3{ 1, 1, 1 }, 
-              //                  hit.hit ? 15 : 5 )
-            }
+                               // linalg.vec3{ 1, 1, 1 }, 
+                               // 5 )
+              debug_draw_sphere( pos, linalg.vec3{ 0.5, 0.5, 0.5 },
+                               linalg.vec3{ 1, 1, 1 } )
+            case Nav_Type.BLOCKED:
+              // debug_draw_aabb( min, max, 
+              //                  linalg.vec3{ 1, 0, 0 }, 
+              //                  5 )
+              debug_draw_sphere( pos, linalg.vec3{ 0.5, 0.5, 0.5 },
+                               linalg.vec3{ 1, 0, 0 } ) 
+            case Nav_Type.TRAVERSABLE:
+              // debug_draw_aabb( min, max, 
+              //                  linalg.vec3{ 0, 1, 0 }, 
+              //                  15 )
+              debug_draw_sphere( pos, linalg.vec3{ 0.5, 0.5, 0.5 },
+                               linalg.vec3{ 0, 1, 0 } ) 
+
           }
         }
       }
     }
-    if any_hits
-    { 
-      // draw red target indicator line
-      debug_draw_line( closest_hit + linalg.vec3{ 0, 0.5, 0 }, closest_hit + linalg.vec3{ 0, 1.5, 0 }, linalg.vec3{ 1, 0, 0 }, 25 ) 
-      // draw blue line from character
-      debug_draw_line( data.entity_arr[0].pos + linalg.vec3{ 0, 0, 0 }, closest_hit + linalg.vec3{ 0, 1.5, 0 }, linalg.vec3{ 0.6, 0.8, 1 }, 15 )
-      
-      debug_draw_sphere( closest_hit + linalg.vec3{ 0, 1.5, 0 }, linalg.vec3{ 0.2, 0.2, 0.2 }, linalg.vec3{ 0.6, 0.8, 1 } )
-    }
-
 
     // // draw the gbuffer and lighting buffer onto screen as quads
     // quad_size :: linalg.vec2{ 0.25, -0.25 }
