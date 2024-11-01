@@ -1,6 +1,7 @@
 package core
 
-import str "core:strings"
+import        "core:fmt"
+import str    "core:strings"
 import linalg "core:math/linalg/glsl"
 
 
@@ -11,7 +12,7 @@ assetm_init :: proc()
   // blank_tex       := make_texture( "assets/blank.png", false )
   // // black_blank_tex := make_texture( "assets/blank_black.png", false )
   // blank_tex_idx := assetm_load_texture( "blank.png", false )
-  data.texture_idxs.blank = assetm_load_texture( "textures/blank.png", false )
+  data.texture_idxs.blank = assetm_load_texture( "blank.png", false )
 
   cube_mat  := material_t{ 
                  albedo_idx    = data.texture_idxs.blank, 
@@ -57,7 +58,7 @@ assetm_init :: proc()
   // brick_mat_idx := assetm_add_material( brick_mat )
   data.material_idxs.brick = assetm_add_material( brick_mat )
 
-  data.texture_idxs.dirt_cube_albedo = assetm_load_texture( "textures/dirt_path_sphax_01.png", false )
+  data.texture_idxs.dirt_cube_albedo = assetm_load_texture( "dirt_path_sphax_01.png", false )
 
   dirt_cube_mat  := material_t{ 
            albedo_idx    = data.texture_idxs.dirt_cube_albedo, 
@@ -97,7 +98,7 @@ assetm_init :: proc()
 assetm_load_texture :: #force_inline proc( name: string, srgb: bool ) -> ( idx: int )
 {
   tex : texture_t
-  tex.handle = make_texture( str.concatenate( []string{ "assets/", name} ), srgb )
+  tex.handle = make_texture( str.concatenate( []string{ "assets/textures/", name} ), srgb )
   idx = len( data.texture_arr )
   append( &data.texture_arr, tex )
 
@@ -125,7 +126,8 @@ assetm_get_material :: #force_inline proc( idx: int ) -> ( tex: ^material_t )
 
 assetm_load_mesh :: #force_inline proc( name: string ) -> ( idx: int )
 {
-  path_cstr := str.clone_to_cstring( str.concatenate( []string{ "assets/", name} ) )
+  path_cstr := str.clone_to_cstring( str.concatenate( []string{ "assets/meshes/", name} ) )
+  // fmt.println( "path: ", path_cstr )
   m := mesh_load_fbx( path_cstr )
   idx = len( data.mesh_arr )
   append( &data.mesh_arr, m)

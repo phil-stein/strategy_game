@@ -31,6 +31,11 @@ main :: proc()
 
   assetm_init()
 
+  data.brdf_lut = make_brdf_lut()
+  cubemap_data := #load( "../assets/textures/gothic_manor_01_2k.hdr" )
+  data.cubemap = cubemap_load( &cubemap_data[0], len(cubemap_data) )
+  data.cubemap.intensity = 1.9
+
 
   
   // -- add entities --

@@ -89,7 +89,8 @@ cubemap_load :: proc( buf: [^]byte, buf_len: int ) -> ( cm: cubemap_t)
   // render cubemap ----------------------------------------------------------------------
  
   // mesh_t* cube_mesh = assetm_get_mesh("cube");
-  cube_mesh := mesh_load_fbx( "assets/cube.fbx" )
+  // cube_mesh := mesh_load_fbx( "assets/cube.fbx" )
+  cube_mesh := assetm_get_mesh( data.mesh_idxs.cube )
 
   proj : linalg.mat4
   pers : f32 = 90.0

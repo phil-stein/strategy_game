@@ -17,8 +17,11 @@ import fbx    "../external/ufbx"
 F32_PER_VERT :: ( 3 + 2 + 3 + 3 )  // pos, uvs, normals, tangents
 
 
-mesh_load_fbx :: proc( path: cstring ) -> ( mesh: mesh_t )
+mesh_load_fbx :: proc( path: cstring, loc := #caller_location ) -> ( mesh: mesh_t )
 {
+  
+  // fmt.println( "loc: ", loc )
+
   // Load the .fbx file
   opts  := fbx.Load_Opts{}
   err   := fbx.Error{}

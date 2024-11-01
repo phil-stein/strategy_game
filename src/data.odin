@@ -330,41 +330,36 @@ data_init :: proc()
   
 
 
-  data.basic_shader          = shader_make( #load( "../assets/basic.vert", string ), 
-                                            #load( "../assets/basic.frag", string ), "basic_shader" )
+  data.basic_shader          = shader_make( #load( "../assets/shaders/basic.vert", string ), 
+                                            #load( "../assets/shaders/basic.frag", string ), "basic_shader" )
 
-  data.quad_shader           = shader_make( #load( "../assets/quad.vert", string ), 
-                                            #load( "../assets/quad.frag", string ), "quad_shader" )
+  data.quad_shader           = shader_make( #load( "../assets/shaders/quad.vert", string ), 
+                                            #load( "../assets/shaders/quad.frag", string ), "quad_shader" )
 
-  data.deferred_shader       = shader_make( #load( "../assets/basic.vert",    string ), 
-                                            #load( "../assets/deferred.frag", string ), "deferred_shader" )
+  data.deferred_shader       = shader_make( #load( "../assets/shaders/basic.vert",    string ), 
+                                            #load( "../assets/shaders/deferred.frag", string ), "deferred_shader" )
   
-  data.lighting_shader       = shader_make( #load( "../assets/screen.vert", string ), 
-                                            #load( "../assets/pbr.frag",    string ), "lighting_shader" )
+  data.lighting_shader       = shader_make( #load( "../assets/shaders/screen.vert", string ), 
+                                            #load( "../assets/shaders/pbr.frag",    string ), "lighting_shader" )
 
-  data.post_fx_shader        = shader_make( #load( "../assets/screen.vert",  string ), 
-                                            #load( "../assets/post_fx.frag", string ), "post_fx_shader" )
+  data.post_fx_shader        = shader_make( #load( "../assets/shaders/screen.vert",  string ), 
+                                            #load( "../assets/shaders/post_fx.frag", string ), "post_fx_shader" )
 
-  data.skybox_shader         = shader_make( #load( "../assets/cubemap/cube_map.vert",  string ), 
-                                            #load( "../assets/cubemap/cube_map.frag", string ), "skybox_shader" )
+  data.skybox_shader         = shader_make( #load( "../assets/shaders/cubemap/cube_map.vert",  string ), 
+                                            #load( "../assets/shaders/cubemap/cube_map.frag", string ), "skybox_shader" )
 
-  data.brdf_lut_shader       = shader_make( #load( "../assets/cubemap/brdf_lut.vert", string ), 
-                                            #load( "../assets/cubemap/brdf_lut.frag", string ))
+  data.brdf_lut_shader       = shader_make( #load( "../assets/shaders/cubemap/brdf_lut.vert", string ), 
+                                            #load( "../assets/shaders/cubemap/brdf_lut.frag", string ))
 
-  data.equirect_shader       = shader_make( #load( "../assets/cubemap/render_equirect.vert", string ), 
-                                            #load( "../assets/cubemap/render_equirect.frag", string ))
+  data.equirect_shader       = shader_make( #load( "../assets/shaders/cubemap/render_equirect.vert", string ), 
+                                            #load( "../assets/shaders/cubemap/render_equirect.frag", string ))
  
-  data.irradiance_map_shader = shader_make( #load( "../assets/cubemap/render_equirect.vert", string ), 
-                                            #load( "../assets/cubemap/irradiance_map.frag", string ))
+  data.irradiance_map_shader = shader_make( #load( "../assets/shaders/cubemap/render_equirect.vert", string ), 
+                                            #load( "../assets/shaders/cubemap/irradiance_map.frag", string ))
  
-  data.prefilter_shader      = shader_make( #load( "../assets/cubemap/render_equirect.vert", string ), 
-                                            #load( "../assets/cubemap/prefilter_map.frag", string ))
-  
-  data.brdf_lut = make_brdf_lut()
-  cubemap_data := #load( "../assets/gothic_manor_01_2k.hdr" )
-  data.cubemap = cubemap_load( &cubemap_data[0], len(cubemap_data) )
-  data.cubemap.intensity = 1.9
- 
+  data.prefilter_shader      = shader_make( #load( "../assets/shaders/cubemap/render_equirect.vert", string ), 
+                                            #load( "../assets/shaders/cubemap/prefilter_map.frag", string ))
+   
   data.fb_deferred = framebuffer_create_gbuffer( 1 ) 
   data.fb_lighting = framebuffer_create_hdr()
 
