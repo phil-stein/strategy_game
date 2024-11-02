@@ -49,7 +49,6 @@ main :: proc()
   // --- create map ---
 
   data_create_map()
-  nav_arr := game_build_nav_struct()
 
   
   // -- set opengl state --
@@ -100,7 +99,7 @@ main :: proc()
       {
         for x := 0; x < TILE_ARR_X_MAX; x += 1
         {
-          nav_type := nav_arr[level_idx][x][z]
+          nav_type := data.tile_type_arr[level_idx][x][z]
 
           pos := linalg.vec3{ 
                   f32(x) * 2 - f32(TILE_ARR_X_MAX) +1,
@@ -115,25 +114,28 @@ main :: proc()
               // debug_draw_aabb( min, max, 
                                // linalg.vec3{ 1, 1, 1 }, 
                                // 5 )
-              debug_draw_sphere( pos, linalg.vec3{ 0.5, 0.5, 0.5 },
+              debug_draw_sphere( pos, linalg.vec3{ 0.25, 0.25, 0.25 },
                                linalg.vec3{ 1, 1, 1 } )
             case Nav_Type.BLOCKED:
               // debug_draw_aabb( min, max, 
               //                  linalg.vec3{ 1, 0, 0 }, 
               //                  5 )
-              debug_draw_sphere( pos, linalg.vec3{ 0.5, 0.5, 0.5 },
+              debug_draw_sphere( pos, linalg.vec3{ 0.25, 0.25, 0.25 },
                                linalg.vec3{ 1, 0, 0 } ) 
             case Nav_Type.TRAVERSABLE:
               // debug_draw_aabb( min, max, 
               //                  linalg.vec3{ 0, 1, 0 }, 
               //                  15 )
-              debug_draw_sphere( pos, linalg.vec3{ 0.5, 0.5, 0.5 },
+              debug_draw_sphere( pos, linalg.vec3{ 0.25, 0.25, 0.25 },
                                linalg.vec3{ 0, 1, 0 } ) 
 
           }
         }
       }
     }
+
+
+    
 
     // // draw the gbuffer and lighting buffer onto screen as quads
     // quad_size :: linalg.vec2{ 0.25, -0.25 }

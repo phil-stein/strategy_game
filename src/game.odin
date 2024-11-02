@@ -6,56 +6,81 @@ import linalg "core:math/linalg/glsl"
 
 
 
-Nav_Type :: enum
+waypoint_t :: struct
 {
-  EMPTY,
-  BLOCKED,
-  TRAVERSABLE,
-  // ...
+  level_idx : int,
+  x, z      : int,
 }
-nav_type_level_arr :: [TILE_ARR_X_MAX][TILE_ARR_Z_MAX]Nav_Type
 
-game_build_nav_struct :: proc( /* num_levels: int, levels: []string */ ) -> ( nav: [len(data.tile_str_arr)]nav_type_level_arr )
+game_a_star_pathfind :: proc( start, end: waypoint_t ) -> ( path: [dynamic]waypoint_t, success: bool  )
 {
-  // nav : [len(data.tile_str_arr)]nav_type_level_arr
+  current : waypoint_t = start
+  append( &path, start )
 
-  for level, level_idx in data.tile_str_arr
+  next_points        : [4]waypoint_t
+  next_points_viable : [4]bool
+
+  tries := 0
+
+  for current != end && tries < 100
   {
+    next_points_viable = { true, true, true, true }
 
-    // for z := TILE_ARR_Z_MAX -1; z >= 0; z -= 1    // reversed so the str aligns with the created map
-    // {
-    //   for x := TILE_ARR_X_MAX -1; x >= 0; x -= 1  // reversed so the str aligns with the created map
-    for x := 0; x < TILE_ARR_X_MAX; x += 1 
+    //    [0]
+    // [1] X [2]
+    //    [3]
+
+    if current.z > 0 && data.tile_type_arr[0][current.x][current.z -1] == Nav_Type.TRAVERSABLE
+    { next_points[0]  = waypoint_t{ level_idx = 0, x = current.x, z = current.z -1 } }
+    else
+    { next_points_viable[0] = false }
+
+    if current.x > 0 && data.tile_type_arr[0][current.x -1][current.z] == Nav_Type.TRAVERSABLE
+    { next_points[1]  = waypoint_t{ level_idx = 0, x = current.x -1, z = current.z } }
+    else
+    { next_points_viable[1] = false }
+
+    if current.x < TILE_ARR_X_MAX -1 && data.tile_type_arr[0][current.x +1][current.z] == Nav_Type.TRAVERSABLE
+    { next_points[2]  = waypoint_t{ level_idx = 0, x = current.x +1, z = current.z } }
+    else
+    { next_points_viable[2] = false }
+
+    if current.z < TILE_ARR_Z_MAX -1 && data.tile_type_arr[0][current.x][current.z +1] == Nav_Type.TRAVERSABLE
+    { next_points[3]  = waypoint_t{ level_idx = 0, x = current.x, z = current.z +1 } }
+    else
+    { next_points_viable[3] = false }
+
+    end_point := linalg.vec2{ f32(end.x), f32(end.z) }
+    shortest_next_point : int = 0
+    last_dist           : f32 = 999999999999999999999999.0
+    for i in 0 ..< len(next_points)
     {
-      for z := 0; z < TILE_ARR_Z_MAX; z += 1 
+      if !next_points_viable[i] { continue }
+
+      point := linalg.vec2{ f32(next_points[i].x), f32(next_points[i].z) }
+      dist  := linalg.distance( point, end_point )
+      if dist < last_dist
       {
-        tile_str_idx := ( TILE_ARR_X_MAX * TILE_ARR_Z_MAX ) - ( x + (z*TILE_ARR_X_MAX) +1 ) // reversed idx so the str aligns with the created map
-        // fmt.println( "level[ x + z ]: ", level[ x + z ], ", rune: ", rune(level[ x + z ]) )
-        // fmt.println( "level[ tile_str_idx ]: ", level[ tile_str_idx ], ", rune: ", rune(level[ tile_str_idx ]) )
-        // switch level[ x + z ] 
-        switch level[ tile_str_idx ] 
-        {
-          case '.':
-            nav[level_idx][x][z] = Nav_Type.EMPTY
-          case 'X':
-            nav[level_idx][x][z] = Nav_Type.TRAVERSABLE
-            if level_idx > 0
-            {
-              nav[level_idx -1][x][z] = Nav_Type.BLOCKED
-            }
-          case:
-            nav[level_idx][x][z] = Nav_Type.EMPTY
-        }
+        shortest_next_point = i
+        last_dist           = dist
       }
     }
+
+    one_viable := false
+    for i in 0 ..< len(next_points_viable)
+    { one_viable |= next_points_viable[i] } 
+    if one_viable
+    {
+      assert( shortest_next_point < len(next_points) && shortest_next_point >= 0 )
+      current = next_points[shortest_next_point]
+      append( &path, next_points[shortest_next_point] )
+    }
+    else { return path, false }
+
+    tries += 1
   }
-
-  return nav
-}
-
-game_a_star_pathfind :: proc()
-{
-  // @TODO:
+  
+  return path, current == end
 }
 
 game_find_tile_hit_by_camera :: proc()
@@ -71,6 +96,7 @@ game_find_tile_hit_by_camera :: proc()
   // }
   any_hits    := false
   closest_hit := linalg.vec3{ 10000000, 1000000, 1000000 }
+  closest_hit_tile := waypoint_t{ 0, 0, 0 }
   for y := 0; y < len(data.tile_str_arr); y += 1
   {
     tile_str := data.tile_str_arr[y]
@@ -100,6 +126,7 @@ game_find_tile_hit_by_camera :: proc()
             if linalg.distance( data.cam.pos, pos ) < linalg.distance( data.cam.pos, closest_hit )
             {
               closest_hit = pos
+              closest_hit_tile = waypoint_t{ y, x, z }
             }
             // debug_draw_aabb( min, max, 
             //                  hit.hit ? linalg.vec3{ 1, 0, 1 } : linalg.vec3{ 1, 1, 1 }, 
@@ -112,10 +139,55 @@ game_find_tile_hit_by_camera :: proc()
   if any_hits
   { 
     // draw red target indicator line
-    debug_draw_line( closest_hit + linalg.vec3{ 0, 0.5, 0 }, closest_hit + linalg.vec3{ 0, 1.5, 0 }, linalg.vec3{ 1, 0, 0 }, 25 ) 
+    debug_draw_line( closest_hit + linalg.vec3{ 0, 0.5, 0 }, closest_hit + linalg.vec3{ 0, 1.5, 0 }, linalg.vec3{ 1, 0, 0 }, 10 ) 
     // draw blue line from character
-    debug_draw_line( data.entity_arr[0].pos + linalg.vec3{ 0, 0, 0 }, closest_hit + linalg.vec3{ 0, 1.5, 0 }, linalg.vec3{ 0.6, 0.8, 1 }, 15 )
+    debug_draw_line( data.entity_arr[0].pos + linalg.vec3{ 0, 0, 0 }, closest_hit + linalg.vec3{ 0, 1.5, 0 }, linalg.vec3{ 0.6, 0.8, 1 }, 10 )
     
     debug_draw_sphere( closest_hit + linalg.vec3{ 0, 1.5, 0 }, linalg.vec3{ 0.2, 0.2, 0.2 }, linalg.vec3{ 0.6, 0.8, 1 } )
+
+
+  
+    start := waypoint_t{ level_idx=0, x=5, z=5 } 
+    start_pos := linalg.vec3{ 
+                  f32(start.x)         * 2 - f32(TILE_ARR_X_MAX) +1,
+                  f32(start.level_idx) * 2, 
+                  f32(start.z)         * 2 - f32(TILE_ARR_Z_MAX) +1
+                 }
+    debug_draw_sphere( start_pos, linalg.vec3{ 0.5, 0.5, 0.5 }, linalg.vec3{ 1, 0, 1 } )
+    path, path_found := game_a_star_pathfind( start, closest_hit_tile )
+
+
+    // if len(path) >= 2
+    // {
+    //   p00 := linalg.vec3{ 
+    //           f32(path[0].x)         * 2 - f32(TILE_ARR_X_MAX) +1,
+    //           f32(path[0].level_idx) * 2, 
+    //           f32(path[0].z)         * 2 - f32(TILE_ARR_Z_MAX) +1
+    //          }
+    //   p01 := linalg.vec3{ 
+    //           f32(path[1].x)         * 2 - f32(TILE_ARR_X_MAX) +1,
+    //           f32(path[1].level_idx) * 2, 
+    //           f32(path[1].z)         * 2 - f32(TILE_ARR_Z_MAX) +1
+    //          }
+    //   debug_draw_line( p00, p01, linalg.vec3{ 1, 0, 1 }, 25 ) 
+    // }
+    for i in 0 ..< len(path) -1
+    {
+
+      p00 := linalg.vec3{ 
+              f32(path[i].x)         * 2 - f32(TILE_ARR_X_MAX) +1,
+              f32(path[i].level_idx) * 2, 
+              f32(path[i].z)         * 2 - f32(TILE_ARR_Z_MAX) +1
+             }
+      p01 := linalg.vec3{ 
+              f32(path[i +1].x)         * 2 - f32(TILE_ARR_X_MAX) +1,
+              f32(path[i +1].level_idx) * 2, 
+              f32(path[i +1].z)         * 2 - f32(TILE_ARR_Z_MAX) +1
+             }
+      debug_draw_line( p00, p01, path_found ? linalg.vec3{ 0, 1, 0 } : linalg.vec3{ 1, 0, 0 }, 25 ) 
+
+    }
+
+    delete( path )
   }
 }

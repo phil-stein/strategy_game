@@ -1,10 +1,10 @@
-# startegy game
+# strategy game
 
 xcom / mario kingdom rabbits inspired strategy game made using odin & opengl
 
 plan ur turn seeing the enemies turn to interact with their moves
 
-use combo moves to extend your playable chars abilities with the other player chars or enemies
+use combo moves to extend your playable chars abilities/moveset with the other player chars or enemies
 
 ## todo
   - ui
@@ -15,7 +15,7 @@ use combo moves to extend your playable chars abilities with the other player ch
         - [ ] port the text rendering code
         - [ ] instanced / batched rendering
   - gameplay
-    - [ ] a* pathfinding
+    - [X] a* pathfinding
     - [ ] multiple player chars ( 3 probably )
     - [ ] enemies
       - [ ] ai
@@ -24,12 +24,12 @@ use combo moves to extend your playable chars abilities with the other player ch
     - [ ] combo-moves
       - [ ] jumping off other player chars
       - [ ] tackle/kick/etc. enemies
+      - [ ] carry enemies/player chars ?
+      - [ ] push enemies/player chars ?
       - [ ] interact with environment
         - [ ] push buttons / pull levers / etc.
         - [ ] bounce pads / trampolines
         - [ ] push blocks / obstacles
-      - [ ] carry enemies/player chars ?
-      - [ ] push enemies/player chars ?
       - [ ] ...
     - [ ] differrent tile types
       - [ ] regular
@@ -63,3 +63,4 @@ use combo moves to extend your playable chars abilities with the other player ch
       - [ ] mesh
     - [ ] batched / instanced rendering
     - [ ] particle system
+    - [ ] proper asset streaming / loading

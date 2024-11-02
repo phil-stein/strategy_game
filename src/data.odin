@@ -58,8 +58,17 @@ cubemap_t :: struct
   intensity   : f32,
 }
 
-TILE_ARR_X_MAX :: 10
-TILE_ARR_Z_MAX :: 10
+TILE_ARR_X_MAX  :: 10
+TILE_ARR_Z_MAX  :: 10
+TILE_LEVELS_MAX :: 2
+Nav_Type :: enum
+{
+  EMPTY,
+  BLOCKED,
+  TRAVERSABLE,
+  // slopes, etc.
+}
+nav_type_level_arr :: [TILE_ARR_X_MAX][TILE_ARR_Z_MAX]Nav_Type
 
 data_t :: struct
 {
@@ -156,7 +165,8 @@ data_t :: struct
   tile_00_str : string,
   tile_01_str : string,
 
-  tile_str_arr : [2]string,
+  tile_str_arr  : [TILE_LEVELS_MAX]string,
+  tile_type_arr : [TILE_LEVELS_MAX]nav_type_level_arr,
 
 }
 data : data_t =
@@ -427,5 +437,43 @@ data_create_map :: proc()
       }
     }
   }
+
+
+  // populate data.tile_type_arr
+// // game_build_nav_struct :: proc( /* num_levels: int, levels: []string */ ) -> ( nav: [len(data.tile_str_arr)]nav_type_level_arr )
+// data_build_nav_struct :: proc(  )
+// {
+  for level, level_idx in data.tile_str_arr
+  {
+
+    // for z := TILE_ARR_Z_MAX -1; z >= 0; z -= 1    // reversed so the str aligns with the created map
+    // {
+    //   for x := TILE_ARR_X_MAX -1; x >= 0; x -= 1  // reversed so the str aligns with the created map
+    for x := 0; x < TILE_ARR_X_MAX; x += 1 
+    {
+      for z := 0; z < TILE_ARR_Z_MAX; z += 1 
+      {
+        tile_str_idx := ( TILE_ARR_X_MAX * TILE_ARR_Z_MAX ) - ( x + (z*TILE_ARR_X_MAX) +1 ) // reversed idx so the str aligns with the created map
+        // fmt.println( "level[ x + z ]: ", level[ x + z ], ", rune: ", rune(level[ x + z ]) )
+        // fmt.println( "level[ tile_str_idx ]: ", level[ tile_str_idx ], ", rune: ", rune(level[ tile_str_idx ]) )
+        // switch level[ x + z ] 
+        switch level[ tile_str_idx ] 
+        {
+          case '.':
+            data.tile_type_arr[level_idx][x][z] = Nav_Type.EMPTY
+          case 'X':
+            data.tile_type_arr[level_idx][x][z] = Nav_Type.TRAVERSABLE
+            if level_idx > 0
+            {
+              data.tile_type_arr[level_idx -1][x][z] = Nav_Type.BLOCKED
+            }
+          case:
+            data.tile_type_arr[level_idx][x][z] = Nav_Type.EMPTY
+        }
+      }
+    }
+  }
+// }
+
 }
 
