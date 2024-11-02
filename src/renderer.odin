@@ -47,7 +47,7 @@ renderer_update :: proc()
       mesh := assetm_get_mesh( e.mesh_idx )
 
   
-      e.model = make_model( e.pos, e.rot, e.scl )
+      e.model = util_make_model( e.pos, e.rot, e.scl )
       // @TODO:
       // e.inv_model = linalg.inverse( e.model )
       shader_act_set_mat4( "model", &e.model[0][0] )

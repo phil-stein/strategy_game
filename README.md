@@ -15,8 +15,10 @@ use combo moves to extend your playable chars abilities/moveset with the other p
         - [ ] port the text rendering code
         - [ ] instanced / batched rendering
   - gameplay
-    - [X] a* pathfinding
-    - [ ] multiple player chars ( 3 probably )
+    - [ ] a* pathfinding `WIP`
+    - [ ] player chars
+      - [ ] move to pathfinding result
+      - [ ] multiple player chars ( 3 probably )
     - [ ] enemies
       - [ ] ai
       - [ ] show their turn

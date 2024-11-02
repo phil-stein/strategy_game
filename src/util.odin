@@ -3,7 +3,7 @@ package core
 import        "core:math"
 import linalg "core:math/linalg/glsl"
 
-make_model :: proc( pos, rot, scale: linalg.vec3 ) -> ( model: linalg.mat4 )
+util_make_model :: proc( pos, rot, scale: linalg.vec3 ) -> ( model: linalg.mat4 )
 {
 	// mat4_make_identity(model);
 	// float x = rot[0];  m_deg_to_rad(&x);
@@ -53,7 +53,7 @@ ray_hit_t :: struct
 //       puts hit point in hit_out
 //       puts dist between ray->pos and hit_out in dist
 // INLINE bool phys_collision_check_ray_v_aabb(ray_t* ray, vec3 min, vec3 max, f32* dist, vec3 hit_out) 
-ray_intersect_aabb :: proc( ray: ray_t, min, max: linalg.vec3 ) -> ( hit: ray_hit_t )
+util_ray_intersect_aabb :: proc( ray: ray_t, min, max: linalg.vec3 ) -> ( hit: ray_hit_t )
 {
   hit.hit  = false
   hit.dist = 0.0
@@ -95,3 +95,13 @@ ray_intersect_aabb :: proc( ray: ray_t, min, max: linalg.vec3 ) -> ( hit: ray_hi
   hit.hit = true 
   return hit 
 }
+
+util_tile_to_pos :: #force_inline proc( tile: waypoint_t ) -> ( pos: linalg.vec3 )
+{
+  return linalg.vec3{ 
+          f32(tile.x)         * 2 - f32(TILE_ARR_X_MAX) +1,
+          f32(tile.level_idx) * 2, 
+          f32(tile.z)         * 2 - f32(TILE_ARR_Z_MAX) +1
+         }
+}
+

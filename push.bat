@@ -3,7 +3,7 @@
 :: check if arg was given
 IF "%~1"=="" GOTO no_arg
 
-echo commit message: "DESKTOP: from strategy game, %*"
+echo commit message: "DESKTOP: %*"
 
 :: fisch
 echo --- STRATEGY GAME ---
@@ -12,7 +12,7 @@ echo --- STRATEGY GAME ---
 :: this way might break if legitematelly used by another process 
 del /q .git\index.lock
 git add .
-git commit -m "DESKTOP: from strategy game, %*"
+git commit -m "DESKTOP: %*"
 git push origin main
 
 GOTO end

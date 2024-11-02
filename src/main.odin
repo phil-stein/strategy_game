@@ -40,10 +40,17 @@ main :: proc()
   
   // -- add entities --
 
-  append( &data.entity_arr, entity_t{ pos = {  0, 2, 0 }, rot = { 0, 180, 0 }, scl = { 1, 1, 1 },
+  data.player_chars[0].tile = waypoint_t{ level_idx=0, x=5, z=5 }
+  player_char_00_pos := util_tile_to_pos( data.player_chars[0].tile )
+  data.player_chars[0].entity_idx = len(data.entity_arr)
+  append( &data.entity_arr, entity_t{ pos = player_char_00_pos + linalg.vec3{ -2, 2, -2 }, 
+                                      rot = { 0, 180, 0 }, scl = { 1, 1, 1 },
                                       mesh_idx = data.mesh_idxs.suzanne, 
                                       mat_idx  = data.material_idxs.metal_01
                                     } )
+  fmt.println( "player[0].pos: ", data.entity_arr[data.player_chars[0].entity_idx].pos )
+  fmt.println( "player.tile: ", data.player_chars[0].tile )
+  fmt.println( "player.tile -> pos: ", player_char_00_pos )
 
 
   // --- create map ---
@@ -85,57 +92,54 @@ main :: proc()
     }
     
     renderer_update()
+    // debug_draw_tiles()
 
-    game_find_tile_hit_by_camera()
-
-    // for level_idx in 0 ..< len(data.tile_str_arr)
-    level_idx := 0
+    cam_hit_tile, has_cam_hit_tile := game_find_tile_hit_by_camera()
+    if has_cam_hit_tile
     {
+      // start := waypoint_t{ level_idx=0, x=5, z=5 } 
+      start := data.player_chars[0].tile
+      // start_pos := linalg.vec3{ 
+      //               f32(start.x)         * 2 - f32(TILE_ARR_X_MAX) +1,
+      //               f32(start.level_idx) * 2, 
+      //               f32(start.z)         * 2 - f32(TILE_ARR_Z_MAX) +1
+      //              }
+      start_pos := util_tile_to_pos(data.player_chars[0].tile )
+      // fmt.println( "start -> pos: ", start_pos )
+      debug_draw_sphere( start_pos, linalg.vec3{ 0.35, 0.35, 0.35 }, linalg.vec3{ 0, 1, 0 } )
+      path, path_found := game_a_star_pathfind( start, cam_hit_tile )
 
-      // for z := TILE_ARR_Z_MAX -1; z >= 0; z -= 1    // reversed so the str aligns with the created map
-      // {
-      //   for x := TILE_ARR_X_MAX -1; x >= 0; x -= 1  // reversed so the str aligns with the created map
-      for z := 0; z < TILE_ARR_Z_MAX; z += 1
+
+      for i in 0 ..< len(path) -1
       {
-        for x := 0; x < TILE_ARR_X_MAX; x += 1
-        {
-          nav_type := data.tile_type_arr[level_idx][x][z]
 
-          pos := linalg.vec3{ 
-                  f32(x) * 2 - f32(TILE_ARR_X_MAX) +1,
-                  f32(level_idx) * 2, 
-                  f32(z) * 2 - f32(TILE_ARR_Z_MAX) +1
-                 }
-          min := pos + linalg.vec3{ -1, -1, -1 }
-          max := pos + linalg.vec3{  1,  1,  1 }
-          switch nav_type
-          {
-            case Nav_Type.EMPTY:
-              // debug_draw_aabb( min, max, 
-                               // linalg.vec3{ 1, 1, 1 }, 
-                               // 5 )
-              debug_draw_sphere( pos, linalg.vec3{ 0.25, 0.25, 0.25 },
-                               linalg.vec3{ 1, 1, 1 } )
-            case Nav_Type.BLOCKED:
-              // debug_draw_aabb( min, max, 
-              //                  linalg.vec3{ 1, 0, 0 }, 
-              //                  5 )
-              debug_draw_sphere( pos, linalg.vec3{ 0.25, 0.25, 0.25 },
-                               linalg.vec3{ 1, 0, 0 } ) 
-            case Nav_Type.TRAVERSABLE:
-              // debug_draw_aabb( min, max, 
-              //                  linalg.vec3{ 0, 1, 0 }, 
-              //                  15 )
-              debug_draw_sphere( pos, linalg.vec3{ 0.25, 0.25, 0.25 },
-                               linalg.vec3{ 0, 1, 0 } ) 
+        p00 := linalg.vec3{ 
+                f32(path[i].x)         * 2 - f32(TILE_ARR_X_MAX) +1,
+                f32(path[i].level_idx) * 2, 
+                f32(path[i].z)         * 2 - f32(TILE_ARR_Z_MAX) +1
+               }
+        p01 := linalg.vec3{ 
+                f32(path[i +1].x)         * 2 - f32(TILE_ARR_X_MAX) +1,
+                f32(path[i +1].level_idx) * 2, 
+                f32(path[i +1].z)         * 2 - f32(TILE_ARR_Z_MAX) +1
+               }
+        debug_draw_line( p00, p01, path_found ? linalg.vec3{ 0, 1, 0 } : linalg.vec3{ 1, 0, 0 }, 25 ) 
 
-          }
-        }
       }
+      debug_draw_sphere( util_tile_to_pos( path[len(path) -1] ), linalg.vec3{ 0.35, 0.35, 0.35 }, linalg.vec3{ 0, 1, 0 } )
+
+      // data.player_chars[0]
+
+      // pos := util_tile_to_pos( path[len(path) -1] )
+      pos := util_tile_to_pos( cam_hit_tile )
+
+      min := pos + linalg.vec3{ -1, -1, -1 }
+      max := pos + linalg.vec3{  1,  1,  1 }
+      debug_draw_aabb( min, max, linalg.vec3{ 0, 1, 0 }, 15)
+
+      delete( path )
     }
 
-
-    
 
     // // draw the gbuffer and lighting buffer onto screen as quads
     // quad_size :: linalg.vec2{ 0.25, -0.25 }

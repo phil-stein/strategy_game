@@ -9,7 +9,7 @@ debug_draw_sphere :: proc( pos, scl, color: linalg.vec3 )
   mesh := assetm_get_mesh(data.mesh_idxs.sphere)
 	// w, h := window_get_size()
 
-  model := make_model( pos, linalg.vec3{ 0, 0, 0 }, scl )
+  model := util_make_model( pos, linalg.vec3{ 0, 0, 0 }, scl )
   
   gl.Disable( gl.DEPTH_TEST )
   gl.Disable( gl.CULL_FACE )
@@ -37,7 +37,7 @@ debug_draw_sphere :: proc( pos, scl, color: linalg.vec3 )
 debug_draw_line :: proc(pos0, pos1, tint: linalg.vec3, width: f32)
 {
 	// ---- mvp ----
-  model := make_model( linalg.vec3{ 0, 0, 0 }, linalg.vec3{ 0, 0, 0 }, linalg.vec3{ 1, 1, 1 } )
+  model := util_make_model( linalg.vec3{ 0, 0, 0 }, linalg.vec3{ 0, 0, 0 }, linalg.vec3{ 1, 1, 1 } )
 
   // @UNSURE: if i shoulf call this
   // camera_set_view_mat()
@@ -105,4 +105,53 @@ debug_draw_aabb :: proc(min, max, color: linalg.vec3, width: f32)
   debug_draw_line( bot1, top1, color, width ) 
   debug_draw_line( bot2, top2, color, width ) 
   debug_draw_line( bot3, top3, color, width ) 
+}
+
+debug_draw_tiles :: proc()
+{
+  level_idx := 0
+  // for level_idx in 0 ..< len(data.tile_str_arr)
+  {
+  
+    // for z := TILE_ARR_Z_MAX -1; z >= 0; z -= 1    // reversed so the str aligns with the created map
+    // {
+    //   for x := TILE_ARR_X_MAX -1; x >= 0; x -= 1  // reversed so the str aligns with the created map
+    for z := 0; z < TILE_ARR_Z_MAX; z += 1
+    {
+      for x := 0; x < TILE_ARR_X_MAX; x += 1
+      {
+        nav_type := data.tile_type_arr[level_idx][x][z]
+  
+        pos := linalg.vec3{ 
+                f32(x) * 2 - f32(TILE_ARR_X_MAX) +1,
+                f32(level_idx) * 2, 
+                f32(z) * 2 - f32(TILE_ARR_Z_MAX) +1
+               }
+        min := pos + linalg.vec3{ -1, -1, -1 }
+        max := pos + linalg.vec3{  1,  1,  1 }
+        switch nav_type
+        {
+          case Tile_Nav_Type.EMPTY:
+            // debug_draw_aabb( min, max, 
+                             // linalg.vec3{ 1, 1, 1 }, 
+                             // 5 )
+            debug_draw_sphere( pos, linalg.vec3{ 0.25, 0.25, 0.25 },
+                             linalg.vec3{ 1, 1, 1 } )
+          case Tile_Nav_Type.BLOCKED:
+            // debug_draw_aabb( min, max, 
+            //                  linalg.vec3{ 1, 0, 0 }, 
+            //                  5 )
+            debug_draw_sphere( pos, linalg.vec3{ 0.25, 0.25, 0.25 },
+                             linalg.vec3{ 1, 0, 0 } ) 
+          case Tile_Nav_Type.TRAVERSABLE:
+            // debug_draw_aabb( min, max, 
+            //                  linalg.vec3{ 0, 1, 0 }, 
+            //                  15 )
+            debug_draw_sphere( pos, linalg.vec3{ 0.25, 0.25, 0.25 },
+                             linalg.vec3{ 0, 1, 0 } ) 
+  
+        }
+      }
+    }
+  }
 }

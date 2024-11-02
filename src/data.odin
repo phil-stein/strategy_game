@@ -61,14 +61,20 @@ cubemap_t :: struct
 TILE_ARR_X_MAX  :: 10
 TILE_ARR_Z_MAX  :: 10
 TILE_LEVELS_MAX :: 2
-Nav_Type :: enum
+Tile_Nav_Type :: enum
 {
   EMPTY,
   BLOCKED,
   TRAVERSABLE,
   // slopes, etc.
 }
-nav_type_level_arr :: [TILE_ARR_X_MAX][TILE_ARR_Z_MAX]Nav_Type
+nav_type_level_arr :: [TILE_ARR_X_MAX][TILE_ARR_Z_MAX]Tile_Nav_Type
+
+character_t :: struct
+{
+  tile       : waypoint_t,
+  entity_idx : int,
+}
 
 data_t :: struct
 {
@@ -141,18 +147,20 @@ data_t :: struct
 
   texture_idxs : struct
   {
-    blank            : int,
-    brick_albedo     : int,
-    brick_normal     : int,  
-    brick_roughness  : int,
-    dirt_cube_albedo : int,
+    blank               : int,
+    brick_albedo        : int,
+    brick_normal        : int,  
+    brick_roughness     : int,
+    dirt_cube_01_albedo : int,
+    dirt_cube_02_albedo : int,
   },
   material_idxs : struct
   {
-    default   : int,
-    metal_01  : int,
-    brick     : int,
-    dirt_cube : int,
+    default      : int,
+    metal_01     : int,
+    brick        : int,
+    dirt_cube_01 : int,
+    dirt_cube_02 : int,
   },
   mesh_idxs : struct
   {
@@ -167,6 +175,8 @@ data_t :: struct
 
   tile_str_arr  : [TILE_LEVELS_MAX]string,
   tile_type_arr : [TILE_LEVELS_MAX]nav_type_level_arr,
+
+  player_chars : [3]character_t,
 
 }
 data : data_t =
@@ -204,7 +214,7 @@ data : data_t =
   "X.XXXX...X"+
   "X..XXXXX.X"+
   "X..XXXXX.X"+
-  "X...XXXX.X"+
+  "XXX.XXXX.X"+
   "X.XXXXXXXX"+
   "XXXXX.X..X"+
   "XXXXXXXXXX",
@@ -428,7 +438,7 @@ data_create_map :: proc()
                                   }, 
                             rot = { 0, 0, 0 }, scl = { 1, 1, 1 },
                             mesh_idx = data.mesh_idxs.dirt_cube, 
-                            mat_idx  = data.material_idxs.dirt_cube
+                            mat_idx  = y == 1 ? data.material_idxs.dirt_cube_02 : data.material_idxs.dirt_cube_01
                           } )
           // fmt.println( "idx: ", idx, "pos: ", data.entity_arr[idx].pos, 
           //              " \t| x, z: ", x, z, "MAX: ", TILE_ARR_X_MAX, TILE_ARR_Z_MAX ,
@@ -460,15 +470,15 @@ data_create_map :: proc()
         switch level[ tile_str_idx ] 
         {
           case '.':
-            data.tile_type_arr[level_idx][x][z] = Nav_Type.EMPTY
+            data.tile_type_arr[level_idx][x][z] = Tile_Nav_Type.EMPTY
           case 'X':
-            data.tile_type_arr[level_idx][x][z] = Nav_Type.TRAVERSABLE
+            data.tile_type_arr[level_idx][x][z] = Tile_Nav_Type.TRAVERSABLE
             if level_idx > 0
             {
-              data.tile_type_arr[level_idx -1][x][z] = Nav_Type.BLOCKED
+              data.tile_type_arr[level_idx -1][x][z] = Tile_Nav_Type.BLOCKED
             }
           case:
-            data.tile_type_arr[level_idx][x][z] = Nav_Type.EMPTY
+            data.tile_type_arr[level_idx][x][z] = Tile_Nav_Type.EMPTY
         }
       }
     }

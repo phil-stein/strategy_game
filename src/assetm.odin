@@ -58,10 +58,11 @@ assetm_init :: proc()
   // brick_mat_idx := assetm_add_material( brick_mat )
   data.material_idxs.brick = assetm_add_material( brick_mat )
 
-  data.texture_idxs.dirt_cube_albedo = assetm_load_texture( "dirt_path_sphax_01.png", false )
+  data.texture_idxs.dirt_cube_01_albedo = assetm_load_texture( "dirt_path_sphax_01.png", false )
+  data.texture_idxs.dirt_cube_02_albedo = assetm_load_texture( "dirt_path_sphax_02.png", false )
 
   dirt_cube_mat  := material_t{ 
-           albedo_idx    = data.texture_idxs.dirt_cube_albedo, 
+           albedo_idx    = data.texture_idxs.dirt_cube_01_albedo, 
            roughness_idx = data.texture_idxs.blank, 
            metallic_idx  = data.texture_idxs.blank, 
            normal_idx    = data.texture_idxs.blank, 
@@ -71,7 +72,9 @@ assetm_init :: proc()
            metallic_f  = 0.0,
          }
   // brick_mat_idx := assetm_add_material( brick_mat )
-  data.material_idxs.dirt_cube = assetm_add_material( dirt_cube_mat )
+  data.material_idxs.dirt_cube_01 = assetm_add_material( dirt_cube_mat )
+  dirt_cube_mat.albedo_idx = data.texture_idxs.dirt_cube_02_albedo
+  data.material_idxs.dirt_cube_02 = assetm_add_material( dirt_cube_mat )
 
   // sphere_idx := len(data.entity_arr)
   // append( &data.entity_arr, entity_t{ pos = {  2, 2, 0 }, rot = { 0, 0, 0 }, scl = { 1, 1, 1 },
