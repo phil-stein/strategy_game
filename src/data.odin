@@ -140,6 +140,11 @@ data_t :: struct
     view_mat  : linalg.mat4,
     pers_mat  : linalg.mat4,
   },
+
+  editor_ui : struct
+  {
+    active : bool,
+  },
   
   entity_arr  : [dynamic]entity_t,
   
@@ -202,6 +207,11 @@ data : data_t =
     // yaw_rad   = 14.2,
     pitch_rad = -0.78397244,
     yaw_rad   = 14.130187,
+  },
+
+  editor_ui = 
+  {
+    active = true,
   },
 
   tile_00_str = 

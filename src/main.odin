@@ -39,6 +39,9 @@ main :: proc()
 
   
   // -- add entities --
+  // entity_arr[0] is invalid entity
+  // @TODO: less hacky solution
+  append( &data.entity_arr, entity_t{} ) 
 
   data.player_chars[0].tile = waypoint_t{ level_idx=0, x=5, z=5 }
   player_char_00_pos := util_tile_to_pos( data.player_chars[0].tile )
@@ -151,7 +154,7 @@ main :: proc()
       max := pos + linalg.vec3{  1,  1,  1 }
       debug_draw_aabb( min, max, linalg.vec3{ 0, 1, 0 }, 15)
 
-      if input.mouse_button_states[Mouse_Button.LEFT].pressed && path_found
+      if input.mouse_button_states[Mouse_Button.LEFT].pressed && input.mouse_button_states[Mouse_Button.RIGHT].down && path_found
       { 
         // fmt.println( "mouse01 pressed ) 
 
@@ -201,7 +204,9 @@ main :: proc()
     // renderer_draw_quad( linalg.vec2{ -0.75, -0.75 }, quad_size, data.fb_deferred.buffer04 )
     // renderer_draw_quad( linalg.vec2{ -0.25,  0.75 }, quad_size, data.fb_lighting.buffer01 )
 
-    ui_update()
+    // --- editor ui ---
+    if input.key_states[Key.BACKSPACE].pressed { data.editor_ui.active = !data.editor_ui.active }
+    if data.editor_ui.active { ui_update() }
 
     glfw.SwapBuffers( data.window )
     

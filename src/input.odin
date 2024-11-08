@@ -255,15 +255,13 @@ input_mouse_pos_callback :: proc( window: glfw.WindowHandle, xpos, ypos: f64 )
   input.mouse_y = f32(ypos)
 }
 
-input_center_cursor :: proc( loc := #caller_location )
+input_center_cursor :: proc()
 {
   glfw.SetCursorPos( data.window, f64(data.window_width / 2), f64(data.window_height / 2) )
   input.mouse_x = f32(data.window_width / 2)
   input.mouse_y = f32(data.window_height / 2)
   input.mouse_delta_x = 0 
   input.mouse_delta_y = 0
-
-  fmt.println( "input_center_cursor: ", loc )
 }
 
 input_set_cursor_visibile :: proc(visible: bool)
