@@ -4,6 +4,35 @@ import linalg "core:math/linalg/glsl"
 import gl     "vendor:OpenGL"
 
 
+debug_draw_mesh :: proc( assetm_mesh_idx: int, pos, rot, scl, color: linalg.vec3 )
+{
+  mesh := assetm_get_mesh( assetm_mesh_idx )
+	// w, h := window_get_size()
+
+  model := util_make_model( pos, rot, scl )
+  
+  gl.Disable( gl.DEPTH_TEST )
+  gl.Disable( gl.CULL_FACE )
+	
+  shader_use( data.basic_shader )
+	gl.ActiveTexture( gl.TEXTURE0 )
+	gl.BindTexture(gl.TEXTURE_2D, assetm_get_texture( data.texture_idxs.blank ).handle )
+	shader_set_i32( data.basic_shader,  "tex", 0 )
+	shader_set_vec3( data.basic_shader, "tint", color )
+	
+	shader_set_mat4(data.basic_shader, "model", &model[0][0] )
+	shader_set_mat4(data.basic_shader, "view",  &data.cam.view_mat[0][0] )
+	shader_set_mat4(data.basic_shader, "proj",  &data.cam.pers_mat[0][0] )
+  
+  gl.BindVertexArray( mesh.vao )
+  gl.DrawElements( gl.TRIANGLES,           // Draw triangles.
+                   i32(mesh.indices_len),  // indices length
+                   gl.UNSIGNED_INT,        // Data type of the indices.
+                   rawptr(uintptr(0)) )    // Pointer to indices. (Not needed.)
+
+  gl.Enable( gl.DEPTH_TEST )
+  gl.Enable( gl.CULL_FACE )
+}
 debug_draw_sphere :: proc( pos, scl, color: linalg.vec3 )
 {
   mesh := assetm_get_mesh(data.mesh_idxs.sphere)
@@ -154,4 +183,26 @@ debug_draw_tiles :: proc()
       }
     }
   }
+}
+
+debug_draw_path :: proc( path: [dynamic]waypoint_t, color: linalg.vec3 )
+{
+
+  for i in 0 ..< len(path) -1
+  {
+
+    p00 := linalg.vec3{ 
+            f32(path[i].x)         * 2 - f32(TILE_ARR_X_MAX) +1,
+            f32(path[i].level_idx) * 2, 
+            f32(path[i].z)         * 2 - f32(TILE_ARR_Z_MAX) +1
+           }
+    p01 := linalg.vec3{ 
+            f32(path[i +1].x)         * 2 - f32(TILE_ARR_X_MAX) +1,
+            f32(path[i +1].level_idx) * 2, 
+            f32(path[i +1].z)         * 2 - f32(TILE_ARR_Z_MAX) +1
+           }
+    debug_draw_line( p00, p01, color, 25 ) 
+
+  }
+  debug_draw_sphere( util_tile_to_pos( path[len(path) -1] ), linalg.vec3{ 0.35, 0.35, 0.35 }, color )
 }

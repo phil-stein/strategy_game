@@ -10,7 +10,7 @@ import gl "vendor:OpenGL"
 
 // intis glfw & glad, also creates the window
 // returns: <stddef.h> return_code
-window_create :: proc( width, height: int, title: cstring, type: WINDOW_TYPE, vsync: bool ) -> bool
+window_create :: proc( width, height: int, title: cstring, type: Window_Type, vsync: bool ) -> bool
 {
 	// enable error logging for glfw
   glfw.SetErrorCallback( cast(glfw.ErrorProc)error_callback )
@@ -42,7 +42,7 @@ window_create :: proc( width, height: int, title: cstring, type: WINDOW_TYPE, vs
   glfw.WindowHint_int( glfw.REFRESH_RATE, mode.refresh_rate )
 
   // open a window and create its opengl context
-	if type == WINDOW_TYPE.FULLSCREEN
+	if type == Window_Type.FULLSCREEN
   {
     data.window = glfw.CreateWindow( mode.width, mode.height, title, monitor, nil )
     data.window_width  = int(mode.width)
@@ -76,7 +76,7 @@ window_create :: proc( width, height: int, title: cstring, type: WINDOW_TYPE, vs
 	gl.Viewport( 0, 0, w, h )
 
 	// maximize window
-	if ( type == WINDOW_TYPE.MAXIMIZED )
+	if ( type == Window_Type.MAXIMIZED )
 	{
 		glfw.MaximizeWindow( data.window )
 	}
@@ -126,7 +126,7 @@ resize_callback :: proc( window: glfw.WindowHandle, width, height: c.int )
   data.fb_lighting = framebuffer_create_hdr()
 }
 
-gl_debug_enum :: enum
+Gl_Debug_Enum :: enum
 {
   OUTPUT_SYNCHRONOUS           = gl.DEBUG_OUTPUT_SYNCHRONOUS,
   NEXT_LOGGED_MESSAGE_LENGTH   = gl.DEBUG_NEXT_LOGGED_MESSAGE_LENGTH,
@@ -154,8 +154,8 @@ gl_debug_enum :: enum
   TYPE_POP_GROUP               = gl.DEBUG_TYPE_POP_GROUP,
   SEVERITY_NOTIFICATION        = gl.DEBUG_SEVERITY_NOTIFICATION,
   
-   MAX_DEBUG_GROUP_STACK_DEPTH = gl.MAX_DEBUG_GROUP_STACK_DEPTH,
-   GROUP_STACK_DEPTH           = gl.DEBUG_GROUP_STACK_DEPTH,
+  MAX_DEBUG_GROUP_STACK_DEPTH = gl.MAX_DEBUG_GROUP_STACK_DEPTH,
+  GROUP_STACK_DEPTH           = gl.DEBUG_GROUP_STACK_DEPTH,
 
 
 }
@@ -175,15 +175,15 @@ opengl_debug_callback :: proc( source, type, id, severity: u32,
   //          ( type == gl.DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ), type, severity, message );
 
   // @TODO: fix all these messages in the future
-  if gl_debug_enum(severity) == .SEVERITY_NOTIFICATION ||
-     gl_debug_enum(severity) == .SEVERITY_LOW          ||
-     gl_debug_enum(severity) == .SEVERITY_MEDIUM       
+  if Gl_Debug_Enum(severity) == .SEVERITY_NOTIFICATION ||
+     Gl_Debug_Enum(severity) == .SEVERITY_LOW          ||
+     Gl_Debug_Enum(severity) == .SEVERITY_MEDIUM       
   {
     return
   }
 
   fmt.eprintf( "[GL ERROR]: type: %s, severity: %s\n -> message: %s\n",
-               gl_debug_enum(type), gl_debug_enum(severity), message );
+               Gl_Debug_Enum(type), Gl_Debug_Enum(severity), message );
   // fmt.println( oc ) // is nil
   // fmt.println( " -> ", loc.file_path, ", proc: ", loc.procedure, ", line: ", loc.line )
 }

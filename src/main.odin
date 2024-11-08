@@ -15,15 +15,15 @@ main :: proc()
 {
   // ---- init ----
 
-  if ( !window_create( 1500, 1075, "title", WINDOW_TYPE.MINIMIZED, vsync=true ) ) // /* 1000, 750, */
+  if ( !window_create( 1500, 1075, "title", Window_Type.MINIMIZED, vsync=true ) ) // /* 1000, 750, */
   {
     fmt.print( "ERROR: failed to create window\n" )
     return;
   }
   input_init()
-  // hide cursor
-  input_center_cursor()
-  input_set_cursor_visibile( false )
+  // // hide cursor
+  // input_center_cursor()
+  // input_set_cursor_visibile( false )
 
   // ---- setup ----
 
@@ -51,6 +51,7 @@ main :: proc()
   fmt.println( "player[0].pos: ", data.entity_arr[data.player_chars[0].entity_idx].pos )
   fmt.println( "player.tile: ", data.player_chars[0].tile )
   fmt.println( "player.tile -> pos: ", player_char_00_pos )
+  fmt.println( "data.player_chars[0].entity_idx: ", data.player_chars[0].entity_idx )
 
 
   // --- create map ---
@@ -60,6 +61,8 @@ main :: proc()
   
   // -- set opengl state --
   renderer_init()
+
+  ui_init()
 	
 
   // ---- main loop ----
@@ -69,13 +72,25 @@ main :: proc()
       
     data_pre_updated()
       
-    camera_rotate_by_mouse()
-    camera_move_by_keys()
 
-    if ( keystates[KEY.ESCAPE].pressed )
+    if input.mouse_button_states[Mouse_Button.RIGHT].down
+    {
+      camera_rotate_by_mouse()
+      camera_move_by_keys()
+
+      input_set_cursor_visibile( false )
+      input_center_cursor()
+    }
+    else
+    {
+      input_set_cursor_visibile( true )
+      // input_center_cursor()
+    }
+
+    if ( input.key_states[Key.ESCAPE].pressed )
     { break }
 
-    if ( keystates[KEY.TAB].pressed )
+    if ( input.key_states[Key.TAB].pressed )
     { data.wireframe_mode_enabled  = !data.wireframe_mode_enabled }
 
     // wireframe mode
@@ -84,7 +99,7 @@ main :: proc()
 	  else
 	  { gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL) }
 
-    if ( keystates[KEY.ENTER].pressed )
+    if ( input.key_states[Key.ENTER].pressed )
     {
       fmt.println( "data.cam.pos:   ", data.cam.pos )
       fmt.println( "data.cam.pitch: ", data.cam.pitch_rad )
@@ -108,25 +123,24 @@ main :: proc()
       // fmt.println( "start -> pos: ", start_pos )
       debug_draw_sphere( start_pos, linalg.vec3{ 0.35, 0.35, 0.35 }, linalg.vec3{ 0, 1, 0 } )
       path, path_found := game_a_star_pathfind( start, cam_hit_tile )
-
-
-      for i in 0 ..< len(path) -1
-      {
-
-        p00 := linalg.vec3{ 
-                f32(path[i].x)         * 2 - f32(TILE_ARR_X_MAX) +1,
-                f32(path[i].level_idx) * 2, 
-                f32(path[i].z)         * 2 - f32(TILE_ARR_Z_MAX) +1
-               }
-        p01 := linalg.vec3{ 
-                f32(path[i +1].x)         * 2 - f32(TILE_ARR_X_MAX) +1,
-                f32(path[i +1].level_idx) * 2, 
-                f32(path[i +1].z)         * 2 - f32(TILE_ARR_Z_MAX) +1
-               }
-        debug_draw_line( p00, p01, path_found ? linalg.vec3{ 0, 1, 0 } : linalg.vec3{ 1, 0, 0 }, 25 ) 
-
-      }
-      debug_draw_sphere( util_tile_to_pos( path[len(path) -1] ), linalg.vec3{ 0.35, 0.35, 0.35 }, linalg.vec3{ 0, 1, 0 } )
+      // for i in 0 ..< len(path) -1
+      // {
+      //
+      //   p00 := linalg.vec3{ 
+      //           f32(path[i].x)         * 2 - f32(TILE_ARR_X_MAX) +1,
+      //           f32(path[i].level_idx) * 2, 
+      //           f32(path[i].z)         * 2 - f32(TILE_ARR_Z_MAX) +1
+      //          }
+      //   p01 := linalg.vec3{ 
+      //           f32(path[i +1].x)         * 2 - f32(TILE_ARR_X_MAX) +1,
+      //           f32(path[i +1].level_idx) * 2, 
+      //           f32(path[i +1].z)         * 2 - f32(TILE_ARR_Z_MAX) +1
+      //          }
+      //   debug_draw_line( p00, p01, path_found ? linalg.vec3{ 0, 1, 0 } : linalg.vec3{ 1, 0, 0 }, 25 ) 
+      //
+      // }
+      debug_draw_path( path, path_found ? linalg.vec3{ 0, 1, 0 } : linalg.vec3{ 1, 0, 0 } )
+      // debug_draw_sphere( util_tile_to_pos( path[len(path) -1] ), linalg.vec3{ 0.35, 0.35, 0.35 }, linalg.vec3{ 0, 1, 0 } )
 
       // data.player_chars[0]
 
@@ -137,9 +151,47 @@ main :: proc()
       max := pos + linalg.vec3{  1,  1,  1 }
       debug_draw_aabb( min, max, linalg.vec3{ 0, 1, 0 }, 15)
 
+      if input.mouse_button_states[Mouse_Button.LEFT].pressed && path_found
+      { 
+        // fmt.println( "mouse01 pressed ) 
+
+        if data.player_chars[0].has_path
+        {
+          delete(data.player_chars[0].path)
+        }
+
+        data.player_chars[0].has_path = true
+        data.player_chars[0].path = make( [dynamic]waypoint_t, len(path), cap(path) )
+        copy( data.player_chars[0].path[:], path[:] )
+
+      }
+
       delete( path )
     }
 
+
+    for char in data.player_chars
+    {
+      if char.has_path
+      {
+        debug_draw_path( char.path, linalg.vec3{ 0, 1, 1 } )
+
+        pos := util_tile_to_pos( char.path[len(char.path) -1] )
+        pos +=  linalg.vec3{ 0, 2, 0 }
+        // pos +=  linalg.vec3{ -2, 2, -2 } 
+        rot := data.entity_arr[char.entity_idx].rot
+        // rot.xz *= -1
+        rot.y = 0
+        debug_draw_mesh( data.mesh_idxs.suzanne, 
+                         pos, 
+                         // data.entity_arr[char.entity_idx].rot, 
+                         rot,
+                         data.entity_arr[char.entity_idx].scl, 
+                         linalg.vec3{ 0, 1, 1 } )
+        // fmt.println( "data.entity_arr[char.entity_idx]: ", data.entity_arr[char.entity_idx] )
+        // os.exit(1)
+      }
+    }
 
     // // draw the gbuffer and lighting buffer onto screen as quads
     // quad_size :: linalg.vec2{ 0.25, -0.25 }
@@ -149,11 +201,14 @@ main :: proc()
     // renderer_draw_quad( linalg.vec2{ -0.75, -0.75 }, quad_size, data.fb_deferred.buffer04 )
     // renderer_draw_quad( linalg.vec2{ -0.25,  0.75 }, quad_size, data.fb_lighting.buffer01 )
 
+    ui_update()
+
     glfw.SwapBuffers( data.window )
     
-    data_post_update()
     input_update()
   }
+  
+  ui_cleanup()
 
   glfw.DestroyWindow( data.window )
   glfw.Terminate()

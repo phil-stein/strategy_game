@@ -7,15 +7,17 @@ plan ur turn seeing the enemies turn to interact with their moves
 use combo moves to extend your playable chars abilities/moveset with the other player chars or enemies
 
 ## todo
-  - ui
+  * ui
     - editor ui
       - [ ] port nuklear
     - game ui
       - [ ] text
         - [ ] port the text rendering code
         - [ ] instanced / batched rendering
-  - gameplay
+  * gameplay
     - [ ] a* pathfinding `WIP`
+      - [X] very basic pathfinding
+      - [ ] actual a*
     - [ ] player chars
       - [ ] move to pathfinding result
       - [ ] multiple player chars ( 3 probably )
@@ -39,19 +41,8 @@ use combo moves to extend your playable chars abilities/moveset with the other p
       - [ ] ladders / climable
       - [ ] ice
       - [ ] breakable
-  - graphics
-    - game art
-      - [ ] decide style
-        - stylized pbr handpainted
-          - normal + handpainted normals
-          - normal + handpainted albedo
-          - both
-        - stylized pbr ( overwatch )
-        - stylized pbr ( arcane inspired )
-        - handpainted
-      - [ ] export level as fbx/obj/etc.
-      - [ ] make level art
-      - [ ] make character art
+  * graphics
+    - [ ] transparency
     - [ ] graphic effects
       - [ ] ambient occlusion
       - [ ] shadows
@@ -59,10 +50,35 @@ use combo moves to extend your playable chars abilities/moveset with the other p
     - [ ] special stuff
       - [ ] water shader
       - [ ] leaves / bushes / vegetation
-  - core
+  * core
     - [ ] custom asset formats
       - [ ] texture
       - [ ] mesh
     - [ ] batched / instanced rendering
     - [ ] particle system
     - [ ] proper asset streaming / loading
+  * game art
+    - [ ] decide style
+      - stylized pbr handpainted
+        - normal + handpainted normals
+        - normal + handpainted albedo
+        - both
+      - stylized pbr ( overwatch )
+      - stylized pbr ( arcane inspired )
+      - handpainted
+    - [ ] export level as fbx/obj/etc.
+    - [ ] make level art
+    - [ ] make character art
+
+## buggs
+  - [ ] debug_draw_mesh() rotates around center (0, 0, 0) not pos, see main.odin
+
+
+## naming-conventions
+  - variables: snake_case
+    - bools: has_XXX, is_XXX
+    - ...
+  - functions: snake_case
+  - structs:   snake_case_t
+  - constants: SCREAM_CASE
+  - enums:     Camel_Snake_Case (XXX_Type, XXX_Flag) 

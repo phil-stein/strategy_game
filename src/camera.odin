@@ -88,11 +88,11 @@ camera_rotate_by_mouse :: proc()
 	@(static) init       := false
 	@(static) pitch, yaw : f32
 
-	xoffset := data.mouse_delta_x
-	yoffset := data.mouse_delta_y
+	xoffset := input.mouse_delta_x
+	yoffset := input.mouse_delta_y
 
-	xoffset *= data.mouse_sensitivity
-	yoffset *= data.mouse_sensitivity
+	xoffset *= input.mouse_sensitivity
+	yoffset *= input.mouse_sensitivity
 
 	
 	yaw   += xoffset
@@ -125,38 +125,38 @@ camera_move_by_keys :: proc()
   up    := camera_get_up()
   // -- move the cam --
 	speed := CAM_SPEED * data.delta_t
-	if ( keystates[KEY.LEFT_SHIFT].down )
+	if ( input.key_states[Key.LEFT_SHIFT].down )
 	{ speed *= CAM_SPEED_SHIFT_MULT; }
-	if ( keystates[KEY.W].down )
+	if ( input.key_states[Key.W].down )
 	{
     dist = front * speed
     data.cam.pos += dist
 	}
-	if ( keystates[KEY.S].down )
+	if ( input.key_states[Key.S].down )
 	{
     dist = front * -speed
     data.cam.pos += dist
 	}
-	if ( keystates[KEY.A].down )
+	if ( input.key_states[Key.A].down )
 	{
     dist = linalg.cross( front, up )
     dist = linalg.normalize( dist )
     dist *= -speed
     data.cam.pos += dist
 	}
-	if ( keystates[KEY.D].down )
+	if ( input.key_states[Key.D].down )
 	{
     dist = linalg.cross( front, up )
     dist = linalg.normalize( dist )
     dist *= speed
     data.cam.pos += dist
 	}
-	if ( keystates[KEY.Q].down )
+	if ( input.key_states[Key.Q].down )
 	{
     dist = up * -speed
     data.cam.pos += dist
 	}
-	if ( keystates[KEY.E].down )
+	if ( input.key_states[Key.E].down )
 	{
     dist = up * speed
     data.cam.pos += dist

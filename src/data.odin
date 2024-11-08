@@ -7,7 +7,13 @@ import        "vendor:glfw"
 import gl     "vendor:OpenGL"
 
 
-WINDOW_TYPE :: enum { MINIMIZED, MAXIMIZED, FULLSCREEN };
+waypoint_t :: struct
+{
+  level_idx : int,
+  x, z      : int,
+}
+
+Window_Type :: enum { MINIMIZED, MAXIMIZED, FULLSCREEN };
 
 texture_t :: struct
 {
@@ -74,6 +80,10 @@ character_t :: struct
 {
   tile       : waypoint_t,
   entity_idx : int,
+
+  has_path        : bool,
+  path            : [dynamic]waypoint_t,
+  halo_entity_idx : int,
 }
 
 data_t :: struct
@@ -121,13 +131,6 @@ data_t :: struct
 
   wireframe_mode_enabled : bool,
   
-  mouse_x           : f32,
-  mouse_y           : f32,  
-  mouse_delta_x     : f32,
-  mouse_delta_y     : f32, 
-
-  mouse_sensitivity : f32,
-
   cam : struct
   {
     pos       : linalg.vec3,
@@ -179,6 +182,7 @@ data_t :: struct
   player_chars : [3]character_t,
 
 }
+// global struct holding most data about the game, except input
 data : data_t =
 {
   delta_t_real      = 0.0,
@@ -188,13 +192,6 @@ data : data_t =
   time_scale        = 1.0,
   
   wireframe_mode_enabled = false,
-  
-  mouse_x           = 0.0,
-  mouse_y           = 0.0, 
-  mouse_delta_x     = 0.0,
-  mouse_delta_y     = 0.0, 
-
-  mouse_sensitivity = 0.5,
 
   cam = 
   {
@@ -209,9 +206,9 @@ data : data_t =
 
   tile_00_str = 
   "XXXXXXXXXX"+
-  "X.XXXX..XX"+
+  "X.XXXX.XXX"+
   "XXX.X.XXXX"+
-  "X.XXXX...X"+
+  "X.XXXX..XX"+
   "X..XXXXX.X"+
   "X..XXXXX.X"+
   "XXX.XXXX.X"+
@@ -220,21 +217,31 @@ data : data_t =
   "XXXXXXXXXX",
   
   tile_01_str = 
-  "XXXXXX..XX"+
+  "XXXXX...XX"+
   "X..X......"+
   "X.......X."+
   "..XX.....X"+
   "...X...X.X"+
   "...X......"+
-  "X.....XX.."+
+  "......XX.."+
   "...X...XXX"+
   "XX....X..."+
-  "XXXXX.....",
+  "XXXX......",
 }
 
 data_init :: proc()
 {
 
+// init .player_chars
+  for &char in data.player_chars
+  {
+    char.has_path = false
+    char.tile     = waypoint_t{ level_idx=0, x=0, z=0 }
+    char.entity_idx = -1
+  }
+
+
+  // init .title_str_arr
   data.tile_str_arr[0] = data.tile_00_str
   data.tile_str_arr[1] = data.tile_01_str
 
@@ -348,41 +355,6 @@ data_init :: proc()
 
   // ----------------------------------------------------------------------------------------------
   
-
-
-  data.basic_shader          = shader_make( #load( "../assets/shaders/basic.vert", string ), 
-                                            #load( "../assets/shaders/basic.frag", string ), "basic_shader" )
-
-  data.quad_shader           = shader_make( #load( "../assets/shaders/quad.vert", string ), 
-                                            #load( "../assets/shaders/quad.frag", string ), "quad_shader" )
-
-  data.deferred_shader       = shader_make( #load( "../assets/shaders/basic.vert",    string ), 
-                                            #load( "../assets/shaders/deferred.frag", string ), "deferred_shader" )
-  
-  data.lighting_shader       = shader_make( #load( "../assets/shaders/screen.vert", string ), 
-                                            #load( "../assets/shaders/pbr.frag",    string ), "lighting_shader" )
-
-  data.post_fx_shader        = shader_make( #load( "../assets/shaders/screen.vert",  string ), 
-                                            #load( "../assets/shaders/post_fx.frag", string ), "post_fx_shader" )
-
-  data.skybox_shader         = shader_make( #load( "../assets/shaders/cubemap/cube_map.vert",  string ), 
-                                            #load( "../assets/shaders/cubemap/cube_map.frag", string ), "skybox_shader" )
-
-  data.brdf_lut_shader       = shader_make( #load( "../assets/shaders/cubemap/brdf_lut.vert", string ), 
-                                            #load( "../assets/shaders/cubemap/brdf_lut.frag", string ))
-
-  data.equirect_shader       = shader_make( #load( "../assets/shaders/cubemap/render_equirect.vert", string ), 
-                                            #load( "../assets/shaders/cubemap/render_equirect.frag", string ))
- 
-  data.irradiance_map_shader = shader_make( #load( "../assets/shaders/cubemap/render_equirect.vert", string ), 
-                                            #load( "../assets/shaders/cubemap/irradiance_map.frag", string ))
- 
-  data.prefilter_shader      = shader_make( #load( "../assets/shaders/cubemap/render_equirect.vert", string ), 
-                                            #load( "../assets/shaders/cubemap/prefilter_map.frag", string ))
-   
-  data.fb_deferred = framebuffer_create_gbuffer( 1 ) 
-  data.fb_lighting = framebuffer_create_hdr()
-
 }
 
 data_pre_updated :: proc()
@@ -399,11 +371,6 @@ data_pre_updated :: proc()
   window_set_title( str.clone_to_cstring( fmt.tprint( "amazing title | fps: ", data.cur_fps, ", vsync: ", data.vsync_enabled ) ) )
 }
 
-data_post_update :: proc()
-{
-  data.mouse_delta_x = 0.0
-  data.mouse_delta_y = 0.0
-}
 
 data_create_map :: proc()
 {

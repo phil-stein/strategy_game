@@ -6,11 +6,6 @@ import linalg "core:math/linalg/glsl"
 
 
 
-waypoint_t :: struct
-{
-  level_idx : int,
-  x, z      : int,
-}
 
 game_a_star_pathfind :: proc( start, end: waypoint_t ) -> ( path: [dynamic]waypoint_t, success: bool  )
 {

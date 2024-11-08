@@ -1,9 +1,9 @@
 package core
 
-// import "core:fmt"
+import "core:fmt"
 import "vendor:glfw"
 
-KEY :: enum
+Key :: enum
 {
   UNKNOWN = glfw.KEY_UNKNOWN, 
 
@@ -138,7 +138,7 @@ KEY :: enum
   LAST = glfw.KEY_LAST 
 }
 
-KEYMOD :: enum
+Keymod :: enum
 {
   MOD_NONE     = 0,
 
@@ -157,57 +157,113 @@ KEYMOD :: enum
 //   DOWN    = glfw.PRESS,
 //   PRESSED = 2
 // }
-keystate_t :: struct
+key_state_t :: struct
 {
   down_last : bool, // down last frame
   down      : bool,
   pressed   : bool,
-  mods      : KEYMOD, 
+  mods      : Keymod, 
 }
 
-// @TODO: no idea what #sparse does,
-//        cant find docs on odin-lang.org 
-keystates : #sparse [KEY]keystate_t
+
+Mouse_Button :: enum
+{
+  LEFT  = glfw.MOUSE_BUTTON_1,
+  RIGHT = glfw.MOUSE_BUTTON_2,
+}
+mouse_button_state_t :: struct
+{
+  down_last : bool, // down last frame
+  down      : bool,
+  pressed   : bool,
+}
+
+input_t :: struct
+{
+  // @TODO: no idea what #sparse does,
+  //        cant find docs on odin-lang.org 
+  key_states : #sparse [Key]key_state_t,
+
+  // @TODO: no idea what #sparse does,
+  //        cant find docs on odin-lang.org 
+  mouse_button_states : #sparse [Mouse_Button]mouse_button_state_t,
+
+  mouse_x           : f32,
+  mouse_y           : f32,  
+  mouse_delta_x     : f32,
+  mouse_delta_y     : f32, 
+
+  mouse_sensitivity : f32,
+}
+// global struct holding all input info
+input : input_t = 
+{
+  mouse_x           = 0.0,
+  mouse_y           = 0.0, 
+  mouse_delta_x     = 0.0,
+  mouse_delta_y     = 0.0, 
+
+  mouse_sensitivity = 0.5,
+}
 
 input_init :: proc()
 {
   glfw.SetKeyCallback( data.window, glfw.KeyProc(input_key_callback) )
+  
+  glfw.SetMouseButtonCallback( data.window, glfw.MouseButtonProc(input_mouse_button_callback) )
   glfw.SetCursorPosCallback( data.window, glfw.CursorPosProc(input_mouse_pos_callback) )
 }
 
 input_update :: proc()
 {
-  for &key in keystates 
+  for &key in input.key_states 
   {
     key.down_last = key.down
     key.pressed   = false
     key.mods      = .MOD_NONE
   }
+
+  for &btn in input.mouse_button_states 
+  {
+    btn.down_last = btn.down
+    btn.pressed   = false
+  }
+
+  input.mouse_delta_x = 0.0
+  input.mouse_delta_y = 0.0
 }
 
 input_key_callback :: proc( window: glfw.WindowHandle, keycode: int, scancode: int, state: int, mods: int)
 {
-  keystates[KEY(keycode)].pressed = keystates[KEY(keycode)].down_last ? false : true 
-  keystates[KEY(keycode)].down    = state == glfw.PRESS || state == glfw.REPEAT 
-  keystates[KEY(keycode)].mods = KEYMOD(mods)
+  input.key_states[Key(keycode)].pressed = input.key_states[Key(keycode)].down_last ? false : true 
+  input.key_states[Key(keycode)].down    = state == glfw.PRESS || state == glfw.REPEAT 
+  input.key_states[Key(keycode)].mods    = Keymod(mods)
   // if ( keycode == glfw.KEY_W ) { fmt.println( "state: ", state ) }
+}
+
+input_mouse_button_callback :: proc( window: glfw.WindowHandle, button, action, mods: int )
+{
+  input.mouse_button_states[Mouse_Button(button)].pressed = input.mouse_button_states[Mouse_Button(button)].down_last ? false : true 
+  input.mouse_button_states[Mouse_Button(button)].down    = action == glfw.PRESS || action == glfw.REPEAT 
 }
 
 input_mouse_pos_callback :: proc( window: glfw.WindowHandle, xpos, ypos: f64 )
 {
-  data.mouse_delta_x = f32(xpos) - data.mouse_x
-  data.mouse_delta_y = data.mouse_y - f32(ypos) // for some reason y is invers, prob because opengl is weird about coordinates
-  data.mouse_x = f32(xpos)
-  data.mouse_y = f32(ypos)
+  input.mouse_delta_x = f32(xpos) - input.mouse_x
+  input.mouse_delta_y = input.mouse_y - f32(ypos) // for some reason y is invers, prob because opengl is weird about coordinates
+  input.mouse_x = f32(xpos)
+  input.mouse_y = f32(ypos)
 }
 
-input_center_cursor :: proc()
+input_center_cursor :: proc( loc := #caller_location )
 {
   glfw.SetCursorPos( data.window, f64(data.window_width / 2), f64(data.window_height / 2) )
-  data.mouse_x = f32(data.window_width / 2)
-  data.mouse_y = f32(data.window_height / 2)
-  data.mouse_delta_x = 0 
-  data.mouse_delta_y = 0
+  input.mouse_x = f32(data.window_width / 2)
+  input.mouse_y = f32(data.window_height / 2)
+  input.mouse_delta_x = 0 
+  input.mouse_delta_y = 0
+
+  fmt.println( "input_center_cursor: ", loc )
 }
 
 input_set_cursor_visibile :: proc(visible: bool)
