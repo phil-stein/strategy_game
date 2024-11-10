@@ -149,7 +149,12 @@ mesh_load_fbx :: proc( path: cstring, loc := #caller_location ) -> ( mesh: mesh_
     }
 
   }
-  return mesh_make(&vertices[0], len(vertices), &indices[0], len(indices))
+  mesh = mesh_make(&vertices[0], len(vertices), &indices[0], len(indices))
+
+  delete( vertices )
+  delete( indices )
+
+  return mesh
 }
 
 mesh_make :: proc( vertices: [^]f32, vertices_len: int, indices: [^]u32, indices_len: int ) -> ( mesh: mesh_t )

@@ -185,6 +185,7 @@ data_t :: struct
   tile_type_arr : [TILE_LEVELS_MAX]nav_type_level_arr,
 
   player_chars : [3]character_t,
+  player_chars_current : int,
 
 }
 // global struct holding most data about the game, except input
@@ -237,6 +238,8 @@ data : data_t =
   "...X...XXX"+
   "XX....X..."+
   "XXXX......",
+
+  player_chars_current = 0,
 }
 
 data_init :: proc()
@@ -378,7 +381,20 @@ data_pre_updated :: proc()
   { data.delta_t_real = 0.016; first_frame = false; } // otherwise dt first frame is like 5 seconds
   data.delta_t = data.delta_t_real * data.time_scale
   
-  window_set_title( str.clone_to_cstring( fmt.tprint( "amazing title | fps: ", data.cur_fps, ", vsync: ", data.vsync_enabled ) ) )
+  window_set_title( 
+    str.clone_to_cstring( 
+      fmt.tprint( "amazing title | fps: ", data.cur_fps, ", vsync: ", data.vsync_enabled ), 
+      context.temp_allocator ) 
+  )
+}
+
+data_cleanup :: proc()
+{
+  delete( data.entity_arr )
+
+  delete( data.mesh_arr )
+  delete( data.texture_arr )
+  delete( data.material_arr )
 }
 
 

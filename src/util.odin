@@ -14,6 +14,10 @@ util_make_model :: proc( pos, rot, scale: linalg.vec3 ) -> ( model: linalg.mat4 
   y := math.to_radians( rot.y )
   z := math.to_radians( rot.z )
 	
+  // @NOTE: idk why its in different position than in my own c math lib
+  //        prob bc. the core:math/linalg/glsl lib is different 
+  model *= linalg.mat4Translate( pos )
+
 	// mat4_rotate_at(model, pos, x, VEC3_X(1));
 	// mat4_rotate_at(model, pos, y, VEC3_Y(1));
 	// mat4_rotate_at(model, pos, z, VEC3_Z(1));
@@ -22,7 +26,6 @@ util_make_model :: proc( pos, rot, scale: linalg.vec3 ) -> ( model: linalg.mat4 
   model *= linalg.mat4Rotate( { 0.0, 0.0, 1.0 }, z )
 	
 	// mat4_translate(model, pos);
-  model *= linalg.mat4Translate( pos )
 
 	// mat4_scale(model, scale, model);
   model *= linalg.mat4Scale( scale )

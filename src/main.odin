@@ -8,11 +8,46 @@ import        "vendor:glfw"
 import gl     "vendor:OpenGL"
 import        "core:image"
 import        "core:image/png"
+import        "core:log"
+import        "core:mem"
 
 
 
 main :: proc() 
 {
+  // ---- init odin stuff ----
+
+  when ODIN_DEBUG 
+  {
+		track: mem.Tracking_Allocator
+		mem.tracking_allocator_init(&track, context.allocator)
+		context.allocator = mem.tracking_allocator(&track)
+
+		defer 
+    {
+			if len(track.allocation_map) > 0 
+      {
+				fmt.eprintf("=== %v allocations not freed: ===\n", len(track.allocation_map))
+				for _, entry in track.allocation_map 
+        {
+					fmt.eprintf("- %v bytes @ %v\n", entry.size, entry.location)
+				}
+			}
+			if len(track.bad_free_array) > 0 
+      {
+				fmt.eprintf("=== %v incorrect frees: ===\n", len(track.bad_free_array))
+				for entry in track.bad_free_array 
+        {
+					fmt.eprintf("- %p @ %v\n", entry.memory, entry.location)
+				}
+			}
+			mem.tracking_allocator_destroy(&track)
+		}
+	}
+  
+  context.logger = log.create_console_logger()
+  defer free( context.logger.data )
+
   // ---- init ----
 
   if ( !window_create( 1500, 1075, "title", Window_Type.MINIMIZED, vsync=true ) ) // /* 1000, 750, */
@@ -46,15 +81,33 @@ main :: proc()
   data.player_chars[0].tile = waypoint_t{ level_idx=0, x=5, z=5 }
   player_char_00_pos := util_tile_to_pos( data.player_chars[0].tile )
   data.player_chars[0].entity_idx = len(data.entity_arr)
-  append( &data.entity_arr, entity_t{ pos = player_char_00_pos + linalg.vec3{ -2, 2, -2 }, 
+  append( &data.entity_arr, entity_t{ pos = player_char_00_pos + linalg.vec3{ 0, 2, 0 }, 
                                       rot = { 0, 180, 0 }, scl = { 1, 1, 1 },
                                       mesh_idx = data.mesh_idxs.suzanne, 
                                       mat_idx  = data.material_idxs.metal_01
                                     } )
-  fmt.println( "player[0].pos: ", data.entity_arr[data.player_chars[0].entity_idx].pos )
-  fmt.println( "player.tile: ", data.player_chars[0].tile )
-  fmt.println( "player.tile -> pos: ", player_char_00_pos )
-  fmt.println( "data.player_chars[0].entity_idx: ", data.player_chars[0].entity_idx )
+  // fmt.println( "player[0].pos: ", data.entity_arr[data.player_chars[0].entity_idx].pos )
+  // fmt.println( "player.tile: ", data.player_chars[0].tile )
+  // fmt.println( "player.tile -> pos: ", player_char_00_pos )
+  // fmt.println( "data.player_chars[0].entity_idx: ", data.player_chars[0].entity_idx )
+
+  data.player_chars[1].tile = waypoint_t{ level_idx=0, x=3, z=4 }
+  player_char_01_pos := util_tile_to_pos( data.player_chars[1].tile )
+  data.player_chars[1].entity_idx = len(data.entity_arr)
+  append( &data.entity_arr, entity_t{ pos = player_char_01_pos + linalg.vec3{ 0, 2, 0 }, 
+                                      rot = { 0, 180, 0 }, scl = { 1, 1, 1 },
+                                      mesh_idx = data.mesh_idxs.suzanne, 
+                                      mat_idx  = data.material_idxs.brick
+                                    } )
+
+  data.player_chars[2].tile = waypoint_t{ level_idx=0, x=0, z=7 }
+  player_char_02_pos := util_tile_to_pos( data.player_chars[2].tile )
+  data.player_chars[2].entity_idx = len(data.entity_arr)
+  append( &data.entity_arr, entity_t{ pos = player_char_02_pos + linalg.vec3{ 0, 2, 0 }, 
+                                      rot = { 0, 180, 0 }, scl = { 1, 1, 1 },
+                                      mesh_idx = data.mesh_idxs.suzanne, 
+                                      mat_idx  = data.material_idxs.default
+                                    } )
 
 
   // --- create map ---
@@ -112,17 +165,23 @@ main :: proc()
     renderer_update()
     // debug_draw_tiles()
 
+    if input.key_states[Key.UP].pressed
+    { 
+      data.player_chars_current += 1
+      data.player_chars_current = data.player_chars_current >= len(data.player_chars) ? 0 : data.player_chars_current
+    }
+
     cam_hit_tile, has_cam_hit_tile := game_find_tile_hit_by_camera()
     if has_cam_hit_tile
     {
       // start := waypoint_t{ level_idx=0, x=5, z=5 } 
-      start := data.player_chars[0].tile
+      start := data.player_chars[data.player_chars_current].tile
       // start_pos := linalg.vec3{ 
       //               f32(start.x)         * 2 - f32(TILE_ARR_X_MAX) +1,
       //               f32(start.level_idx) * 2, 
       //               f32(start.z)         * 2 - f32(TILE_ARR_Z_MAX) +1
       //              }
-      start_pos := util_tile_to_pos(data.player_chars[0].tile )
+      start_pos := util_tile_to_pos(data.player_chars[data.player_chars_current].tile )
       // fmt.println( "start -> pos: ", start_pos )
       debug_draw_sphere( start_pos, linalg.vec3{ 0.35, 0.35, 0.35 }, linalg.vec3{ 0, 1, 0 } )
       path, path_found := game_a_star_pathfind( start, cam_hit_tile )
@@ -158,20 +217,19 @@ main :: proc()
       { 
         // fmt.println( "mouse01 pressed ) 
 
-        if data.player_chars[0].has_path
+        if data.player_chars[data.player_chars_current].has_path
         {
-          delete(data.player_chars[0].path)
+          delete(data.player_chars[data.player_chars_current].path)
         }
 
-        data.player_chars[0].has_path = true
-        data.player_chars[0].path = make( [dynamic]waypoint_t, len(path), cap(path) )
-        copy( data.player_chars[0].path[:], path[:] )
+        data.player_chars[data.player_chars_current].has_path = true
+        data.player_chars[data.player_chars_current].path = make( [dynamic]waypoint_t, len(path), cap(path) )
+        copy( data.player_chars[data.player_chars_current].path[:], path[:] )
 
       }
 
       delete( path )
     }
-
 
     for char in data.player_chars
     {
@@ -184,7 +242,7 @@ main :: proc()
         // pos +=  linalg.vec3{ -2, 2, -2 } 
         rot := data.entity_arr[char.entity_idx].rot
         // rot.xz *= -1
-        rot.y = 0
+        // rot.y = 0
         debug_draw_mesh( data.mesh_idxs.suzanne, 
                          pos, 
                          // data.entity_arr[char.entity_idx].rot, 
@@ -211,12 +269,17 @@ main :: proc()
     glfw.SwapBuffers( data.window )
     
     input_update()
+
+    // fmt.println( size_of(context.temp_allocator) )
+    free_all( context.temp_allocator )
   }
   
   ui_cleanup()
 
   glfw.DestroyWindow( data.window )
   glfw.Terminate()
+
+  data_cleanup()
 }
 
 
@@ -321,6 +384,8 @@ make_texture :: proc( path: string, srgb: bool ) -> ( handle: u32 )
 
   // must be called after glTexImage2D
   gl.GenerateMipmap(gl.TEXTURE_2D);
+
+  delete( pixels )
 
   return handle
 }

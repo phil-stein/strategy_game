@@ -9,7 +9,10 @@ use combo moves to extend your playable chars abilities/moveset with the other p
 ## todo
   * ui
     - editor ui
-      - [ ] port nuklear
+      - [x] port imgui 
+      - [ ] entity explorer `WIP`
+      - [ ] level editor
+      - [ ] data window
     - game ui
       - [ ] text
         - [ ] port the text rendering code
@@ -19,8 +22,10 @@ use combo moves to extend your playable chars abilities/moveset with the other p
       - [X] very basic pathfinding
       - [ ] actual a*
     - [ ] player chars
-      - [ ] move to pathfinding result
       - [ ] multiple player chars ( 3 probably )
+      - [ ] switch
+      - [ ] show moves `WIP`
+      - [ ] move to pathfinding result
     - [ ] enemies
       - [ ] ai
       - [ ] show their turn
@@ -71,7 +76,7 @@ use combo moves to extend your playable chars abilities/moveset with the other p
     - [ ] make character art
 
 ## buggs
-  - [ ] debug_draw_mesh() rotates around center (0, 0, 0) not pos, see main.odin
+  - [x] debug_draw_mesh() rotates around center (0, 0, 0) not pos, see main.odin
 
 
 ## naming-conventions
@@ -81,4 +86,4 @@ use combo moves to extend your playable chars abilities/moveset with the other p
   - functions: snake_case
   - structs:   snake_case_t
   - constants: SCREAM_CASE
-  - enums:     Camel_Snake_Case (XXX_Type, XXX_Flag) 
+  - enums:     Camel_Snake_Case.SCREAM_CASE (XXX_Type, XXX_Flag) 

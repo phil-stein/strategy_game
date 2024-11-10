@@ -135,7 +135,7 @@ assetm_init :: proc()
 assetm_load_texture :: #force_inline proc( name: string, srgb: bool ) -> ( idx: int )
 {
   tex : texture_t
-  tex.handle = make_texture( str.concatenate( []string{ "assets/textures/", name} ), srgb )
+  tex.handle = make_texture( str.concatenate( []string{ "assets/textures/", name}, context.temp_allocator ), srgb )
   idx = len( data.texture_arr )
   append( &data.texture_arr, tex )
 
@@ -163,7 +163,7 @@ assetm_get_material :: #force_inline proc( idx: int ) -> ( tex: ^material_t )
 
 assetm_load_mesh :: #force_inline proc( name: string ) -> ( idx: int )
 {
-  path_cstr := str.clone_to_cstring( str.concatenate( []string{ "assets/meshes/", name} ) )
+  path_cstr := str.clone_to_cstring( str.concatenate( []string{ "assets/meshes/", name}, context.temp_allocator ), context.temp_allocator )
   // fmt.println( "path: ", path_cstr )
   m := mesh_load_fbx( path_cstr )
   idx = len( data.mesh_arr )
