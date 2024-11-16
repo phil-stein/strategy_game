@@ -15,6 +15,7 @@
 
 # vs files
 /.vs
+.vs/*
 
 # .cache folder 
 .cache/*
