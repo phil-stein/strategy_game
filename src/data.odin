@@ -17,7 +17,10 @@ Window_Type :: enum { MINIMIZED, MAXIMIZED, FULLSCREEN };
 
 texture_t :: struct
 {
-  handle : u32
+  handle : u32,
+  name   : string,  // @TODO: only needed in debug mode
+  width  : int,
+  height : int,
 }
 
 material_t :: struct
@@ -43,6 +46,8 @@ mesh_t :: struct
 
 entity_t :: struct
 {
+  dead             : bool,
+
   pos, rot, scl    : linalg.vec3,
   
   mesh_idx         : int,
@@ -64,9 +69,6 @@ cubemap_t :: struct
   intensity   : f32,
 }
 
-TILE_ARR_X_MAX  :: 10
-TILE_ARR_Z_MAX  :: 10
-TILE_LEVELS_MAX :: 2
 Tile_Nav_Type :: enum
 {
   EMPTY,
@@ -146,7 +148,8 @@ data_t :: struct
     active : bool,
   },
   
-  entity_arr  : [dynamic]entity_t,
+  entity_arr          : [dynamic]entity_t,
+  entity_dead_idx_arr : [dynamic]int,
   
   // assetm
   mesh_arr     : [dynamic]mesh_t,
@@ -161,6 +164,14 @@ data_t :: struct
     brick_roughness     : int,
     dirt_cube_01_albedo : int,
     dirt_cube_02_albedo : int,
+    robot_albedo        : int,
+    robot_normal        : int,  
+    robot_roughness     : int,
+    robot_metallic      : int,  
+    female_albedo       : int,
+    female_normal       : int,  
+    female_roughness    : int,
+    female_metallic     : int,  
   },
   material_idxs : struct
   {
@@ -169,25 +180,34 @@ data_t :: struct
     brick        : int,
     dirt_cube_01 : int,
     dirt_cube_02 : int,
+    robot        : int,
+    female       : int,
   },
   mesh_idxs : struct
   {
-    cube      : int,
-    sphere    : int,
-    suzanne   : int,
-    dirt_cube : int,
+    cube        : int,
+    sphere      : int,
+    suzanne     : int,
+    dirt_cube   : int,
+    robot_char  : int,
+    female_char : int,
   },
+
 
   tile_00_str : string,
   tile_01_str : string,
 
-  tile_str_arr  : [TILE_LEVELS_MAX]string,
-  tile_type_arr : [TILE_LEVELS_MAX]nav_type_level_arr,
+  tile_str_arr       : [TILE_LEVELS_MAX]string,
+  tile_type_arr      : [TILE_LEVELS_MAX]nav_type_level_arr,
+  tile_entity_id_arr : [TILE_LEVELS_MAX][TILE_ARR_X_MAX][TILE_ARR_Z_MAX]int,
 
   player_chars : [3]character_t,
   player_chars_current : int,
 
 }
+TILE_ARR_X_MAX  :: 10
+TILE_ARR_Z_MAX  :: 10
+TILE_LEVELS_MAX :: 2
 // global struct holding most data about the game, except input
 data : data_t =
 {
@@ -398,6 +418,32 @@ data_cleanup :: proc()
 }
 
 
+data_entity_remove :: proc( idx: int )
+{
+  assert( !data.entity_arr[idx].dead, "tried removing dead entity" )
+  assert( idx >= 0 && idx < len(data.entity_arr), "invalid entity idx" )
+
+  data.entity_arr[idx].dead = true
+  append( &data.entity_dead_idx_arr, idx )
+}
+data_entity_add :: proc( e: entity_t ) -> ( idx: int )
+{
+  idx = -1
+
+  if len(data.entity_dead_idx_arr) > 0
+  {
+    idx = pop(&data.entity_dead_idx_arr)
+    data.entity_arr[idx] = e
+  }
+  else
+  {
+    idx = len(data.entity_arr)
+    append( &data.entity_arr, e )
+  }
+  
+  return idx
+}
+
 data_create_map :: proc()
 {
   // for z in 0 ..< TILE_ARR_Z_MAX
@@ -424,11 +470,11 @@ data_create_map :: proc()
           //                   mesh_idx = data.mesh_idxs.cube, 
           //                   mat_idx  = data.material_idxs.brick 
           //                 } )
-          append( &data.entity_arr, 
-                  entity_t{ pos = { f32(x) * 2 - f32(TILE_ARR_X_MAX) +1, 
-                                    f32(y) * 2, 
-                                    f32(z) * 2 - f32(TILE_ARR_Z_MAX) +1
-                                  }, 
+
+          data.tile_entity_id_arr[y][x][z] = len(data.entity_arr)
+          // append( &data.entity_arr, 
+          data_entity_add( 
+                  entity_t{ pos = util_tile_to_pos( waypoint_t{ level_idx=y, x=x, z=z } ), 
                             rot = { 0, 0, 0 }, scl = { 1, 1, 1 },
                             mesh_idx = data.mesh_idxs.dirt_cube, 
                             mat_idx  = y == 1 ? data.material_idxs.dirt_cube_02 : data.material_idxs.dirt_cube_01

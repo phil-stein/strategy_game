@@ -10,7 +10,7 @@ import        "core:image"
 import        "core:image/png"
 import        "core:log"
 import        "core:mem"
-
+import        "core:time"
 
 
 main :: proc() 
@@ -64,12 +64,16 @@ main :: proc()
 
   data_init()
 
+  stopwatch : time.Stopwatch
+  time.stopwatch_start( &stopwatch )  
   assetm_init()
+  time.stopwatch_stop( &stopwatch )
+  log.info( "TIMER | assetm_init(): ", stopwatch._accumulation )
 
   data.brdf_lut = make_brdf_lut()
   cubemap_data := #load( "../assets/textures/gothic_manor_01_2k.hdr" )
   data.cubemap = cubemap_load( &cubemap_data[0], len(cubemap_data) )
-  data.cubemap.intensity = 1.9
+  data.cubemap.intensity = 1.9 // 1.0 // 1.9
 
 
   
@@ -81,11 +85,11 @@ main :: proc()
   data.player_chars[0].tile = waypoint_t{ level_idx=0, x=5, z=5 }
   player_char_00_pos := util_tile_to_pos( data.player_chars[0].tile )
   data.player_chars[0].entity_idx = len(data.entity_arr)
-  append( &data.entity_arr, entity_t{ pos = player_char_00_pos + linalg.vec3{ 0, 2, 0 }, 
-                                      rot = { 0, 180, 0 }, scl = { 1, 1, 1 },
-                                      mesh_idx = data.mesh_idxs.suzanne, 
-                                      mat_idx  = data.material_idxs.metal_01
-                                    } )
+  data_entity_add( entity_t{ pos = player_char_00_pos + linalg.vec3{ 0, 1, 0 }, 
+                             rot = { 0, 180, 0 }, scl = { 1, 1, 1 },
+                             mesh_idx = data.mesh_idxs.robot_char, // data.mesh_idxs.suzanne, 
+                             mat_idx  = data.material_idxs.robot
+                           } )
   // fmt.println( "player[0].pos: ", data.entity_arr[data.player_chars[0].entity_idx].pos )
   // fmt.println( "player.tile: ", data.player_chars[0].tile )
   // fmt.println( "player.tile -> pos: ", player_char_00_pos )
@@ -94,25 +98,26 @@ main :: proc()
   data.player_chars[1].tile = waypoint_t{ level_idx=0, x=3, z=4 }
   player_char_01_pos := util_tile_to_pos( data.player_chars[1].tile )
   data.player_chars[1].entity_idx = len(data.entity_arr)
-  append( &data.entity_arr, entity_t{ pos = player_char_01_pos + linalg.vec3{ 0, 2, 0 }, 
-                                      rot = { 0, 180, 0 }, scl = { 1, 1, 1 },
-                                      mesh_idx = data.mesh_idxs.suzanne, 
-                                      mat_idx  = data.material_idxs.brick
-                                    } )
+  data_entity_add( entity_t{ pos = player_char_01_pos + linalg.vec3{ 0, 1, 0 }, 
+                             rot = { 0, 180, 0 }, scl = { 1, 1, 1 },
+                             mesh_idx = data.mesh_idxs.female_char, // data.mesh_idxs.suzanne, 
+                             mat_idx  = data.material_idxs.female
+                           } )
 
   data.player_chars[2].tile = waypoint_t{ level_idx=0, x=0, z=7 }
   player_char_02_pos := util_tile_to_pos( data.player_chars[2].tile )
   data.player_chars[2].entity_idx = len(data.entity_arr)
-  append( &data.entity_arr, entity_t{ pos = player_char_02_pos + linalg.vec3{ 0, 2, 0 }, 
-                                      rot = { 0, 180, 0 }, scl = { 1, 1, 1 },
-                                      mesh_idx = data.mesh_idxs.suzanne, 
-                                      mat_idx  = data.material_idxs.default
-                                    } )
+  data_entity_add( entity_t{ pos = player_char_02_pos + linalg.vec3{ 0, 2, 0 }, 
+                             rot = { 0, 180, 0 }, scl = { 1, 1, 1 },
+                             mesh_idx = data.mesh_idxs.suzanne, 
+                             mat_idx  = data.material_idxs.default
+                           } )
 
 
   // --- create map ---
 
   data_create_map()
+
 
   
   // -- set opengl state --
@@ -233,6 +238,7 @@ main :: proc()
 
     for char in data.player_chars
     {
+      data.entity_arr[char.entity_idx].rot.y += 15 * data.delta_t
       if char.has_path
       {
         debug_draw_path( char.path, linalg.vec3{ 0, 1, 1 } )
@@ -243,7 +249,7 @@ main :: proc()
         rot := data.entity_arr[char.entity_idx].rot
         // rot.xz *= -1
         // rot.y = 0
-        debug_draw_mesh( data.mesh_idxs.suzanne, 
+        debug_draw_mesh( data.entity_arr[char.entity_idx].mesh_idx, // data.mesh_idxs.suzanne, 
                          pos, 
                          // data.entity_arr[char.entity_idx].rot, 
                          rot,
@@ -275,11 +281,13 @@ main :: proc()
   }
   
   ui_cleanup()
+  assetm_cleanup()
 
   glfw.DestroyWindow( data.window )
   glfw.Terminate()
 
   data_cleanup()
+  free_all( context.temp_allocator )
 }
 
 
@@ -295,7 +303,7 @@ gl_format_str :: proc( format: i32 ) -> string
          format == gl.SRGB_ALPHA ? "SRGB_ALPHA" :
          "unknown" 
 }
-make_texture :: proc( path: string, srgb: bool ) -> ( handle: u32 )
+make_texture :: proc( path: string, srgb: bool, tint:= [3]f32{ 1, 1, 1 } ) -> ( handle: u32 )
 {
   // Load image at compile time
   // image_file_bytes := #load( "../assets/texture_01.png" )
@@ -319,16 +327,19 @@ make_texture :: proc( path: string, srgb: bool ) -> ( handle: u32 )
   image_w := i32( image_ptr.width )
   image_h := i32( image_ptr.height )
 
-  if ( err != nil )
+  if err != nil
   {
       fmt.println("ERROR: Image failed to load.")
   }
 
   // Copy bytes from icon buffer into slice.
   pixels := make( []u8, len(image_ptr.pixels.buf) )
+  tint_idx := 0
   for b, i in image_ptr.pixels.buf 
   {
-      pixels[i] = b
+      pixels[i] = byte( f32(b) * tint[tint_idx] )
+      tint_idx += 1
+      if tint_idx >= 3 { tint_idx = 0 }
   }
   gl.GenTextures( 1, &handle )
   gl.BindTexture( gl.TEXTURE_2D, handle )

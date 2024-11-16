@@ -42,6 +42,7 @@ renderer_update :: proc()
     shader_use( data.deferred_shader )
     for &e, idx in data.entity_arr
     {
+      if e.dead { continue }
       // fmt.println( "#### rendering entity[", idx, "] ####" )
 
       mesh := assetm_get_mesh( e.mesh_idx )

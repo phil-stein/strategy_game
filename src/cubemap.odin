@@ -1,6 +1,6 @@
 package core
 
-// import        "core:fmt"
+import        "core:fmt"
 import        "core:log"
 import        "core:c"
 import        "core:math"
@@ -12,11 +12,8 @@ import gl     "vendor:OpenGL"
 import stbi   "vendor:stb/image"
 
 
-cubemap_load :: proc( buf: [^]byte, buf_len: int ) -> ( cm: cubemap_t)
+cubemap_load :: proc( buf: [^]byte, buf_len: int, loc := #caller_location ) -> ( cm: cubemap_t)
 {
-
-
-
   // @BUGG: @OPTIMIZATION: reloading cubemap adds a lot of memory
   // if (core_data->cube_map.loaded) { cubemap_free(); }
 

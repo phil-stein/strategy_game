@@ -3,7 +3,8 @@ package core
 import        "core:fmt"
 import str    "core:strings"
 import linalg "core:math/linalg/glsl"
-
+import        "core:time"
+import        "core:log"
 
 assetm_init :: proc()
 {
@@ -46,7 +47,14 @@ assetm_init :: proc()
   // blank_tex       := make_texture( "assets/blank.png", false )
   // // black_blank_tex := make_texture( "assets/blank_black.png", false )
   // blank_tex_idx := assetm_load_texture( "blank.png", false )
-  data.texture_idxs.blank = assetm_load_texture( "blank.png", false )
+  
+  stopwatch : time.Stopwatch
+  time.stopwatch_reset( &stopwatch )
+  // time.stopwatch_start( &stopwatch )
+  // assetio_convert_texture( "blank.png" )
+  // time.stopwatch_stop( &stopwatch )
+  // log.info( "TIMER | assetio_convert_texture( \"blank.png\" ): ", stopwatch._accumulation )
+  data.texture_idxs.blank = assetio_load_texture( "blank.png", true )
 
   cube_mat  := material_t{ 
                  albedo_idx    = data.texture_idxs.blank, 
@@ -71,13 +79,18 @@ assetm_init :: proc()
            roughness_f = 0.25,
            metallic_f  = 1.0,
          }
-  // suzanne_mat_idx := assetm_add_material( suzanne_mat )
   data.material_idxs.metal_01 = assetm_add_material( suzanne_mat )
 
 
-  data.texture_idxs.brick_albedo    = assetm_load_texture( "brick/albedo.png", false )
-  data.texture_idxs.brick_normal    = assetm_load_texture( "brick/normal.png", false )
-  data.texture_idxs.brick_roughness = assetm_load_texture( "brick/roughness.png", false )
+
+  time.stopwatch_reset( &stopwatch )
+  time.stopwatch_start( &stopwatch )
+  data.texture_idxs.brick_albedo    = assetio_load_texture( "brick/albedo.png", true )
+  data.texture_idxs.brick_normal    = assetio_load_texture( "brick/normal.png", false )
+  data.texture_idxs.brick_roughness = assetio_load_texture( "brick/roughness.png", false )
+  time.stopwatch_stop( &stopwatch )
+  log.info( "TIMER: brick-textures: ", stopwatch._accumulation )
+  time.stopwatch_reset( &stopwatch )
 
   brick_mat  := material_t{ 
            albedo_idx    = data.texture_idxs.brick_albedo, 
@@ -89,11 +102,10 @@ assetm_init :: proc()
            roughness_f = 1.0,
            metallic_f  = 0.0,
          }
-  // brick_mat_idx := assetm_add_material( brick_mat )
   data.material_idxs.brick = assetm_add_material( brick_mat )
 
-  data.texture_idxs.dirt_cube_01_albedo = assetm_load_texture( "dirt_path_sphax_01.png", false )
-  data.texture_idxs.dirt_cube_02_albedo = assetm_load_texture( "dirt_path_sphax_02.png", false )
+  data.texture_idxs.dirt_cube_01_albedo = assetio_load_texture( "dirt_path_sphax_01.png", true, [3]f32{ 1.3, 1.15, 1 }  )
+  data.texture_idxs.dirt_cube_02_albedo = assetio_load_texture( "dirt_path_sphax_02.png", true, [3]f32{ 1.3, 1.15, 1 }  )
 
   dirt_cube_mat  := material_t{ 
            albedo_idx    = data.texture_idxs.dirt_cube_01_albedo, 
@@ -105,42 +117,74 @@ assetm_init :: proc()
            roughness_f = 1.0,
            metallic_f  = 0.0,
          }
-  // brick_mat_idx := assetm_add_material( brick_mat )
   data.material_idxs.dirt_cube_01 = assetm_add_material( dirt_cube_mat )
   dirt_cube_mat.albedo_idx = data.texture_idxs.dirt_cube_02_albedo
   data.material_idxs.dirt_cube_02 = assetm_add_material( dirt_cube_mat )
 
-  // sphere_idx := len(data.entity_arr)
-  // append( &data.entity_arr, entity_t{ pos = {  2, 2, 0 }, rot = { 0, 0, 0 }, scl = { 1, 1, 1 },
-  //                                     mesh = mesh_load_fbx( "assets/sphere.fbx" ), 
-  //                                     mat  = { 
-  //                                              albedo    = make_texture( "assets/brick/albedo.png",    true ), 
-  //                                              roughness = make_texture( "assets/brick/roughness.png", false ), 
-  //                                              metallic  = blank_tex, 
-  //                                              normal    = make_texture( "assets/brick/normal.png",    false ), 
-  //
-  //                                              tint        = linalg.vec3{ 1.0, 1.0, 1.0 },
-  //                                              roughness_f = 1.0,
-  //                                              metallic_f  = 0.0,
-  //                                            },
-  //                                   } )
+  time.stopwatch_start( &stopwatch )
+  data.texture_idxs.robot_albedo    = assetio_load_texture( "robot_character_06/albedo.png", true )
+  data.texture_idxs.robot_normal    = assetio_load_texture( "robot_character_06/normal.png", false )
+  data.texture_idxs.robot_metallic  = assetio_load_texture( "robot_character_06/metallic.png", false )
+  data.texture_idxs.robot_roughness = assetio_load_texture( "robot_character_06/roughness.png", false )
+  time.stopwatch_stop( &stopwatch )
+  log.info( "TIMER: robot-textures: ", stopwatch._accumulation )
+  robot_mat := material_t{ 
+           albedo_idx    = data.texture_idxs.robot_albedo, 
+           roughness_idx = data.texture_idxs.robot_roughness, 
+           metallic_idx  = data.texture_idxs.robot_metallic, 
+           normal_idx    = data.texture_idxs.robot_normal, 
+
+           tint        = linalg.vec3{ 1.0, 1.0, 1.0 },
+           roughness_f = 1.0,
+           metallic_f  = 1.0,
+         }
+  data.material_idxs.robot = assetm_add_material( robot_mat )
+
+  time.stopwatch_reset( &stopwatch )
+  time.stopwatch_start( &stopwatch )
+  // assetio_convert_texture( "female_char_01/albedo.png" )
+  // log.info( "TIMER | assetio_convert_texture( \"female_char_01/albedo.png\" ): ", stopwatch._accumulation )
+
+  data.texture_idxs.female_albedo    = assetio_load_texture( "female_char_01/albedo.png", true )
+  data.texture_idxs.female_normal    = assetio_load_texture( "female_char_01/normal.png", false )
+  data.texture_idxs.female_metallic  = assetio_load_texture( "female_char_01/metallic.png", false )
+  data.texture_idxs.female_roughness = assetio_load_texture( "female_char_01/roughness.png", false )
+  time.stopwatch_stop( &stopwatch )
+  log.info( "TIMER: female-textures: ", stopwatch._accumulation )
+  time.stopwatch_reset( &stopwatch )
+  female_char := material_t{ 
+           albedo_idx    = data.texture_idxs.female_albedo, 
+           roughness_idx = data.texture_idxs.female_roughness, 
+           metallic_idx  = data.texture_idxs.female_metallic, 
+           normal_idx    = data.texture_idxs.female_normal, 
+
+           tint        = linalg.vec3{ 1.0, 1.0, 1.0 },
+           roughness_f = 1.0,
+           metallic_f  = 1.0,
+         }
+  data.material_idxs.female = assetm_add_material( female_char )
   
-  data.mesh_idxs.cube      = assetm_load_mesh( "cube.fbx" )
-  data.mesh_idxs.sphere    = assetm_load_mesh( "sphere.fbx" ) 
-  data.mesh_idxs.suzanne   = assetm_load_mesh( "suzanne_02.fbx" )
-  data.mesh_idxs.dirt_cube = assetm_load_mesh( "dirt_cube.fbx" )
+  // ---- mesh ----
+
+  data.mesh_idxs.cube        = assetm_load_mesh( "cube.fbx" )
+  data.mesh_idxs.sphere      = assetm_load_mesh( "sphere.fbx" ) 
+  data.mesh_idxs.suzanne     = assetm_load_mesh( "suzanne_02.fbx" )
+  data.mesh_idxs.dirt_cube   = assetm_load_mesh( "dirt_cube.fbx" )
+  data.mesh_idxs.robot_char  = assetm_load_mesh( "robot_character_06_01.fbx" )
+  data.mesh_idxs.female_char = assetm_load_mesh( "female_char_01_01.fbx" )
 }
-
-
-assetm_load_texture :: #force_inline proc( name: string, srgb: bool ) -> ( idx: int )
+assetm_cleanup :: proc()
 {
-  tex : texture_t
-  tex.handle = make_texture( str.concatenate( []string{ "assets/textures/", name}, context.temp_allocator ), srgb )
-  idx = len( data.texture_arr )
-  append( &data.texture_arr, tex )
-
-  return 
+  
+  when ODIN_DEBUG
+  {
+    for i in 0 ..< len(data.texture_arr)
+    {
+      delete( data.texture_arr[i].name )
+    }
+  }
 }
+
 
 assetm_get_texture :: #force_inline proc( idx: int ) -> ( tex: ^texture_t )
 {

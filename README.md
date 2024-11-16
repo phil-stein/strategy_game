@@ -9,10 +9,11 @@ use combo moves to extend your playable chars abilities/moveset with the other p
 ## todo
   * ui
     - editor ui
-      - [x] port imgui 
+      - [X] port imgui 
       - [ ] entity explorer `WIP`
-      - [ ] level editor
+      - [X] level editor
       - [ ] data window
+      - [ ] assem explorer 
     - game ui
       - [ ] text
         - [ ] port the text rendering code
@@ -57,11 +58,15 @@ use combo moves to extend your playable chars abilities/moveset with the other p
       - [ ] leaves / bushes / vegetation
   * core
     - [ ] custom asset formats
-      - [ ] texture
+      - [X] texture
       - [ ] mesh
     - [ ] batched / instanced rendering
     - [ ] particle system
     - [ ] proper asset streaming / loading
+    - [ ] serialization
+      - [ ] map
+      - [ ] chars position
+      - [ ] enemy layout
   * game art
     - [ ] decide style
       - stylized pbr handpainted
@@ -74,6 +79,11 @@ use combo moves to extend your playable chars abilities/moveset with the other p
     - [ ] export level as fbx/obj/etc.
     - [ ] make level art
     - [ ] make character art
+  * upkeep & organisation 
+    - [ ] factor out code into packages 
+      - [ ] assetm
+      - [ ] data ? 
+      - [ ] util
 
 ## buggs
   - [x] debug_draw_mesh() rotates around center (0, 0, 0) not pos, see main.odin
