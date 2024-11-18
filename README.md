@@ -10,10 +10,10 @@ use combo moves to extend your playable chars abilities/moveset with the other p
   * ui
     - editor ui
       - [X] port imgui 
-      - [ ] entity explorer `WIP`
+      - [X] entity explorer
       - [X] level editor
-      - [ ] data window
-      - [ ] assem explorer 
+      - [X] data window
+      - [X] assem explorer 
     - game ui
       - [ ] text
         - [ ] port the text rendering code
@@ -87,6 +87,7 @@ use combo moves to extend your playable chars abilities/moveset with the other p
 
 ## buggs
   - [x] debug_draw_mesh() rotates around center (0, 0, 0) not pos, see main.odin
+  - [ ] not freed in main.odin -> 231: data.player_chars[data.player_chars_current].path = make( [dynamic]waypoint_t, len(path), cap(path) )
 
 
 ## naming-conventions

@@ -1,0 +1,31 @@
+make_texture():
+  [INFO ] --- [2024-11-11 22:18:43] [assetm.odin:85:assetm_init()] TIMER: brick-textures:  289.6424ms
+  [INFO ] --- [2024-11-11 22:18:50] [assetm.odin:123:assetm_init()] TIMER: robot-textures:  6.5605732s
+  [INFO ] --- [2024-11-11 22:18:56] [assetm.odin:143:assetm_init()] TIMER: female-textures:  6.2259291s
+  [INFO ] --- [2024-11-11 22:18:56] [main.odin:71:main()] TIMER | assetm_init():  13.4359739s
+
+assetio_load_texture():
+  [INFO ] --- [2024-11-16 13:56:02] [assetm.odin:92:assetm_init()] TIMER: brick-textures:  18.5689ms
+  [INFO ] --- [2024-11-16 13:56:02] [assetm.odin:130:assetm_init()] TIMER: robot-textures:  309.3648ms
+  [INFO ] --- [2024-11-16 13:56:02] [assetm.odin:153:assetm_init()] TIMER: female-textures:  289.5443ms
+  [INFO ] --- [2024-11-16 13:56:02] [main.odin:71:main()] TIMER | assetm_init():  821.2287ms
+
+assetm_load_mesh():
+  [INFO ] --- [2024-11-18 02:52:46] [assetm.odin:178:assetm_init()] TIMER: loading meshes:  228.4612ms
+  [INFO ] --- [2024-11-18 02:52:46] [main.odin:75:main()] TIMER | assetm_init():  949.1584ms
+  [INFO ] --- [2024-11-18 02:52:46] [main.odin:133:main()] TIMER | init():  1.2608982s
+
+assetio_load_mesh():
+  [INFO ] --- [2024-11-18 03:27:14] [assetm.odin:185:assetm_init()] TIMER: loading meshes:  124.8566ms
+  [INFO ] --- [2024-11-18 03:27:14] [main.odin:75:main()] TIMER | assetm_init():  739.8626ms
+  [INFO ] --- [2024-11-18 03:27:14] [main.odin:133:main()] TIMER | init():  1.0354307s
+
+
+difference:
+  TIMER: brick-textures:  289.6424ms  - 18.5689ms  = 271.0735ms           -> 15.59825x
+  TIMER: robot-textures:  6.5605732s  - 309.3648ms = 6271.028900000001ms  -> 22.65827x
+  TIMER: female-textures:  6.2259291s - 289.5443ms = 5936.3848ms          -> 21.50250x
+  TIMER: assetm_init():  13.4359739s  - 821.2287ms = 12614.745200000001ms -> 16.36081x
+
+  TIMER: loading meshes:  228.4612ms  - 124.8566ms = 103.60459999999999   -> 1.8297887336352263x 
+  TIMER: assetm_init(): 13.4359739s   - 1.0354307s = 12.400543200000001   -> 12.976217432996723 

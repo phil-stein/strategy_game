@@ -12,11 +12,16 @@ import        "core:image/png"
 import        "core:mem"
 import gl     "vendor:OpenGL"
 
+TEXTURES_PATH_START :: "assets/textures/"
+TEXTURES_EXTENSIONS :: "tex"
+MESH_PATH_START     :: "assets/meshes/"
+MESH_EXTENSIONS     :: "mesh"
+
 
 TEXTURE_HEADER_BYTE_SIZE :: /* len */ 4 /* width */ +4 /* height */ +4 /* channels */ +4
 assetio_convert_texture :: proc( path: string )
 {
-  image_file_bytes, ok := os.read_entire_file( str.concatenate( []string{ "assets/textures/", path}, context.temp_allocator ) ) 
+  image_file_bytes, ok := os.read_entire_file( str.concatenate( []string{ TEXTURES_PATH_START, path}, context.temp_allocator ) ) 
   if !ok 
   {
     // Print error to stderr and exit with errorcode
@@ -76,7 +81,7 @@ assetio_convert_texture :: proc( path: string )
   conv_data[pos] = byte(image_ptr.channels >> 16); pos += 1
   conv_data[pos] = byte(image_ptr.channels >> 8);  pos += 1
   conv_data[pos] = byte(image_ptr.channels);       pos += 1
-  fmt.println( "len:", len(pixels), ", width:", image_ptr.width, ", height:", image_ptr.height, ", channels:", image_ptr.channels )
+  // fmt.println( "len:", len(pixels), ", width:", image_ptr.width, ", height:", image_ptr.height, ", channels:", image_ptr.channels )
   // fmt.println( "pos:", pos )
   // fmt.println( "header written" )
   // fmt.println( "len(pixels):", len(pixels) ) 
@@ -93,11 +98,10 @@ assetio_convert_texture :: proc( path: string )
   path_conv := str.clone( path, context.temp_allocator )
   path_conv  = str.cut( path_conv, 0, len(path_conv) - 3, context.temp_allocator )
   // fmt.println( "path_conv: ", path_conv )
-  path_conv  = str.concatenate( []string{ path_conv, "tex" }, context.temp_allocator )
+  path_conv  = str.concatenate( []string{ path_conv, TEXTURES_EXTENSIONS }, context.temp_allocator )
   // fmt.println( "path_conv: ", path_conv )
-  path_conv  = str.concatenate( []string{ "assets/textures/", path_conv }, context.temp_allocator )
+  path_conv  = str.concatenate( []string{ TEXTURES_PATH_START, path_conv }, context.temp_allocator )
   fmt.println( "path_conv: ", path_conv )
-
 
   os.write_entire_file(  path_conv, conv_data )
   // fmt.println( "wrote file" )
@@ -108,9 +112,9 @@ assetio_load_texture :: proc( path: string, srgb: bool, tint:= [3]f32{ 1, 1, 1 }
   path_conv := str.clone( path, context.temp_allocator )
   path_conv  = str.cut( path_conv, 0, len(path_conv) - 3, context.temp_allocator )
   // fmt.println( "path_conv: ", path_conv )
-  name      := str.concatenate( []string{ path_conv, "tex" }, context.temp_allocator )
+  name      := str.concatenate( []string{ path_conv, TEXTURES_EXTENSIONS }, context.temp_allocator )
   // fmt.println( "path_conv: ", path_conv )
-  path_conv  = str.concatenate( []string{ "assets/textures/", name }, context.temp_allocator )
+  path_conv  = str.concatenate( []string{ TEXTURES_PATH_START, name }, context.temp_allocator )
   // fmt.println( "path_conv: ", path_conv )
   // fmt.println( "path:", path )
 
@@ -227,14 +231,12 @@ assetio_load_texture :: proc( path: string, srgb: bool, tint:= [3]f32{ 1, 1, 1 }
   gl.GenerateMipmap(gl.TEXTURE_2D);
 
   tex : texture_t
-  tex.handle = handle
-  tex.width  = width
-  tex.height = height
+  tex.handle   = handle
+  tex.width    = width
+  tex.height   = height
+  tex.channels = channels
   when ODIN_DEBUG
-  {
-    // tex.name   = name
-    tex.name   = str.clone( name )
-  }
+  { tex.name   = str.clone( name ) }
   idx := len( data.texture_arr )
   append( &data.texture_arr, tex )
 
@@ -243,9 +245,133 @@ assetio_load_texture :: proc( path: string, srgb: bool, tint:= [3]f32{ 1, 1, 1 }
 assetio_load_png :: #force_inline proc( name: string, srgb: bool, tint := [3]f32{ 1, 1, 1 } ) -> ( idx: int )
 {
   tex : texture_t
-  tex.handle = make_texture( str.concatenate( []string{ "assets/textures/", name}, context.temp_allocator ), srgb, tint )
+  tex.handle = make_texture( str.concatenate( []string{ TEXTURES_PATH_START, name}, context.temp_allocator ), srgb, tint )
   idx = len( data.texture_arr )
   append( &data.texture_arr, tex )
 
   return idx
+}
+
+MESH_HEADER_BYTE_SIZE :: /* len-indices */ 4 /* len-vertices */ +4
+assetio_convert_mesh :: proc( path: string )
+{
+  indices, vertices := mesh_load_fbx_data( str.clone_to_cstring( str.concatenate( []string{ MESH_PATH_START, path}, context.temp_allocator ), context.temp_allocator) )
+
+  conv_data := make( []byte, ( len(indices) * 4) + ( len(vertices) * 4 ) + MESH_HEADER_BYTE_SIZE )
+  defer delete( conv_data )
+
+  pos := 0
+  // len-indices
+  conv_data[pos] = byte(len(indices) >> 24); pos += 1
+  conv_data[pos] = byte(len(indices) >> 16); pos += 1
+  conv_data[pos] = byte(len(indices) >> 8);  pos += 1
+  conv_data[pos] = byte(len(indices));       pos += 1
+  // len-vertices
+  conv_data[pos] = byte(len(vertices) >> 24); pos += 1
+  conv_data[pos] = byte(len(vertices) >> 16); pos += 1
+  conv_data[pos] = byte(len(vertices) >> 8);  pos += 1
+  conv_data[pos] = byte(len(vertices));       pos += 1
+
+  // copy_slice( conv_data[pos:], )
+  for i in indices
+  {
+    conv_data[pos] = byte(i >> 24); pos += 1
+    conv_data[pos] = byte(i >> 16); pos += 1
+    conv_data[pos] = byte(i >> 8);  pos += 1
+    conv_data[pos] = byte(i);       pos += 1
+  }
+  for v in vertices
+  {
+    conv_data[pos] = byte(transmute(u32)v >> 24); pos += 1
+    conv_data[pos] = byte(transmute(u32)v >> 16); pos += 1
+    conv_data[pos] = byte(transmute(u32)v >> 8);  pos += 1
+    conv_data[pos] = byte(transmute(u32)v);       pos += 1
+  }
+
+  // replace .fbx with .mesh
+  path_conv := str.clone( path, context.temp_allocator )
+  path_conv  = str.cut( path_conv, 0, len(path_conv) - 3, context.temp_allocator )
+  // fmt.println( "path_conv: ", path_conv )
+  // path_conv  = str.concatenate( []string{ path_conv, "mesh" }, context.temp_allocator )
+  // fmt.println( "path_conv: ", path_conv )
+  path_conv  = str.concatenate( []string{ MESH_PATH_START, path_conv, MESH_EXTENSIONS }, context.temp_allocator )
+  fmt.println( "path_conv: ", path_conv )
+
+  os.write_entire_file(  path_conv, conv_data )
+}
+
+assetio_load_mesh :: proc( path: string ) -> ( assetm_idx: int )
+{
+  // replace .png with .tex
+  path_conv := str.clone( path, context.temp_allocator )
+  path_conv  = str.cut( path_conv, 0, len(path_conv) - 3, context.temp_allocator )
+  // fmt.println( "path_conv: ", path_conv )
+  name      := str.concatenate( []string{ path_conv, MESH_EXTENSIONS }, context.temp_allocator )
+  // fmt.println( "path_conv: ", path_conv )
+  path_conv  = str.concatenate( []string{ MESH_PATH_START, name }, context.temp_allocator )
+  // fmt.println( "path_conv: ", path_conv )
+  // fmt.println( "path:", path )
+
+  when ODIN_DEBUG
+  {
+    if !os.exists( path_conv )
+    {
+      assetio_convert_mesh( path )
+    }
+    // @TODO: when .mesh edited
+  }
+
+  bytes, ok := os.read_entire_file_from_filename( path_conv, context.allocator )
+  defer delete( bytes, context.allocator )
+  if !ok 
+  {
+    // Print error to stderr and exit with errorcode
+    fmt.eprintln("could not read texture file: ", path)
+    os.exit(1)
+  }
+
+  pos          := 0
+  indices_len  := int(bytes[pos +3]) + (int(bytes[pos +2]) << 8) + (int(bytes[pos +1]) << 16) + (int(bytes[pos +0]) << 24)
+  pos          += 4
+  vertices_len := int(bytes[pos +3]) + (int(bytes[pos +2]) << 8) + (int(bytes[pos +1]) << 16) + (int(bytes[pos +0]) << 24)
+  pos          += 4
+
+  indices := make( []u32, indices_len )
+  defer delete( indices )
+  for i in 0 ..< indices_len
+  {
+    indices[i] = u32( int(bytes[pos +3]) + (int(bytes[pos +2]) << 8) + (int(bytes[pos +1]) << 16) + (int(bytes[pos +0]) << 24) )
+    pos        += 4
+  }
+
+  vertices := make( []f32, vertices_len )
+  defer delete( vertices )
+  for i in 0 ..< vertices_len
+  {
+    vertices[i] = transmute(f32)( i32( int(bytes[pos +3]) + (int(bytes[pos +2]) << 8) + (int(bytes[pos +1]) << 16) + (int(bytes[pos +0]) << 24) ) )
+    pos        += 4
+  }
+
+  m := mesh_make( &vertices[0], len(vertices), &indices[0], len(indices) )
+  assetm_idx = len( data.mesh_arr )
+  append( &data.mesh_arr, m)
+
+  when ODIN_DEBUG
+  { data.mesh_arr[assetm_idx].name = str.clone( name ) }
+
+  return assetm_idx 
+}
+
+assetio_load_fbx :: #force_inline proc( name: string ) -> ( idx: int )
+{
+  path_cstr := str.clone_to_cstring( str.concatenate( []string{ MESH_PATH_START, name}, context.temp_allocator ), context.temp_allocator )
+  // fmt.println( "path: ", path_cstr )
+  m := mesh_load_fbx( path_cstr )
+  idx = len( data.mesh_arr )
+  append( &data.mesh_arr, m)
+
+  when ODIN_DEBUG
+  { data.mesh_arr[idx].name = str.clone( name ) }
+
+  return 
 }

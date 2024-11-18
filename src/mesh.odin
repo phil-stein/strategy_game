@@ -13,13 +13,10 @@ import gl     "vendor:OpenGL"
 import fbx    "../external/ufbx"
 
 
-
 F32_PER_VERT :: ( 3 + 2 + 3 + 3 )  // pos, uvs, normals, tangents
 
-
-mesh_load_fbx :: proc( path: cstring, loc := #caller_location ) -> ( mesh: mesh_t )
+mesh_load_fbx_data :: proc( path: cstring ) -> (  indices: [dynamic]u32, vertices: [dynamic]f32 )
 {
-  
   // fmt.println( "loc: ", loc )
 
   // Load the .fbx file
@@ -36,20 +33,6 @@ mesh_load_fbx :: proc( path: cstring, loc := #caller_location ) -> ( mesh: mesh_
   assert( scene.meshes.count > 0 )
   
   m := scene.meshes.data[0]
-
-  // // Unpack / triangulate the index data
-  // index_count := 3 * mesh.num_triangles
-  // indices = make([]u32, index_count)
-  // off := u32(0)
-  // for i in 0 ..< mesh.faces.count 
-  // {
-  //   face := m.faces.data[i]
-  //   tris := fbx.catch_triangulate_face(nil, &indices[off], uint(index_count), m, face)
-  //   off += 3 * tris
-  // }
-
-  indices  : [dynamic]u32
-  vertices : [dynamic]f32
 
   for face_ix in 0 ..< m.faces.count 
   {
@@ -73,58 +56,24 @@ mesh_load_fbx :: proc( path: cstring, loc := #caller_location ) -> ( mesh: mesh_
     tex0  : linalg.vec2 = { f32(_tex0.x), f32(_tex0.y) }
     tex1  : linalg.vec2 = { f32(_tex1.x), f32(_tex1.y) }
     tex2  : linalg.vec2 = { f32(_tex2.x), f32(_tex2.y) }
-   
-    // vec2 uv0, uv1;
-    // vec2_sub(tex1, tex0, uv0);
-    // vec2_sub(tex2, tex0, uv1);
+
     uv0 := tex1 - tex0
     uv1 := tex2 - tex0
     
-    // vec3 edge0, edge1;
-    // vec3_sub(pos1, pos0, edge0);
-    // vec3_sub(pos2, pos0, edge1);
     edge0 := pos1 - pos0
     edge1 := pos2 - pos0
 
-    // float r = 1.0f / (uv0[0] * uv1[1] - uv0[1] * uv1[0]);
     r := 1.0 / (uv0.x * uv1.y - uv0.y * uv1.x)
-    // P_F32(r);
-
-    // vec3 tan = VEC3_XYZ_INIT(
-    //     ((edge0[0] * uv1[1]) - (edge1[0] * uv0[1])) * r,
-    //     ((edge0[1] * uv1[1]) - (edge1[1] * uv0[1])) * r,
-    //     ((edge0[2] * uv1[1]) - (edge1[2] * uv0[1])) * r
-    //     );
     tan := linalg.vec3{ ((edge0.x * uv1.y) - (edge1.x * uv0.y)) * r,
                         ((edge0.y * uv1.y) - (edge1.y * uv0.y)) * r,
                         ((edge0.z * uv1.y) - (edge1.z * uv0.y)) * r }
 
-
-    // for vertex_ix in 0 ..< face.num_indices
-    // for vertex_ix in (face.num_indices -1) ..= 0 
-    // for vertex_ix := face.num_indices -1; vertex_ix >= 0; vertex_ix -= 1
-    // #reverse for vertex_ix := 0; vertex_ix < face.num_indices; vertex_ix += 1
-    // #reverse for vertex_ix in 0 ..< face.num_indices
-
-    // for vertex_ix := int(face.num_indices) -1; vertex_ix >= 0; vertex_ix -= 1
-    // {
-    //   fmt.println( "vertex_ix: ", vertex_ix )
-    // }
-    // assert( 1 == 0 ) 
-
-    // for vertex_ix := int(face.num_indices) -1; vertex_ix >= 0; vertex_ix -= 1
     for vertex_ix in 0 ..< face.num_indices
     {
-      // fmt.println( "vertex_ix: ", vertex_ix )
       index := face.index_begin + u32(vertex_ix)
-      // index := face.index_begin + (face.num_indices - vertex_ix -1)
-      // fmt.println( "vertex_ix: ", vertex_ix )
-      // fmt.println( "index: ", (face.num_indices - vertex_ix -1))
 
-      // arrput((*indices), (u32)index);
       append( &indices, index )
       pos    := m.vertex_position.values.data[m.vertex_position.indices.data[index]]
-      // normal = ufbx_get_vertex_vec3(&m->vertex_normal, index);
       normal := m.vertex_normal.values.data[m.vertex_normal.indices.data[index]] 
       uv     := m.vertex_uv.values.data[m.vertex_uv.indices.data[index]]
      
@@ -140,15 +89,19 @@ mesh_load_fbx :: proc( path: cstring, loc := #caller_location ) -> ( mesh: mesh_
       append( &vertices, f32(normal.z) )
       append( &vertices, f32(-normal.y) )
 
-      // arrput((*verts), (f32)tan[0]);
-      // arrput((*verts), (f32)tan[2]);
-      // arrput((*verts), (f32)-tan[1]);
       append( &vertices, f32(tan.x) )
       append( &vertices, f32(tan.z) )
       append( &vertices, f32(-tan.y) )
     }
 
   }
+  return 
+}
+
+mesh_load_fbx :: proc( path: cstring, loc := #caller_location ) -> ( mesh: mesh_t )
+{
+  indices, vertices := mesh_load_fbx_data( path )
+
   mesh = mesh_make(&vertices[0], len(vertices), &indices[0], len(indices))
 
   delete( vertices )
@@ -164,7 +117,8 @@ mesh_make :: proc( vertices: [^]f32, vertices_len: int, indices: [^]u32, indices
   // fmt.println( "sizeof(indices): ", size_of(indices) )
   // fmt.println( "len(indices): ", len(indices) )
   // mesh.indices_len = i32(len(indices))
-  mesh.indices_len = indices_len 
+  mesh.indices_len  = indices_len 
+  mesh.vertices_len = vertices_len
 
 
   // Set up vertex array / element array / buffer objects
@@ -187,7 +141,7 @@ mesh_make :: proc( vertices: [^]f32, vertices_len: int, indices: [^]u32, indices
 
   gl.BufferData( gl.ELEMENT_ARRAY_BUFFER, indices_len * size_of(u32), indices, gl.STATIC_DRAW )
 
-  F_PER_V :: 11 // floats per vertex
+  F_PER_V :: F32_PER_VERT // floats per vertex
 
   // position
   gl.VertexAttribPointer(0,                       // index

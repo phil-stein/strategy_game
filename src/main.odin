@@ -44,9 +44,12 @@ main :: proc()
 			mem.tracking_allocator_destroy(&track)
 		}
 	}
-  
   context.logger = log.create_console_logger()
   defer free( context.logger.data )
+  
+  
+  init_stopwatch : time.Stopwatch
+  time.stopwatch_start( &init_stopwatch )
 
   // ---- init ----
 
@@ -125,6 +128,8 @@ main :: proc()
 
   ui_init()
 	
+  time.stopwatch_stop( &init_stopwatch )
+  log.info( "TIMER | init(): ", init_stopwatch._accumulation )
 
   // ---- main loop ----
   for !window_should_close()
@@ -154,14 +159,9 @@ main :: proc()
     if ( input.key_states[Key.TAB].pressed )
     { data.wireframe_mode_enabled  = !data.wireframe_mode_enabled }
 
-    // wireframe mode
-    if ( data.wireframe_mode_enabled == true )
-	  { gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE) }
-	  else
-	  { gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL) }
-
     if ( input.key_states[Key.ENTER].pressed )
     {
+      fmt.println( "camera ------------------------------")
       fmt.println( "data.cam.pos:   ", data.cam.pos )
       fmt.println( "data.cam.pitch: ", data.cam.pitch_rad )
       fmt.println( "data.cam.yaw:   ", data.cam.yaw_rad )
@@ -179,39 +179,13 @@ main :: proc()
     cam_hit_tile, has_cam_hit_tile := game_find_tile_hit_by_camera()
     if has_cam_hit_tile
     {
-      // start := waypoint_t{ level_idx=0, x=5, z=5 } 
       start := data.player_chars[data.player_chars_current].tile
-      // start_pos := linalg.vec3{ 
-      //               f32(start.x)         * 2 - f32(TILE_ARR_X_MAX) +1,
-      //               f32(start.level_idx) * 2, 
-      //               f32(start.z)         * 2 - f32(TILE_ARR_Z_MAX) +1
-      //              }
       start_pos := util_tile_to_pos(data.player_chars[data.player_chars_current].tile )
-      // fmt.println( "start -> pos: ", start_pos )
+      start_pos.y += 1.0
       debug_draw_sphere( start_pos, linalg.vec3{ 0.35, 0.35, 0.35 }, linalg.vec3{ 0, 1, 0 } )
       path, path_found := game_a_star_pathfind( start, cam_hit_tile )
-      // for i in 0 ..< len(path) -1
-      // {
-      //
-      //   p00 := linalg.vec3{ 
-      //           f32(path[i].x)         * 2 - f32(TILE_ARR_X_MAX) +1,
-      //           f32(path[i].level_idx) * 2, 
-      //           f32(path[i].z)         * 2 - f32(TILE_ARR_Z_MAX) +1
-      //          }
-      //   p01 := linalg.vec3{ 
-      //           f32(path[i +1].x)         * 2 - f32(TILE_ARR_X_MAX) +1,
-      //           f32(path[i +1].level_idx) * 2, 
-      //           f32(path[i +1].z)         * 2 - f32(TILE_ARR_Z_MAX) +1
-      //          }
-      //   debug_draw_line( p00, p01, path_found ? linalg.vec3{ 0, 1, 0 } : linalg.vec3{ 1, 0, 0 }, 25 ) 
-      //
-      // }
       debug_draw_path( path, path_found ? linalg.vec3{ 0, 1, 0 } : linalg.vec3{ 1, 0, 0 } )
-      // debug_draw_sphere( util_tile_to_pos( path[len(path) -1] ), linalg.vec3{ 0.35, 0.35, 0.35 }, linalg.vec3{ 0, 1, 0 } )
 
-      // data.player_chars[0]
-
-      // pos := util_tile_to_pos( path[len(path) -1] )
       pos := util_tile_to_pos( cam_hit_tile )
 
       min := pos + linalg.vec3{ -1, -1, -1 }
@@ -220,8 +194,6 @@ main :: proc()
 
       if input.mouse_button_states[Mouse_Button.LEFT].pressed && input.mouse_button_states[Mouse_Button.RIGHT].down && path_found
       { 
-        // fmt.println( "mouse01 pressed ) 
-
         if data.player_chars[data.player_chars_current].has_path
         {
           delete(data.player_chars[data.player_chars_current].path)
@@ -230,7 +202,6 @@ main :: proc()
         data.player_chars[data.player_chars_current].has_path = true
         data.player_chars[data.player_chars_current].path = make( [dynamic]waypoint_t, len(path), cap(path) )
         copy( data.player_chars[data.player_chars_current].path[:], path[:] )
-
       }
 
       delete( path )
@@ -245,13 +216,9 @@ main :: proc()
 
         pos := util_tile_to_pos( char.path[len(char.path) -1] )
         pos +=  linalg.vec3{ 0, 2, 0 }
-        // pos +=  linalg.vec3{ -2, 2, -2 } 
         rot := data.entity_arr[char.entity_idx].rot
-        // rot.xz *= -1
-        // rot.y = 0
-        debug_draw_mesh( data.entity_arr[char.entity_idx].mesh_idx, // data.mesh_idxs.suzanne, 
+        debug_draw_mesh( data.entity_arr[char.entity_idx].mesh_idx,
                          pos, 
-                         // data.entity_arr[char.entity_idx].rot, 
                          rot,
                          data.entity_arr[char.entity_idx].scl, 
                          linalg.vec3{ 0, 1, 1 } )

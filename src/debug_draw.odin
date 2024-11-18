@@ -193,16 +193,20 @@ debug_draw_path :: proc( path: [dynamic]waypoint_t, color: linalg.vec3 )
 
     p00 := linalg.vec3{ 
             f32(path[i].x)         * 2 - f32(TILE_ARR_X_MAX) +1,
-            f32(path[i].level_idx) * 2, 
+            f32(path[i].level_idx) * 2 + 1.0, 
             f32(path[i].z)         * 2 - f32(TILE_ARR_Z_MAX) +1
            }
     p01 := linalg.vec3{ 
             f32(path[i +1].x)         * 2 - f32(TILE_ARR_X_MAX) +1,
-            f32(path[i +1].level_idx) * 2, 
+            f32(path[i +1].level_idx) * 2 + 1.0, 
             f32(path[i +1].z)         * 2 - f32(TILE_ARR_Z_MAX) +1
            }
     debug_draw_line( p00, p01, color, 25 ) 
-
   }
-  debug_draw_sphere( util_tile_to_pos( path[len(path) -1] ), linalg.vec3{ 0.35, 0.35, 0.35 }, color )
+  p_sphere := linalg.vec3{ 
+          f32(path[len(path) -1].x)         * 2 - f32(TILE_ARR_X_MAX) +1,
+          f32(path[len(path) -1].level_idx) * 2 + 1.0, 
+          f32(path[len(path) -1].z)         * 2 - f32(TILE_ARR_Z_MAX) +1
+         }
+  debug_draw_sphere( p_sphere, linalg.vec3{ 0.35, 0.35, 0.35 }, color )
 }

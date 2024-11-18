@@ -17,10 +17,12 @@ Window_Type :: enum { MINIMIZED, MAXIMIZED, FULLSCREEN };
 
 texture_t :: struct
 {
-  handle : u32,
+  handle   : u32,
+  width    : int,
+  height   : int,
+  channels : int,
+
   name   : string,  // @TODO: only needed in debug mode
-  width  : int,
-  height : int,
 }
 
 material_t :: struct
@@ -34,13 +36,17 @@ material_t :: struct
   roughness_f      : f32,
   metallic_f       : f32,
 
+  name             : string,  // @TODO: only needed in debug mode
 }
 
 mesh_t :: struct
 {
-  vao:         u32,
-  vbo:         u32,
-  indices_len: int 
+  vao          : u32,
+  vbo          : u32,
+  vertices_len : int, 
+  indices_len  : int, 
+
+  name         : string  // @TODO: only needed in debug mode
 }
 
 
@@ -101,7 +107,6 @@ data_t :: struct
   window_height  : int,
   monitor_width  : int,
   monitor_height : int,
-
   vsync_enabled  : bool,
 
   quad_vao : u32,
@@ -192,7 +197,6 @@ data_t :: struct
     robot_char  : int,
     female_char : int,
   },
-
 
   tile_00_str : string,
   tile_01_str : string,
@@ -410,6 +414,12 @@ data_pre_updated :: proc()
 
 data_cleanup :: proc()
 {
+  for char in data.player_chars
+  {
+    if char.has_path
+    { delete( char.path ) }
+  }
+
   delete( data.entity_arr )
 
   delete( data.mesh_arr )

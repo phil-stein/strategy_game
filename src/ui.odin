@@ -100,7 +100,7 @@ ui_init :: proc()
 
 // @TODO: this dont work too good
 win_flags : im.WindowFlags = { im.WindowFlag.NoTitleBar }
-p_open := true
+// p_open := true
 ui_update :: proc()
 {
 	imgui_impl_opengl3.NewFrame()
@@ -112,38 +112,38 @@ ui_update :: proc()
   im.DockSpaceOverViewport( 0, im.GetMainViewport(), { im.DockNodeFlag.PassthruCentralNode } )
 
   
-  if p_open && im.Begin( "window", &p_open,  win_flags ) 
+  if /* p_open && */ im.Begin( "window", nil /* &p_open */,  win_flags ) 
   {
-    map_tab, entities_tab, player_chars_tab, framebuffers_tab, assetm_tab : bool
+    map_tab, entities_tab, player_chars_tab, framebuffers_tab, assetm_tab, data_tab : bool
     if im.BeginTabBar( "tabs" )
     {
       if im.BeginTabItem( "map" )
       {
-        // ui_map_tab()
         map_tab = true
         im.EndTabItem()
       }
       if im.BeginTabItem( "entities" )
       {
-        // ui_entity_tab()
         entities_tab = true
         im.EndTabItem()
       }
       if im.BeginTabItem( "player_chars" )
       {
-        // ui_player_chars_tab()
         player_chars_tab = true
         im.EndTabItem()
       }
       if im.BeginTabItem( "assetm" )
       {
-        // ui_assetm_tab()
         assetm_tab = true
+        im.EndTabItem()
+      }
+      if im.BeginTabItem( "data" )
+      {
+        data_tab = true
         im.EndTabItem()
       }
       if im.BeginTabItem( "framebuffers" )
       {
-        // ui_framebuffer_tab()
         framebuffers_tab = true
         im.EndTabItem()
       }
@@ -171,10 +171,14 @@ ui_update :: proc()
     // {
     //   im.SetWindowCollapsed( !is_collapsed ) 
     // }
+
+    im.Separator()
+
     if      map_tab          { ui_map_tab()          }
     else if entities_tab     { ui_entity_tab()       }
     else if player_chars_tab { ui_player_chars_tab() }
     else if assetm_tab       { ui_assetm_tab()       }
+    else if data_tab         { ui_data_tab()         }
     else if framebuffers_tab { ui_framebuffer_tab()  }
 	}
 	im.End()
@@ -220,7 +224,7 @@ ui_entity_tab :: proc()
     // if im.TreeNodeStr(tree_id_string_cstr, "data.entity_arr[%d]", i )
     tree_id_string := fmt.tprintf( "data.entity_arr[%d]", i )
     tree_id_string_cstr := str.clone_to_cstring( tree_id_string, context.temp_allocator )
-    if im.CollapsingHeader(tree_id_string_cstr )
+    if im.CollapsingHeader( tree_id_string_cstr )
     {
       debug_draw_sphere( e.pos, linalg.vec3{ 0.2, 0.2, 0.2 }, linalg.vec3{ 1, 1, 1 } )
 
@@ -420,14 +424,171 @@ ui_assetm_tab :: proc()
   // im.Image( im.TextureID(uintptr(data.texture_arr[data.texture_idxs.brick_albedo].handle)), im.Vec2{ w, h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
   // im.Text( "brick-normal" )
   // im.Image( im.TextureID(uintptr(data.texture_arr[data.texture_idxs.brick_normal].handle)), im.Vec2{ w, h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
-
-  for t in data.texture_arr
+  
+  if im.BeginTabBar( "assetm-tab-tabs" )
   {
-    im.Text( str.clone_to_cstring( t.name, context.temp_allocator ) )
+    if im.BeginTabItem( "materials" )
+    {
+      for &m, i in data.material_arr
+      {
+        if im.CollapsingHeader( str.clone_to_cstring( m.name, context.temp_allocator )  )
+        {
+          // im.Text( str.clone_to_cstring( m.name, context.temp_allocator ) )
+          
+          im.SeparatorText( "tint" )
 
-    SCALE :: 250
-    w : f32 = SCALE * ( f32(t.width) / f32(t.height) )
-    h : f32 = SCALE
-    im.Image( im.TextureID(uintptr(t.handle)), im.Vec2{ w, h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
+          w := (im.GetContentRegionAvail().x - im.GetStyle().ItemSpacing.y) * 0.40
+          im.SetNextItemWidth( w )
+          im.PushID( str.clone_to_cstring( fmt.tprint( "color-picker3_00", i ), context.temp_allocator ) )
+          im.ColorPicker3("##MyColor##5", (^[3]f32)(&m.tint), { im.ColorEditFlags.PickerHueBar, im.ColorEditFlags.NoSidePreview, im.ColorEditFlags.NoInputs, im.ColorEditFlags.NoAlpha });
+          im.PopID()
+          
+          im.SameLine()
+          im.SetNextItemWidth(w);
+          im.PushID( str.clone_to_cstring( fmt.tprint( "color-picker3_01", i ), context.temp_allocator ) )
+          im.ColorPicker3("##MyColor##6", (^[3]f32)(&m.tint), { im.ColorEditFlags.PickerHueWheel, im.ColorEditFlags.NoSidePreview, im.ColorEditFlags.NoInputs, im.ColorEditFlags.NoAlpha } )
+          im.PopID()
+
+          im.PushID( str.clone_to_cstring( fmt.tprint( "color-dragfloat3", i ), context.temp_allocator ) )
+          im.DragFloat3( "", (^[3]f32)(&m.tint), 0.1, 0, 1)
+          im.PopID()
+          color_int := [3]i32{ i32(m.tint[0] * 255.0), i32(m.tint[1] * 255.0), i32(m.tint[2] * 255.0) }
+          im.PushID( str.clone_to_cstring( fmt.tprint( "color-dragint3", i ), context.temp_allocator ) )
+          im.DragInt3( "", &color_int, 0.1, 0, 255)
+          im.PopID()
+          m.tint[0] = f32(color_int[0]) / 255.0
+          m.tint[1] = f32(color_int[1]) / 255.0
+          m.tint[2] = f32(color_int[2]) / 255.0
+
+          im.SeparatorText( "textures" )
+
+          t_albedo    := assetm_get_texture(m.albedo_idx)
+          t_roughness := assetm_get_texture(m.roughness_idx)
+          t_metallic  := assetm_get_texture(m.metallic_idx)
+          t_normal    := assetm_get_texture(m.normal_idx)
+
+          im.Text( "albedo" )
+          im.SameLine()
+          im.Text( "roughness" )
+          im.Text( str.clone_to_cstring( t_albedo.name, context.temp_allocator ) )
+          im.SameLine()
+          im.Text( str.clone_to_cstring( t_roughness.name, context.temp_allocator ) )
+
+          SCALE :: 225
+
+          t := t_albedo
+          // t_w : f32 = SCALE * ( f32(t.width) / f32(t.height) )
+          // t_h : f32 = SCALE
+          t_w : f32 = SCALE
+          t_h : f32 = SCALE * ( f32(t.height) / f32(t.width) )
+          im.Image( im.TextureID(uintptr(t.handle)),    im.Vec2{ t_w, t_h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
+
+          im.SameLine()
+          t = t_roughness
+          // t_w = SCALE * ( f32(t.width) / f32(t.height) )
+          // t_h = SCALE
+          t_w = SCALE
+          t_h = SCALE * ( f32(t.height) / f32(t.width) )
+          im.Image( im.TextureID(uintptr(t.handle)),    im.Vec2{ t_w, t_h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
+          
+          im.Text( "metallic" )
+          im.SameLine()
+          im.Text( "normal" )
+          im.Text( str.clone_to_cstring( t_metallic.name, context.temp_allocator ) )
+          im.SameLine()
+          im.Text( str.clone_to_cstring( t_normal.name, context.temp_allocator ) )
+
+          // t_w = SCALE * ( f32(t.width) / f32(t.height) )
+          // t_h = SCALE
+          t_w = SCALE
+          t_h = SCALE * ( f32(t.height) / f32(t.width) )
+          t = t_metallic
+          im.Image( im.TextureID(uintptr(t.handle)),    im.Vec2{ t_w, t_h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
+
+          im.SameLine()
+          // t_w = SCALE * ( f32(t.width) / f32(t.height) )
+          // t_h = SCALE
+          t_w = SCALE
+          t_h = SCALE * ( f32(t.height) / f32(t.width) )
+          t = t_normal
+          im.Image( im.TextureID(uintptr(t.handle)),    im.Vec2{ t_w, t_h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
+        }
+      }
+      im.EndTabItem()
+    }
+    if im.BeginTabItem( "textures" )
+    {
+      for t, i in data.texture_arr
+      {
+        if im.CollapsingHeader( str.clone_to_cstring( t.name, context.temp_allocator )  )
+        {
+          // im.Text( str.clone_to_cstring( t.name, context.temp_allocator ) )
+          SCALE :: 350
+          // w : f32 = SCALE * ( f32(t.width) / f32(t.height) )
+          // h : f32 = SCALE
+          w : f32 = SCALE
+          h : f32 = SCALE * ( f32(t.height) / f32(t.width) )
+          im.Image( im.TextureID(uintptr(t.handle)), im.Vec2{ w, h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
+
+          im.Text( str.clone_to_cstring( fmt.tprint( "width:    ", t.width ),    context.temp_allocator ) )
+          im.Text( str.clone_to_cstring( fmt.tprint( "height:   ", t.height ),   context.temp_allocator ) )
+          im.Text( str.clone_to_cstring( fmt.tprint( "channels: ", t.channels ), context.temp_allocator ) )
+        }
+      }
+      im.EndTabItem()
+    }
+    if im.BeginTabItem( "meshes" )
+    {
+      im.Text( "F32_PER_VERT: %d", F32_PER_VERT )
+      for m, i in data.mesh_arr
+      {
+        if im.CollapsingHeader( str.clone_to_cstring( m.name, context.temp_allocator )  )
+        {
+          im.Text( str.clone_to_cstring( fmt.tprintf( "vao:          %d", m.vao ),          context.temp_allocator ) )
+          im.Text( str.clone_to_cstring( fmt.tprintf( "vbo:          %d", m.vbo ),          context.temp_allocator ) )
+          im.Text( str.clone_to_cstring( fmt.tprintf( "vertices_len: %d", m.vertices_len / F32_PER_VERT ), context.temp_allocator ) )
+          im.Text( str.clone_to_cstring( fmt.tprintf( "indices_len:  %d", m.indices_len ),  context.temp_allocator ) )
+        }
+      }
+      im.EndTabItem()
+    }
+    im.EndTabBar()
   }
 }
+ui_data_tab :: proc()
+{
+  im.NewLine()
+  im.Text( "delta_t_real:            %f", data.delta_t_real )
+  im.Text( "delta_t:                 %f", data.delta_t )
+  im.Text( "total_t:                 %f", data.total_t )
+  im.Text( "cur_fps:                 %f", data.cur_fps )
+  im.Text( "time_scale:              %f", data.time_scale )
+  
+  im.NewLine()
+  im.Text( "window_width:            %d", data.window_width )
+  im.Text( "window_height:           %d", data.window_height )
+  im.Text( "monitor_width:           %d", data.monitor_width )
+  im.Text( "monitor_height:          %d", data.monitor_height )
+  im.Text( "vsync_enabled:           %s", data.vsync_enabled ? "true" : "false" )
+
+  im.NewLine()
+  im.Text( "wireframe_mode_enabled:  %s", data.wireframe_mode_enabled ? "true" : "false" )
+
+  im.NewLine()
+  im.Text( "cam.pos:                 %f, %f, %f", data.cam.pos.x, data.cam.pos.y, data.cam.pos.z )
+  im.DragFloat3( "cam.pos", (^[3]f32)(&data.cam.pos) )
+  im.Text( "cam.target:              %f, %f, %f", data.cam.target.x, data.cam.target.y, data.cam.target.z )
+  // im.DragFloat3( "cam.target", (^[3]f32)(&data.cam.target) )
+  im.Text( "cam.pitch_rad:           %f", data.cam.pitch_rad )
+  im.DragFloat( "cam.pitch_rad", &data.cam.pitch_rad, 0.1 )
+  im.Text( "cam.yaw_rad:             %f", data.cam.yaw_rad )
+  im.DragFloat( "cam.yaw_rad",   &data.cam.yaw_rad, 0.1 )
+
+  im.NewLine()
+  im.Text( "editor_ui.active:        %s", data.editor_ui.active ? "true" : "false" )
+
+  im.NewLine()
+  im.Text( "TILE_ARR_X_MAX:          %d", TILE_ARR_X_MAX )
+  im.Text( "TILE_ARR_Z_MAX:          %d", TILE_ARR_Z_MAX )
+  im.Text( "TILE_LEVELS_MAX:         %d", TILE_LEVELS_MAX )
+} 

@@ -39,6 +39,15 @@ renderer_update :: proc()
     gl.Enable( gl.CULL_FACE )
     gl.CullFace( gl.BACK )
 
+    // wireframe mode
+    if ( data.wireframe_mode_enabled == true )
+	  { 
+      gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE) 
+      gl.LineWidth( 3 )
+    }
+	  else
+	  { gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL) }
+
     shader_use( data.deferred_shader )
     for &e, idx in data.entity_arr
     {
@@ -78,6 +87,10 @@ renderer_update :: proc()
 
       shader_act_reset_tex_idx()
     }
+
+    if ( data.wireframe_mode_enabled == true )
+	  { gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL) }
+
     // skybox -----------------------------------------------------------------
     gl.DepthFunc(gl.LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
 
