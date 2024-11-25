@@ -96,7 +96,7 @@ assetio_convert_texture :: proc( path: string )
 
   // replace .png with .tex
   path_conv := str.clone( path, context.temp_allocator )
-  path_conv  = str.cut( path_conv, 0, len(path_conv) - 3, context.temp_allocator )
+  path_conv  = str.cut( path_conv, 0, len(path_conv) - 3/* , context.temp_allocator */ )
   // fmt.println( "path_conv: ", path_conv )
   path_conv  = str.concatenate( []string{ path_conv, TEXTURES_EXTENSIONS }, context.temp_allocator )
   // fmt.println( "path_conv: ", path_conv )
@@ -110,7 +110,7 @@ assetio_load_texture :: proc( path: string, srgb: bool, tint:= [3]f32{ 1, 1, 1 }
 {
   // replace .png with .tex
   path_conv := str.clone( path, context.temp_allocator )
-  path_conv  = str.cut( path_conv, 0, len(path_conv) - 3, context.temp_allocator )
+  path_conv  = str.cut( path_conv, 0, len(path_conv) - 3/* , context.temp_allocator */ )
   // fmt.println( "path_conv: ", path_conv )
   name      := str.concatenate( []string{ path_conv, TEXTURES_EXTENSIONS }, context.temp_allocator )
   // fmt.println( "path_conv: ", path_conv )
@@ -223,7 +223,6 @@ assetio_load_texture :: proc( path: string, srgb: bool, tint:= [3]f32{ 1, 1, 1 }
       0,                  // border, must be 0
       gl_format,          // gl.RGBA, // pixel data format
       gl.UNSIGNED_BYTE,   // data type of pixel data
-      // &pixels[0],         // image data
       pixels,             // image data
   )
 
@@ -290,7 +289,7 @@ assetio_convert_mesh :: proc( path: string )
 
   // replace .fbx with .mesh
   path_conv := str.clone( path, context.temp_allocator )
-  path_conv  = str.cut( path_conv, 0, len(path_conv) - 3, context.temp_allocator )
+  path_conv  = str.cut( path_conv, 0, len(path_conv) - 3/* , context.temp_allocator */ )
   // fmt.println( "path_conv: ", path_conv )
   // path_conv  = str.concatenate( []string{ path_conv, "mesh" }, context.temp_allocator )
   // fmt.println( "path_conv: ", path_conv )
@@ -304,7 +303,7 @@ assetio_load_mesh :: proc( path: string ) -> ( assetm_idx: int )
 {
   // replace .png with .tex
   path_conv := str.clone( path, context.temp_allocator )
-  path_conv  = str.cut( path_conv, 0, len(path_conv) - 3, context.temp_allocator )
+  path_conv  = str.cut( path_conv, 0, len(path_conv) - 3/* , context.temp_allocator */ )
   // fmt.println( "path_conv: ", path_conv )
   name      := str.concatenate( []string{ path_conv, MESH_EXTENSIONS }, context.temp_allocator )
   // fmt.println( "path_conv: ", path_conv )

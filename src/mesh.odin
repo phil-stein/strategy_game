@@ -120,7 +120,6 @@ mesh_make :: proc( vertices: [^]f32, vertices_len: int, indices: [^]u32, indices
   mesh.indices_len  = indices_len 
   mesh.vertices_len = vertices_len
 
-
   // Set up vertex array / element array / buffer objects
   gl.GenVertexArrays( 1, &mesh.vao )
   gl.BindVertexArray( mesh.vao )

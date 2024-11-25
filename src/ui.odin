@@ -14,6 +14,7 @@ import        "core:fmt"
 import        "core:strconv"
 import str    "core:strings"
 import linalg "core:math/linalg/glsl"
+import        "core:reflect"
 
 font     : ^im.Font
 font_big : ^im.Font
@@ -81,16 +82,6 @@ ui_init :: proc()
 	imgui_impl_glfw.InitForOpenGL(data.window, true)
 	imgui_impl_opengl3.Init("#version 150")
 
-  // @TODO: custom font
-  // im_io := im.GetIO()
-  // im.FontAtlas_AddFontFromMemoryTTF()
-  // f_config := im.FontConfig{  
-  //
-  // }
-  // im.FontAtlas_AddFont( io.Fonts, f_config )
-  // file_data, succsess := os.read_entire_file_from_filename( "assets/fonts/JetBrainsMonoNL-Regular.ttf" )
-  // // fmt.println( "file_data", file_data )
-  // fmt.println( "succsess: ", succsess )
   font     = im.FontAtlas_AddFontFromFileTTF( io.Fonts, "assets/fonts/JetBrainsMonoNL-Regular.ttf", 20 )
   font_big = im.FontAtlas_AddFontFromFileTTF( io.Fonts, "assets/fonts/JetBrainsMonoNL-Regular.ttf", 24 )
   im.FontAtlas_Build( io.Fonts )
@@ -142,11 +133,6 @@ ui_update :: proc()
         data_tab = true
         im.EndTabItem()
       }
-      if im.BeginTabItem( "framebuffers" )
-      {
-        framebuffers_tab = true
-        im.EndTabItem()
-      }
       im.EndTabBar()
     }
     im.SameLine()
@@ -179,7 +165,7 @@ ui_update :: proc()
     else if player_chars_tab { ui_player_chars_tab() }
     else if assetm_tab       { ui_assetm_tab()       }
     else if data_tab         { ui_data_tab()         }
-    else if framebuffers_tab { ui_framebuffer_tab()  }
+    // else if framebuffers_tab { ui_framebuffer_tab()  }
 	}
 	im.End()
 
@@ -205,8 +191,23 @@ ui_cleanup :: proc()
 	im.DestroyContext()
 }
 
+ui_draw_texture :: proc( name: cstring, w, h, hover_w, hover_h: f32, handle: u32, no_name := false )
+{
+  if !no_name { im.Text( name ) }
+  im.Image( im.TextureID(uintptr(handle)), im.Vec2{ w, h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
+  if im.BeginItemTooltip( )
+  {
+    im.Image( im.TextureID(uintptr(handle)), im.Vec2{ hover_w, hover_h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
+    im.EndTooltip()
+  }
+}
+
 ui_entity_tab :: proc()
 {
+  im.SeparatorText( "reflected" )
+  ui_display_any( data.entity_arr, "data.entity_arr" )
+  im.SeparatorText( "" )
+
   // // if im.TreeNode("data.entity_arr" )
   // if im.CollapsingHeader( "data.entity_arr" )
   // {
@@ -251,6 +252,10 @@ ui_entity_tab :: proc()
 }
 ui_player_chars_tab :: proc()
 {
+  im.SeparatorText( "reflected" )
+  ui_display_any( data.player_chars, "data.player_chars" )
+  im.SeparatorText( "" )
+
   im.Text( "data.player_chars_current: %d", data.player_chars_current )
   // // if im.TreeNode( "data.player_chars" )
   // if im.CollapsingHeader( "data.player_chars" )
@@ -279,31 +284,16 @@ ui_player_chars_tab :: proc()
   // }
 
 }
-ui_framebuffer_tab :: proc()
-{
-  // // if im.TreeNode( "framebuffers" )
-  // if im.CollapsingHeader( "" )
-  // {
-  SCALE :: 0.35
-  w := f32(data.window_width)  * SCALE
-  h := f32(data.window_height) * SCALE
-
-  im.Text( "color" )
-  im.Image( im.TextureID(uintptr(data.fb_deferred.buffer01)), im.Vec2{ w, h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
-  im.Text( "material" )
-  im.Image( im.TextureID(uintptr(data.fb_deferred.buffer02)), im.Vec2{ w, h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
-  im.Text( "normal" )
-  im.Image( im.TextureID(uintptr(data.fb_deferred.buffer03)), im.Vec2{ w, h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
-  im.Text( "position" )
-  im.Image( im.TextureID(uintptr(data.fb_deferred.buffer04)), im.Vec2{ w, h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
-  im.Text( "lighting" )
-  im.Image( im.TextureID(uintptr(data.fb_lighting.buffer01)), im.Vec2{ w, h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
-  // }
-}
 
 level_combo_selected_idx := 0
 ui_map_tab :: proc()
 {
+  im.SeparatorText( "reflected" )
+  ui_display_any( data.tile_str_arr, "data.tile_str_arr" )
+  ui_display_any( data.tile_type_arr, "data.tile_type_arr" )
+  ui_display_any( data.tile_entity_id_arr, "data.tile_entity_id_arr" )
+  im.SeparatorText( "" )
+
   tile_strs   := [?]cstring{ "empty", "blocked", "tile" }
   id_strs     := [?]cstring{ " ",     "X",       "#" }
   id_strs_idx := 0
@@ -412,7 +402,6 @@ ui_map_tab :: proc()
     }
     // z += 1
   }
-  // os.exit( 1 )
 }
 ui_assetm_tab :: proc()
 {
@@ -429,6 +418,10 @@ ui_assetm_tab :: proc()
   {
     if im.BeginTabItem( "materials" )
     {
+      im.SeparatorText( "reflected" )
+      ui_display_any( data.material_arr, "data.material_arr" )
+      im.SeparatorText( "" )
+
       for &m, i in data.material_arr
       {
         if im.CollapsingHeader( str.clone_to_cstring( m.name, context.temp_allocator )  )
@@ -462,10 +455,10 @@ ui_assetm_tab :: proc()
 
           im.SeparatorText( "textures" )
 
-          t_albedo    := assetm_get_texture(m.albedo_idx)
-          t_roughness := assetm_get_texture(m.roughness_idx)
-          t_metallic  := assetm_get_texture(m.metallic_idx)
-          t_normal    := assetm_get_texture(m.normal_idx)
+          t_albedo    := assetm_get_texture( m.albedo_idx )
+          t_roughness := assetm_get_texture( m.roughness_idx )
+          t_metallic  := assetm_get_texture( m.metallic_idx )
+          t_normal    := assetm_get_texture( m.normal_idx )
 
           im.Text( "albedo" )
           im.SameLine()
@@ -518,17 +511,19 @@ ui_assetm_tab :: proc()
     }
     if im.BeginTabItem( "textures" )
     {
+      im.SeparatorText( "reflected" )
+      ui_display_any( data.texture_arr, "data.texture_arr" )
+      im.SeparatorText( "" )
+
       for t, i in data.texture_arr
       {
-        if im.CollapsingHeader( str.clone_to_cstring( t.name, context.temp_allocator )  )
+        name_cstr := str.clone_to_cstring( t.name, context.temp_allocator )
+        if im.CollapsingHeader( name_cstr )
         {
-          // im.Text( str.clone_to_cstring( t.name, context.temp_allocator ) )
           SCALE :: 350
-          // w : f32 = SCALE * ( f32(t.width) / f32(t.height) )
-          // h : f32 = SCALE
           w : f32 = SCALE
           h : f32 = SCALE * ( f32(t.height) / f32(t.width) )
-          im.Image( im.TextureID(uintptr(t.handle)), im.Vec2{ w, h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
+          ui_draw_texture( name_cstr, w, h, w*2, h*2, t.handle, no_name=true )
 
           im.Text( str.clone_to_cstring( fmt.tprint( "width:    ", t.width ),    context.temp_allocator ) )
           im.Text( str.clone_to_cstring( fmt.tprint( "height:   ", t.height ),   context.temp_allocator ) )
@@ -539,6 +534,10 @@ ui_assetm_tab :: proc()
     }
     if im.BeginTabItem( "meshes" )
     {
+      im.SeparatorText( "reflected" )
+      ui_display_any( data.mesh_arr, "data.mesh_arr" )
+      im.SeparatorText( "" )
+
       im.Text( "F32_PER_VERT: %d", F32_PER_VERT )
       for m, i in data.mesh_arr
       {
@@ -557,38 +556,211 @@ ui_assetm_tab :: proc()
 }
 ui_data_tab :: proc()
 {
-  im.NewLine()
-  im.Text( "delta_t_real:            %f", data.delta_t_real )
-  im.Text( "delta_t:                 %f", data.delta_t )
-  im.Text( "total_t:                 %f", data.total_t )
-  im.Text( "cur_fps:                 %f", data.cur_fps )
-  im.Text( "time_scale:              %f", data.time_scale )
+  if im.BeginTabBar( "data-tab-tabs" )
+  {
+    if im.BeginTabItem( "data" )
+    {
+      im.SeparatorText( "reflected" )
+      ui_display_struct_members( data, "data" )
+      im.SeparatorText( "" )
+
+      im.NewLine()
+      im.Text( "delta_t_real:            %f", data.delta_t_real )
+      im.Text( "delta_t:                 %f", data.delta_t )
+      im.Text( "total_t:                 %f", data.total_t )
+      im.Text( "cur_fps:                 %f", data.cur_fps )
+      im.Text( "time_scale:              %f", data.time_scale )
+      im.DragFloat( "time_scale", &data.time_scale, 0.1 )
+      
+      im.NewLine()
+      im.Text( "window_width:            %d", data.window_width )
+      im.Text( "window_height:           %d", data.window_height )
+      im.Text( "monitor_width:           %d", data.monitor_width )
+      im.Text( "monitor_height:          %d", data.monitor_height )
+      im.Text( "vsync_enabled:           %s", data.vsync_enabled ? "true" : "false" )
+      vsync := data.vsync_enabled
+      im.Checkbox( "vsync_enabled", &vsync )
+      if vsync != data.vsync_enabled
+      { window_set_vsync( vsync ) }
+
+      im.NewLine()
+      im.Text( "wireframe_mode_enabled:  %s", data.wireframe_mode_enabled ? "true" : "false" )
+      im.Checkbox( "wireframe_mode_enabled", &data.wireframe_mode_enabled )
   
-  im.NewLine()
-  im.Text( "window_width:            %d", data.window_width )
-  im.Text( "window_height:           %d", data.window_height )
-  im.Text( "monitor_width:           %d", data.monitor_width )
-  im.Text( "monitor_height:          %d", data.monitor_height )
-  im.Text( "vsync_enabled:           %s", data.vsync_enabled ? "true" : "false" )
+      SCALE :: 225
+      t_w : f32 = SCALE
+      t_h : f32 = SCALE 
+      ui_draw_texture( "brdf_lut", t_w, t_h, t_w*2, t_h*2, data.brdf_lut )
 
-  im.NewLine()
-  im.Text( "wireframe_mode_enabled:  %s", data.wireframe_mode_enabled ? "true" : "false" )
+      im.NewLine()
+      im.Text( "cam.pos:                 %f, %f, %f", data.cam.pos.x, data.cam.pos.y, data.cam.pos.z )
+      im.DragFloat3( "cam.pos", (^[3]f32)(&data.cam.pos) )
+      im.Text( "cam.target:              %f, %f, %f", data.cam.target.x, data.cam.target.y, data.cam.target.z )
+      // im.DragFloat3( "cam.target", (^[3]f32)(&data.cam.target) )
+      im.Text( "cam.pitch_rad:           %f", data.cam.pitch_rad )
+      im.DragFloat( "cam.pitch_rad", &data.cam.pitch_rad, 0.1 )
+      im.Text( "cam.yaw_rad:             %f", data.cam.yaw_rad )
+      im.DragFloat( "cam.yaw_rad",   &data.cam.yaw_rad, 0.1 )
 
-  im.NewLine()
-  im.Text( "cam.pos:                 %f, %f, %f", data.cam.pos.x, data.cam.pos.y, data.cam.pos.z )
-  im.DragFloat3( "cam.pos", (^[3]f32)(&data.cam.pos) )
-  im.Text( "cam.target:              %f, %f, %f", data.cam.target.x, data.cam.target.y, data.cam.target.z )
-  // im.DragFloat3( "cam.target", (^[3]f32)(&data.cam.target) )
-  im.Text( "cam.pitch_rad:           %f", data.cam.pitch_rad )
-  im.DragFloat( "cam.pitch_rad", &data.cam.pitch_rad, 0.1 )
-  im.Text( "cam.yaw_rad:             %f", data.cam.yaw_rad )
-  im.DragFloat( "cam.yaw_rad",   &data.cam.yaw_rad, 0.1 )
+      im.NewLine()
+      im.Text( "editor_ui.active:        %s", data.editor_ui.active ? "true" : "false" )
 
-  im.NewLine()
-  im.Text( "editor_ui.active:        %s", data.editor_ui.active ? "true" : "false" )
+      im.NewLine()
+      im.Text( "TILE_ARR_X_MAX:          %d", TILE_ARR_X_MAX )
+      im.Text( "TILE_ARR_Z_MAX:          %d", TILE_ARR_Z_MAX )
+      im.Text( "TILE_LEVELS_MAX:         %d", TILE_LEVELS_MAX )
 
-  im.NewLine()
-  im.Text( "TILE_ARR_X_MAX:          %d", TILE_ARR_X_MAX )
-  im.Text( "TILE_ARR_Z_MAX:          %d", TILE_ARR_Z_MAX )
-  im.Text( "TILE_LEVELS_MAX:         %d", TILE_LEVELS_MAX )
+      im.EndTabItem()
+    }
+    if im.BeginTabItem( "framebuffers" )
+    {
+      SCALE :: 0.35
+      w := f32(data.window_width)  * SCALE
+      h := f32(data.window_height) * SCALE
+
+      // im.Text( "color" )
+      // im.Image( im.TextureID(uintptr(data.fb_deferred.buffer01)), im.Vec2{ w, h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
+      // im.Text( "material" )
+      // im.Image( im.TextureID(uintptr(data.fb_deferred.buffer02)), im.Vec2{ w, h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
+      // im.Text( "normal" )
+      // im.Image( im.TextureID(uintptr(data.fb_deferred.buffer03)), im.Vec2{ w, h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
+      // im.Text( "position" )
+      // im.Image( im.TextureID(uintptr(data.fb_deferred.buffer04)), im.Vec2{ w, h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
+      // im.Text( "lighting" )
+      // im.Image( im.TextureID(uintptr(data.fb_lighting.buffer01)), im.Vec2{ w, h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
+      ui_draw_texture( "color",    w, h, w*2, h*2, data.fb_deferred.buffer01 )
+      ui_draw_texture( "material", w, h, w*2, h*2, data.fb_deferred.buffer02 )
+      ui_draw_texture( "normal",   w, h, w*2, h*2, data.fb_deferred.buffer03 )
+      ui_draw_texture( "position", w, h, w*2, h*2, data.fb_deferred.buffer04 )
+      ui_draw_texture( "lighting", w, h, w*2, h*2, data.fb_lighting.buffer01 )
+
+      im.EndTabItem()
+    }
+    if im.BeginTabItem( "timers" )
+    {
+      im.SeparatorText( "reflected" )
+      ui_display_any( timer_static_arr, "timer_static_arr" )
+      ui_display_any( timer_stopped_arr, "timer_stopped_arr" )
+      im.SeparatorText( "" )
+
+      if im.CollapsingHeader( fmt.ctprintf( "static timer[%d]", len(timer_static_arr) ) )
+      {
+        for &t, i in timer_static_arr
+        {
+          ui_display_timer( &t )
+        }
+      }
+      if im.CollapsingHeader( fmt.ctprintf( "timer[%d]", len(timer_stopped_arr[timer_stopped_arr_idx == 0 ? 1 : 0]) ) )
+      {
+        for &t, i in timer_stopped_arr[timer_stopped_arr_idx == 0 ? 1 : 0]
+        {
+          ui_display_timer( &t )
+        }
+      }
+      im.EndTabItem()
+    }
+  }
+  im.EndTabBar()
 } 
+ui_display_timer :: #force_inline proc( t: ^timer_t)
+{
+  indent_w : f32 = 15.0 * f32(t.parent_idx)
+  if t.parent_idx != 0
+  {
+    im.Indent( indent_w ) 
+  }
+  if im.TreeNode( fmt.ctprintf( "%s -> %s():%d", t.name, t.loc_start.procedure, t.loc_start.line ) )
+  {
+    // im.Text( str.clone_to_cstring( fmt.tprint( "time:", f32( t.stopwatch._accumulation) / ( 1000000.0 ), "ms |", t.stopwatch._accumulation ), context.temp_allocator ) )
+    im.Text( fmt.ctprintf( "time: %.2fms | %d", f32( t.stopwatch._accumulation) / ( 1000000.0 ), t.stopwatch._accumulation ) ) 
+    im.Text( fmt.ctprintf( "idx: %d, parent_idx: %d", t.idx, t.parent_idx ) ) 
+
+    im.SeparatorText( "started" )
+    im.Text( fmt.ctprint( "proc:", t.loc_start.procedure, ", line:", t.loc_start.line, ", col: ", t.loc_start.column ) )
+    im.Text( fmt.ctprint( "file:", t.loc_start.file_path ) )
+
+    im.SeparatorText( "stopped" )
+    im.Text( fmt.ctprint( "proc:", t.loc_stop.procedure, ", line:", t.loc_stop.line, ", col: ", t.loc_stop.column ) )
+    im.Text( fmt.ctprint( "file:", t.loc_stop.file_path ) )
+
+
+    im.TreePop()
+  }
+  if t.parent_idx != 0
+  {
+    im.Unindent( indent_w )
+  }
+}
+
+ui_display_any :: #force_inline proc( v: any, name: string, indent_idx := 0 )
+{
+  ui_display_type_info( type_info_of( v.id ), v, name, indent_idx )
+}
+ui_display_type_info :: proc( type: ^reflect.Type_Info, v: any, name: string, indent_idx := 0 )
+{
+  indent_w : f32 = 15.0 * f32(indent_idx)
+  if indent_idx != 0
+  {
+    im.Indent( indent_w ) 
+  }
+
+  switch
+  {
+    case v.id == typeid_of( string ) || v.id == typeid_of( cstring ):
+    { im.Text( fmt.ctprintf( "%s : %s = \"%s\"", name, v.id, v ) ) }
+    case ( reflect.is_integer( type ) && !reflect.is_unsigned( type ) ):
+    { im.DragInt( fmt.ctprintf( "%s : %s", name, v.id ), (^i32)(v.data) ) }
+    case ( reflect.is_integer( type ) && reflect.is_unsigned( type ) ):
+    { im.DragInt( fmt.ctprintf( "%s : %s", name, v.id ), (^i32)(v.data), 1.0, 0.0 ) }
+    case reflect.is_float( type ):
+    { im.DragFloat( fmt.ctprintf( "%s : %s", name, v.id ), (^f32)(v.data) ) }
+    case v.id == typeid_of( bool ):
+    { im.Checkbox( fmt.ctprintf( "%s : %s", name, v.id ), (^bool)(v.data) ) }
+    case v.id == typeid_of( [2]f32 ) || v.id == typeid_of( linalg.vec2 ): 
+    { im.DragFloat2( fmt.ctprintf( "%s : %s", name, v.id ), (^[2]f32)(v.data) ) }
+    case v.id == typeid_of( [3]f32 ) || v.id == typeid_of( linalg.vec3 ): 
+    { im.DragFloat3( fmt.ctprintf( "%s : %s", name, v.id ), (^[3]f32)(v.data) ) }
+    case v.id == typeid_of( [4]f32 ) || v.id == typeid_of( linalg.vec4 ): 
+    { im.DragFloat4( fmt.ctprintf( "%s : %s", name, v.id ), (^[4]f32)(v.data) ) }
+    case reflect.is_array( type ) || reflect.is_dynamic_array( type ):
+    {
+      if im.CollapsingHeader( fmt.ctprintf( "%s : %s", name, v.id ) )
+      {
+        for idx := 0; idx < reflect.length( v ); idx += 1
+        { 
+          val : any
+          ok  : bool
+          _idx := idx
+          val, _idx, ok = reflect.iterate_array( v, &_idx )
+          if !ok { break }
+          // im.Text( fmt.ctprintf( "%s[%d] : %s = %v", name, idx, val.id, val ) ) 
+          ui_display_any( val, fmt.tprintf( "%s[%d]", name, idx ), indent_idx +1 )
+        }
+      }
+    }
+    case reflect.is_struct( type ):
+    {
+      ui_display_struct_members( v, name, indent_idx +1 )
+    }
+    case: 
+    { im.Text( fmt.ctprintf( "%s : %s = %v", name, type, v ) ) }
+  }
+  
+  if indent_idx != 0
+  {
+    im.Unindent( indent_w )
+  }
+}
+ui_display_struct_members :: proc( value: any, name: string, indent_idx := 1 )
+{
+  if im.CollapsingHeader( fmt.ctprintf( "%s : %s", name, value.id  ) ) 
+  {
+    types_arr  := reflect.struct_field_types( value.id )
+    names_arr  := reflect.struct_field_names( value.id )
+    for type, i in types_arr
+    {
+      v := reflect.struct_field_value_by_name( value, names_arr[i] )
+      ui_display_type_info( type, v, names_arr[i], indent_idx )
+    }
+  }
+}

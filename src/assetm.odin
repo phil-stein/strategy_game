@@ -48,8 +48,8 @@ assetm_init :: proc()
   // // black_blank_tex := make_texture( "assets/blank_black.png", false )
   // blank_tex_idx := assetm_load_texture( "blank.png", false )
   
-  stopwatch : time.Stopwatch
-  time.stopwatch_reset( &stopwatch )
+  // stopwatch : time.Stopwatch
+  // time.stopwatch_reset( &stopwatch )
   // time.stopwatch_start( &stopwatch )
   // assetio_convert_texture( "blank.png" )
   // time.stopwatch_stop( &stopwatch )
@@ -83,14 +83,16 @@ assetm_init :: proc()
 
 
 
-  time.stopwatch_reset( &stopwatch )
-  time.stopwatch_start( &stopwatch )
+  // time.stopwatch_reset( &stopwatch )
+  // time.stopwatch_start( &stopwatch )
+  debug_timer_static_start( "brick-textures" )
   data.texture_idxs.brick_albedo    = assetio_load_texture( "brick/albedo.png", true )
   data.texture_idxs.brick_normal    = assetio_load_texture( "brick/normal.png", false )
   data.texture_idxs.brick_roughness = assetio_load_texture( "brick/roughness.png", false )
-  time.stopwatch_stop( &stopwatch )
-  log.info( "TIMER: brick-textures: ", stopwatch._accumulation )
-  time.stopwatch_reset( &stopwatch )
+  debug_timer_stop()
+  // time.stopwatch_stop( &stopwatch )
+  // log.info( "TIMER: brick-textures: ", stopwatch._accumulation )
+  // time.stopwatch_reset( &stopwatch )
 
   brick_mat  := material_t{ 
            albedo_idx    = data.texture_idxs.brick_albedo, 
@@ -121,13 +123,15 @@ assetm_init :: proc()
   dirt_cube_mat.albedo_idx = data.texture_idxs.dirt_cube_02_albedo
   data.material_idxs.dirt_cube_02 = assetm_add_material( dirt_cube_mat, "dirt_cube_mat_01" )
 
-  time.stopwatch_start( &stopwatch )
+  // time.stopwatch_start( &stopwatch )
+  debug_timer_static_start( "robot-textures" )
   data.texture_idxs.robot_albedo    = assetio_load_texture( "robot_character_06/albedo.png", true )
   data.texture_idxs.robot_normal    = assetio_load_texture( "robot_character_06/normal.png", false )
   data.texture_idxs.robot_metallic  = assetio_load_texture( "robot_character_06/metallic.png", false )
   data.texture_idxs.robot_roughness = assetio_load_texture( "robot_character_06/roughness.png", false )
-  time.stopwatch_stop( &stopwatch )
-  log.info( "TIMER: robot-textures: ", stopwatch._accumulation )
+  debug_timer_stop()
+  // time.stopwatch_stop( &stopwatch )
+  // log.info( "TIMER: robot-textures: ", stopwatch._accumulation )
   robot_mat := material_t{ 
            albedo_idx    = data.texture_idxs.robot_albedo, 
            roughness_idx = data.texture_idxs.robot_roughness, 
@@ -140,16 +144,17 @@ assetm_init :: proc()
          }
   data.material_idxs.robot = assetm_add_material( robot_mat, "robot_char" )
 
-  time.stopwatch_reset( &stopwatch )
-  time.stopwatch_start( &stopwatch )
-
+  // time.stopwatch_reset( &stopwatch )
+  // time.stopwatch_start( &stopwatch )
+  debug_timer_static_start( "female-textures" )
   data.texture_idxs.female_albedo    = assetio_load_texture( "female_char_01/albedo.png", true )
   data.texture_idxs.female_normal    = assetio_load_texture( "female_char_01/normal.png", false )
   data.texture_idxs.female_metallic  = assetio_load_texture( "female_char_01/metallic.png", false )
   data.texture_idxs.female_roughness = assetio_load_texture( "female_char_01/roughness.png", false )
-  time.stopwatch_stop( &stopwatch )
-  log.info( "TIMER: female-textures: ", stopwatch._accumulation )
-  time.stopwatch_reset( &stopwatch )
+  debug_timer_stop()
+  // time.stopwatch_stop( &stopwatch )
+  // log.info( "TIMER: female-textures: ", stopwatch._accumulation )
+  // time.stopwatch_reset( &stopwatch )
   female_char := material_t{ 
            albedo_idx    = data.texture_idxs.female_albedo, 
            roughness_idx = data.texture_idxs.female_roughness, 
@@ -164,17 +169,19 @@ assetm_init :: proc()
   
   // ---- mesh ----
 
-  time.stopwatch_reset( &stopwatch )
-  time.stopwatch_start( &stopwatch )
+  // time.stopwatch_reset( &stopwatch )
+  // time.stopwatch_start( &stopwatch )
+  debug_timer_static_start( "loading meshes" )
   data.mesh_idxs.cube        = assetio_load_mesh( "cube.fbx" )
   data.mesh_idxs.sphere      = assetio_load_mesh( "sphere.fbx" ) 
   data.mesh_idxs.suzanne     = assetio_load_mesh( "suzanne_02.fbx" )
   data.mesh_idxs.dirt_cube   = assetio_load_mesh( "dirt_cube.fbx" )
   data.mesh_idxs.robot_char  = assetio_load_mesh( "robot_character_06_01.fbx" )
   data.mesh_idxs.female_char = assetio_load_mesh( "female_char_01_01.fbx" )
-  time.stopwatch_stop( &stopwatch )
-  log.info( "TIMER: loading meshes: ", stopwatch._accumulation )
-  time.stopwatch_reset( &stopwatch )
+  // time.stopwatch_stop( &stopwatch )
+  // log.info( "TIMER: loading meshes: ", stopwatch._accumulation )
+  debug_timer_stop()
+  // time.stopwatch_reset( &stopwatch )
 }
 assetm_cleanup :: proc()
 {

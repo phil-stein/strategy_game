@@ -421,6 +421,7 @@ data_cleanup :: proc()
   }
 
   delete( data.entity_arr )
+  delete( data.entity_dead_idx_arr )
 
   delete( data.mesh_arr )
   delete( data.texture_arr )

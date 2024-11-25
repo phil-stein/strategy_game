@@ -80,6 +80,7 @@ game_a_star_pathfind :: proc( start, end: waypoint_t ) -> ( path: [dynamic]waypo
 
 game_find_tile_hit_by_camera :: proc() -> ( hit_tile: waypoint_t, has_hit_tile: bool )
 {
+
   // {
   //   min := linalg.vec3{ -1, -1, -1 }
   //   max := linalg.vec3{  1,  1,  1 }

@@ -1,5 +1,6 @@
 package core
 
+import        "base:runtime"
 import        "core:fmt"
 import        "core:math"
 import linalg "core:math/linalg/glsl"
@@ -11,7 +12,44 @@ import        "core:image/png"
 import        "core:log"
 import        "core:mem"
 import        "core:time"
+import        "core:debug/trace"
 
+// setup debug/trace
+global_trace_ctx: trace.Context
+debug_trace_assertion_failure_proc :: proc(prefix, message: string, loc := #caller_location) -> ! 
+{
+	runtime.print_caller_location( loc )
+	runtime.print_string( " " )
+	runtime.print_string( prefix )
+	if len(message) > 0 
+  {
+		runtime.print_string( ": " )
+		runtime.print_string( message )
+	}
+	runtime.print_byte( '\n' )
+
+	// ctx := &trace_ctx
+	ctx := &global_trace_ctx
+	if !trace.in_resolve( ctx ) 
+  {
+		buf: [64]trace.Frame
+		runtime.print_string( "Debug Trace:\n" )
+		frames := trace.frames( ctx, 1, buf[:] )
+		for f, i in frames 
+    {
+			fl := trace.resolve( ctx, f, context.temp_allocator )
+			if fl.loc.file_path == "" && fl.loc.line == 0 
+      {
+				continue
+			}
+			runtime.print_caller_location( fl.loc )
+			runtime.print_string( " - frame " )
+			runtime.print_int( i )
+			runtime.print_byte( '\n' )
+		}
+	}
+	runtime.trap()
+}
 
 main :: proc() 
 {
@@ -19,10 +57,10 @@ main :: proc()
 
   when ODIN_DEBUG 
   {
+    // setup tracking allocator
 		track: mem.Tracking_Allocator
 		mem.tracking_allocator_init(&track, context.allocator)
 		context.allocator = mem.tracking_allocator(&track)
-
 		defer 
     {
 			if len(track.allocation_map) > 0 
@@ -43,41 +81,50 @@ main :: proc()
 			}
 			mem.tracking_allocator_destroy(&track)
 		}
-	}
-  context.logger = log.create_console_logger()
-  defer free( context.logger.data )
-  
-  
-  init_stopwatch : time.Stopwatch
-  time.stopwatch_start( &init_stopwatch )
 
+    // init stack trace
+	  trace.init(&global_trace_ctx)
+	  defer trace.destroy(&global_trace_ctx)
+	  context.assertion_failure_proc = debug_trace_assertion_failure_proc
+	}
+  // setup log
+  context.logger = log.create_console_logger()
+  when ODIN_DEBUG // no need to as windows does it automatically
+  { defer free( context.logger.data ) }
+  
+  
   // ---- init ----
+
+  debug_timer_static_start( "init()" )
 
   if ( !window_create( 1500, 1075, "title", Window_Type.MINIMIZED, vsync=true ) ) // /* 1000, 750, */
   {
     fmt.print( "ERROR: failed to create window\n" )
     return;
   }
+  debug_timer_static_start( "input_init()" )
   input_init()
+  debug_timer_stop() // input_init()
   // // hide cursor
   // input_center_cursor()
   // input_set_cursor_visibile( false )
 
   // ---- setup ----
 
+  debug_timer_static_start( "data_init" )
   data_init()
+  debug_timer_stop() // data_init()
 
-  stopwatch : time.Stopwatch
-  time.stopwatch_start( &stopwatch )  
+  debug_timer_static_start( "assetm_init()" )
   assetm_init()
-  time.stopwatch_stop( &stopwatch )
-  log.info( "TIMER | assetm_init(): ", stopwatch._accumulation )
+  debug_timer_stop()  // assetm_init()
 
+  debug_timer_static_start( "load hdri" )
   data.brdf_lut = make_brdf_lut()
   cubemap_data := #load( "../assets/textures/gothic_manor_01_2k.hdr" )
   data.cubemap = cubemap_load( &cubemap_data[0], len(cubemap_data) )
-  data.cubemap.intensity = 1.9 // 1.0 // 1.9
-
+  data.cubemap.intensity = 4.0 // 1.9 // 1.0 // 1.9
+  debug_timer_stop() // load hdri
 
   
   // -- add entities --
@@ -119,25 +166,33 @@ main :: proc()
 
   // --- create map ---
 
+  debug_timer_static_start( "data_create_map()" ) 
   data_create_map()
+  debug_timer_stop() // data_create_map()
 
 
   
   // -- set opengl state --
+  debug_timer_static_start( "renderer_init()" ) 
   renderer_init()
+  debug_timer_stop()  // renderer_init()
 
+  debug_timer_static_start( "ui_init()" ) 
   ui_init()
+  debug_timer_stop()  // ui_init()
 	
-  time.stopwatch_stop( &init_stopwatch )
-  log.info( "TIMER | init(): ", init_stopwatch._accumulation )
+  debug_timer_stop() // init
 
   // ---- main loop ----
   for !window_should_close()
   {
+    debug_timer_start( "update()" )
+
     glfw.PollEvents();
       
+    debug_timer_start( "data_pre_updated()" )
     data_pre_updated()
-      
+    debug_timer_stop() // data_pre_updated()
 
     if input.mouse_button_states[Mouse_Button.RIGHT].down
     {
@@ -167,7 +222,9 @@ main :: proc()
       fmt.println( "data.cam.yaw:   ", data.cam.yaw_rad )
     }
     
+    debug_timer_start( "renderer_update()" )
     renderer_update()
+    debug_timer_stop() // renderer_update()
     // debug_draw_tiles()
 
     if input.key_states[Key.UP].pressed
@@ -236,25 +293,37 @@ main :: proc()
     // renderer_draw_quad( linalg.vec2{ -0.25,  0.75 }, quad_size, data.fb_lighting.buffer01 )
 
     // --- editor ui ---
-    if input.key_states[Key.BACKSPACE].pressed { data.editor_ui.active = !data.editor_ui.active }
+    debug_timer_start( "ui_update()" )
+    if input.key_states[Key.BACKSPACE].pressed && input.key_states[Key.LEFT_CONTROL].down
+    { data.editor_ui.active = !data.editor_ui.active }
     if data.editor_ui.active { ui_update() }
+    debug_timer_stop() // ui_update()
 
     glfw.SwapBuffers( data.window )
     
     input_update()
 
+    debug_timer_stop()  // update()
+    debug_timer_update()
+
     // fmt.println( size_of(context.temp_allocator) )
     free_all( context.temp_allocator )
   }
-  
-  ui_cleanup()
-  assetm_cleanup()
 
-  glfw.DestroyWindow( data.window )
-  glfw.Terminate()
+  // @NOTE: no real need to do this windows does it automatically,
+  //        but the tracking allocator complains otherwise
+  when ODIN_DEBUG
+  {
+    debug_timer_cleanup()
+    ui_cleanup()
+    assetm_cleanup()
 
-  data_cleanup()
-  free_all( context.temp_allocator )
+    glfw.DestroyWindow( data.window )
+    glfw.Terminate()
+
+    data_cleanup()
+    free_all( context.temp_allocator )
+  }
 }
 
 
