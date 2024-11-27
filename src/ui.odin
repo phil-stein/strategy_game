@@ -191,13 +191,37 @@ ui_cleanup :: proc()
 	im.DestroyContext()
 }
 
-ui_draw_texture :: proc( name: cstring, w, h, hover_w, hover_h: f32, handle: u32, no_name := false )
+ui_display_texture :: proc( name: cstring, w, h, hover_w, hover_h: f32, handle: u32, no_name := false )
 {
   if !no_name { im.Text( name ) }
   im.Image( im.TextureID(uintptr(handle)), im.Vec2{ w, h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
   if im.BeginItemTooltip( )
   {
     im.Image( im.TextureID(uintptr(handle)), im.Vec2{ hover_w, hover_h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
+    im.EndTooltip()
+  }
+}
+ui_display_2_texture :: proc( name_00: cstring, w_00, h_00, hover_w_00, hover_h_00: f32, handle_00: u32,
+                              name_01: cstring, w_01, h_01, hover_w_01, hover_h_01: f32, handle_01: u32, no_name := false )
+{
+  if !no_name 
+  { 
+    im.Text( name_00 ) 
+    im.SameLine()
+    im.Text( name_01 ) 
+  }
+  im.Image( im.TextureID(uintptr(handle_00)), im.Vec2{ w_00, h_00 }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
+  if im.BeginItemTooltip( )
+  {
+    im.Image( im.TextureID(uintptr(handle_00)), im.Vec2{ hover_w_00, hover_h_00 }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
+    im.EndTooltip()
+  }
+  im.SameLine()
+
+  im.Image( im.TextureID(uintptr(handle_01)), im.Vec2{ w_01, h_01 }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
+  if im.BeginItemTooltip( )
+  {
+    im.Image( im.TextureID(uintptr(handle_01)), im.Vec2{ hover_w_01, hover_h_01 }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
     im.EndTooltip()
   }
 }
@@ -453,58 +477,84 @@ ui_assetm_tab :: proc()
           m.tint[1] = f32(color_int[1]) / 255.0
           m.tint[2] = f32(color_int[2]) / 255.0
 
+          im.DragFloat( fmt.ctprintf( "roughness_f : f32" ), &m.roughness_f, 0.05, 0.0, 1.0  )
+          im.DragFloat( fmt.ctprintf( "metallic_f : f32" ), &m.metallic_f,   0.05, 0.0, 1.0 )
+          im.DragFloat2( fmt.ctprintf( "uv_tile: linalg.vec2" ), &m.uv_tile, 0.05 )
+          im.DragFloat2( fmt.ctprintf( "uv_offs: linalg.vec2" ), &m.uv_offs, 0.05 )
+
           im.SeparatorText( "textures" )
 
           t_albedo    := assetm_get_texture( m.albedo_idx )
           t_roughness := assetm_get_texture( m.roughness_idx )
           t_metallic  := assetm_get_texture( m.metallic_idx )
           t_normal    := assetm_get_texture( m.normal_idx )
-
-          im.Text( "albedo" )
-          im.SameLine()
-          im.Text( "roughness" )
-          im.Text( str.clone_to_cstring( t_albedo.name, context.temp_allocator ) )
-          im.SameLine()
-          im.Text( str.clone_to_cstring( t_roughness.name, context.temp_allocator ) )
+ 
+          //  im.Text( "albedo" )
+          //  im.SameLine()
+          //  im.Text( "roughness" )
+          //  im.Text( str.clone_to_cstring( t_albedo.name, context.temp_allocator ) )
+          //  im.SameLine()
+          //  im.Text( str.clone_to_cstring( t_roughness.name, context.temp_allocator ) )
+ 
+          //  SCALE :: 225
+ 
+          //  t := t_albedo
+          //  // t_w : f32 = SCALE * ( f32(t.width) / f32(t.height) )
+          //  // t_h : f32 = SCALE
+          //  t_w : f32 = SCALE
+          //  t_h : f32 = SCALE * ( f32(t.height) / f32(t.width) )
+          //  im.Image( im.TextureID(uintptr(t.handle)),    im.Vec2{ t_w, t_h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
+          //  // ui_display_texture( albedo,  )
+ 
+          //  im.SameLine()
+          //  t = t_roughness
+          //  // t_w = SCALE * ( f32(t.width) / f32(t.height) )
+          //  // t_h = SCALE
+          //  t_w = SCALE
+          //  t_h = SCALE * ( f32(t.height) / f32(t.width) )
+          //  im.Image( im.TextureID(uintptr(t.handle)),    im.Vec2{ t_w, t_h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
+  
+          //  im.Text( "metallic" )
+          //  im.SameLine()
+          //  im.Text( "normal" )
+          //  im.Text( str.clone_to_cstring( t_metallic.name, context.temp_allocator ) )
+          //  im.SameLine()
+          //  im.Text( str.clone_to_cstring( t_normal.name, context.temp_allocator ) )
+ 
+          //  // t_w = SCALE * ( f32(t.width) / f32(t.height) )
+          //  // t_h = SCALE
+          //  t_w = SCALE
+          //  t_h = SCALE * ( f32(t.height) / f32(t.width) )
+          //  t = t_metallic
+          //  im.Image( im.TextureID(uintptr(t.handle)),    im.Vec2{ t_w, t_h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
+ 
+          //  im.SameLine()
+          //  // t_w = SCALE * ( f32(t.width) / f32(t.height) )
+          //  // t_h = SCALE
+          //  t_w = SCALE
+          //  t_h = SCALE * ( f32(t.height) / f32(t.width) )
+          //  t = t_normal
+          //  im.Image( im.TextureID(uintptr(t.handle)),    im.Vec2{ t_w, t_h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
 
           SCALE :: 225
-
-          t := t_albedo
-          // t_w : f32 = SCALE * ( f32(t.width) / f32(t.height) )
-          // t_h : f32 = SCALE
-          t_w : f32 = SCALE
-          t_h : f32 = SCALE * ( f32(t.height) / f32(t.width) )
-          im.Image( im.TextureID(uintptr(t.handle)),    im.Vec2{ t_w, t_h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
-
-          im.SameLine()
-          t = t_roughness
-          // t_w = SCALE * ( f32(t.width) / f32(t.height) )
-          // t_h = SCALE
-          t_w = SCALE
-          t_h = SCALE * ( f32(t.height) / f32(t.width) )
-          im.Image( im.TextureID(uintptr(t.handle)),    im.Vec2{ t_w, t_h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
           
-          im.Text( "metallic" )
-          im.SameLine()
-          im.Text( "normal" )
-          im.Text( str.clone_to_cstring( t_metallic.name, context.temp_allocator ) )
-          im.SameLine()
-          im.Text( str.clone_to_cstring( t_normal.name, context.temp_allocator ) )
+          t_00 := t_albedo
+          t_w_00 : f32 = SCALE
+          t_h_00 : f32 = SCALE * ( f32(t_00.height) / f32(t_00.width) )
+          t_01 := t_roughness
+          t_w_01 : f32 = SCALE
+          t_h_01 : f32 = SCALE * ( f32(t_01.height) / f32(t_01.width) )
+          ui_display_2_texture( fmt.ctprintf( "albedo: %s",    t_albedo.name ),    t_w_00, t_h_00, t_w_00*4, t_h_00*4, t_albedo.handle,
+                                fmt.ctprintf( "roughness: %s", t_roughness.name ), t_w_01, t_h_01, t_w_01*4, t_h_01*4, t_roughness.handle )
 
-          // t_w = SCALE * ( f32(t.width) / f32(t.height) )
-          // t_h = SCALE
-          t_w = SCALE
-          t_h = SCALE * ( f32(t.height) / f32(t.width) )
-          t = t_metallic
-          im.Image( im.TextureID(uintptr(t.handle)),    im.Vec2{ t_w, t_h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
-
-          im.SameLine()
-          // t_w = SCALE * ( f32(t.width) / f32(t.height) )
-          // t_h = SCALE
-          t_w = SCALE
-          t_h = SCALE * ( f32(t.height) / f32(t.width) )
-          t = t_normal
-          im.Image( im.TextureID(uintptr(t.handle)),    im.Vec2{ t_w, t_h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
+          t_00   = t_metallic
+          t_w_00 = SCALE
+          t_h_00 = SCALE * ( f32(t_00.height) / f32(t_00.width) )
+          t_01   = t_normal
+          t_w_01 = SCALE
+          t_h_01 = SCALE * ( f32(t_01.height) / f32(t_01.width) )
+          ui_display_2_texture( fmt.ctprintf( "metallic: %s", t_metallic.name ), t_w_00, t_h_00, t_w_00*4, t_h_00*4, t_metallic.handle,
+                                fmt.ctprintf( "normal: %s",   t_normal.name ),   t_w_01, t_h_01, t_w_01*4, t_h_01*4, t_normal.handle )
         }
       }
       im.EndTabItem()
@@ -523,7 +573,7 @@ ui_assetm_tab :: proc()
           SCALE :: 350
           w : f32 = SCALE
           h : f32 = SCALE * ( f32(t.height) / f32(t.width) )
-          ui_draw_texture( name_cstr, w, h, w*2, h*2, t.handle, no_name=true )
+          ui_display_texture( name_cstr, w, h, w*2, h*2, t.handle, no_name=true )
 
           im.Text( str.clone_to_cstring( fmt.tprint( "width:    ", t.width ),    context.temp_allocator ) )
           im.Text( str.clone_to_cstring( fmt.tprint( "height:   ", t.height ),   context.temp_allocator ) )
@@ -590,7 +640,7 @@ ui_data_tab :: proc()
       SCALE :: 225
       t_w : f32 = SCALE
       t_h : f32 = SCALE 
-      ui_draw_texture( "brdf_lut", t_w, t_h, t_w*2, t_h*2, data.brdf_lut )
+      ui_display_texture( "brdf_lut", t_w, t_h, t_w*2, t_h*2, data.brdf_lut )
 
       im.NewLine()
       im.Text( "cam.pos:                 %f, %f, %f", data.cam.pos.x, data.cam.pos.y, data.cam.pos.z )
@@ -628,11 +678,11 @@ ui_data_tab :: proc()
       // im.Image( im.TextureID(uintptr(data.fb_deferred.buffer04)), im.Vec2{ w, h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
       // im.Text( "lighting" )
       // im.Image( im.TextureID(uintptr(data.fb_lighting.buffer01)), im.Vec2{ w, h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
-      ui_draw_texture( "color",    w, h, w*2, h*2, data.fb_deferred.buffer01 )
-      ui_draw_texture( "material", w, h, w*2, h*2, data.fb_deferred.buffer02 )
-      ui_draw_texture( "normal",   w, h, w*2, h*2, data.fb_deferred.buffer03 )
-      ui_draw_texture( "position", w, h, w*2, h*2, data.fb_deferred.buffer04 )
-      ui_draw_texture( "lighting", w, h, w*2, h*2, data.fb_lighting.buffer01 )
+      ui_display_texture( "color",    w, h, w*2, h*2, data.fb_deferred.buffer01 )
+      ui_display_texture( "material", w, h, w*2, h*2, data.fb_deferred.buffer02 )
+      ui_display_texture( "normal",   w, h, w*2, h*2, data.fb_deferred.buffer03 )
+      ui_display_texture( "position", w, h, w*2, h*2, data.fb_deferred.buffer04 )
+      ui_display_texture( "lighting", w, h, w*2, h*2, data.fb_lighting.buffer01 )
 
       im.EndTabItem()
     }
@@ -698,10 +748,15 @@ ui_display_any :: #force_inline proc( v: any, name: string, indent_idx := 0 )
 }
 ui_display_type_info :: proc( type: ^reflect.Type_Info, v: any, name: string, indent_idx := 0 )
 {
-  indent_w : f32 = 15.0 * f32(indent_idx)
-  if indent_idx != 0
+  // indent_w : f32 = 15.0 * f32(indent_idx)
+  // if indent_idx != 0
+  // {
+  //   im.Indent( indent_w ) 
+  // }
+  for i in 0 ..< indent_idx
   {
-    im.Indent( indent_w ) 
+    im.Text( "| " )
+    im.SameLine()
   }
 
   switch
@@ -713,15 +768,15 @@ ui_display_type_info :: proc( type: ^reflect.Type_Info, v: any, name: string, in
     case ( reflect.is_integer( type ) && reflect.is_unsigned( type ) ):
     { im.DragInt( fmt.ctprintf( "%s : %s", name, v.id ), (^i32)(v.data), 1.0, 0.0 ) }
     case reflect.is_float( type ):
-    { im.DragFloat( fmt.ctprintf( "%s : %s", name, v.id ), (^f32)(v.data) ) }
+    { im.DragFloat( fmt.ctprintf( "%s : %s", name, v.id ), (^f32)(v.data), 0.05 ) }
     case v.id == typeid_of( bool ):
     { im.Checkbox( fmt.ctprintf( "%s : %s", name, v.id ), (^bool)(v.data) ) }
     case v.id == typeid_of( [2]f32 ) || v.id == typeid_of( linalg.vec2 ): 
-    { im.DragFloat2( fmt.ctprintf( "%s : %s", name, v.id ), (^[2]f32)(v.data) ) }
+    { im.DragFloat2( fmt.ctprintf( "%s : %s", name, v.id ), (^[2]f32)(v.data), 0.05 ) }
     case v.id == typeid_of( [3]f32 ) || v.id == typeid_of( linalg.vec3 ): 
-    { im.DragFloat3( fmt.ctprintf( "%s : %s", name, v.id ), (^[3]f32)(v.data) ) }
+    { im.DragFloat3( fmt.ctprintf( "%s : %s", name, v.id ), (^[3]f32)(v.data), 0.05 ) }
     case v.id == typeid_of( [4]f32 ) || v.id == typeid_of( linalg.vec4 ): 
-    { im.DragFloat4( fmt.ctprintf( "%s : %s", name, v.id ), (^[4]f32)(v.data) ) }
+    { im.DragFloat4( fmt.ctprintf( "%s : %s", name, v.id ), (^[4]f32)(v.data), 0.05 ) }
     case reflect.is_array( type ) || reflect.is_dynamic_array( type ):
     {
       if im.CollapsingHeader( fmt.ctprintf( "%s : %s", name, v.id ) )
@@ -746,10 +801,10 @@ ui_display_type_info :: proc( type: ^reflect.Type_Info, v: any, name: string, in
     { im.Text( fmt.ctprintf( "%s : %s = %v", name, type, v ) ) }
   }
   
-  if indent_idx != 0
-  {
-    im.Unindent( indent_w )
-  }
+  // if indent_ix != 0
+  // {
+  //   im.Unindent( indent_w )
+  // }
 }
 ui_display_struct_members :: proc( value: any, name: string, indent_idx := 1 )
 {

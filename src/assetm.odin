@@ -48,12 +48,6 @@ assetm_init :: proc()
   // // black_blank_tex := make_texture( "assets/blank_black.png", false )
   // blank_tex_idx := assetm_load_texture( "blank.png", false )
   
-  // stopwatch : time.Stopwatch
-  // time.stopwatch_reset( &stopwatch )
-  // time.stopwatch_start( &stopwatch )
-  // assetio_convert_texture( "blank.png" )
-  // time.stopwatch_stop( &stopwatch )
-  // log.info( "TIMER | assetio_convert_texture( \"blank.png\" ): ", stopwatch._accumulation )
   data.texture_idxs.blank = assetio_load_texture( "blank.png", true )
 
   cube_mat  := material_t{ 
@@ -61,6 +55,9 @@ assetm_init :: proc()
                  roughness_idx = data.texture_idxs.blank, 
                  metallic_idx  = data.texture_idxs.blank, 
                  normal_idx    = data.texture_idxs.blank, 
+
+                 uv_tile       = linalg.vec2{ 1, 1 },
+                 uv_offs       = linalg.vec2{ 0, 0 },
 
                  tint        = linalg.vec3{ 1.0, 1.0, 1.0 },
                  // tint        = linalg.vec3{ 0.4, 1.0, 0.2 },
@@ -75,6 +72,9 @@ assetm_init :: proc()
            metallic_idx  = data.texture_idxs.blank, 
            normal_idx    = data.texture_idxs.blank, 
 
+           uv_tile       = linalg.vec2{ 1, 1 },
+           uv_offs       = linalg.vec2{ 0, 0 },
+
            tint        = linalg.vec3{ 1.0, 1.0, 1.0 },
            roughness_f = 0.25,
            metallic_f  = 1.0,
@@ -82,23 +82,42 @@ assetm_init :: proc()
   data.material_idxs.metal_01 = assetm_add_material( suzanne_mat, "metal_mat" )
 
 
+  debug_timer_static_start( "water-textures" )
+  data.texture_idxs.water_albedo    = assetio_load_texture( "water/albedo.png", true )
+  data.texture_idxs.water_normal    = assetio_load_texture( "water/normal.png", false )
+  // data.texture_idxs.water_roughness = assetio_load_texture( "water/specular.png", false )
+  data.texture_idxs.water_roughness = assetio_load_texture( "water/roughness.png", false )
+  debug_timer_stop()
+  water_mat  := material_t{ 
+           albedo_idx    = data.texture_idxs.water_albedo, 
+           roughness_idx = data.texture_idxs.water_roughness, 
+           metallic_idx  = data.texture_idxs.blank, 
+           normal_idx    = data.texture_idxs.water_normal, 
 
-  // time.stopwatch_reset( &stopwatch )
-  // time.stopwatch_start( &stopwatch )
+           uv_tile       = linalg.vec2{ 15, 15 },
+           uv_offs       = linalg.vec2{ 0, 0 },
+
+           tint        = linalg.vec3{ 1.0, 1.0, 1.0 },
+           roughness_f = 1.0,
+           metallic_f  = 0.0,
+  }
+  data.material_idxs.water = assetm_add_material( water_mat, "water_mat" )
+
+
   debug_timer_static_start( "brick-textures" )
   data.texture_idxs.brick_albedo    = assetio_load_texture( "brick/albedo.png", true )
   data.texture_idxs.brick_normal    = assetio_load_texture( "brick/normal.png", false )
   data.texture_idxs.brick_roughness = assetio_load_texture( "brick/roughness.png", false )
   debug_timer_stop()
-  // time.stopwatch_stop( &stopwatch )
-  // log.info( "TIMER: brick-textures: ", stopwatch._accumulation )
-  // time.stopwatch_reset( &stopwatch )
 
   brick_mat  := material_t{ 
            albedo_idx    = data.texture_idxs.brick_albedo, 
            roughness_idx = data.texture_idxs.brick_roughness, 
            metallic_idx  = data.texture_idxs.blank, 
            normal_idx    = data.texture_idxs.brick_normal, 
+
+           uv_tile       = linalg.vec2{ 1, 1 },
+           uv_offs       = linalg.vec2{ 0, 0 },
 
            tint        = linalg.vec3{ 1.0, 1.0, 1.0 },
            roughness_f = 1.0,
@@ -114,6 +133,9 @@ assetm_init :: proc()
            roughness_idx = data.texture_idxs.blank, 
            metallic_idx  = data.texture_idxs.blank, 
            normal_idx    = data.texture_idxs.blank, 
+
+           uv_tile       = linalg.vec2{ 1, 1 },
+           uv_offs       = linalg.vec2{ 0, 0 },
 
            tint        = linalg.vec3{ 1.0, 1.0, 1.0 },
            roughness_f = 1.0,
@@ -138,6 +160,9 @@ assetm_init :: proc()
            metallic_idx  = data.texture_idxs.robot_metallic, 
            normal_idx    = data.texture_idxs.robot_normal, 
 
+           uv_tile       = linalg.vec2{ 1, 1 },
+           uv_offs       = linalg.vec2{ 0, 0 },
+
            tint        = linalg.vec3{ 1.0, 1.0, 1.0 },
            roughness_f = 1.0,
            metallic_f  = 1.0,
@@ -160,6 +185,9 @@ assetm_init :: proc()
            roughness_idx = data.texture_idxs.female_roughness, 
            metallic_idx  = data.texture_idxs.female_metallic, 
            normal_idx    = data.texture_idxs.female_normal, 
+
+           uv_tile       = linalg.vec2{ 1, 1 },
+           uv_offs       = linalg.vec2{ 0, 0 },
 
            tint        = linalg.vec3{ 1.0, 1.0, 1.0 },
            roughness_f = 1.0,

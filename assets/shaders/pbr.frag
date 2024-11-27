@@ -147,6 +147,12 @@ void main()
   // else
   // { FragColor = vec4(col, 1.0); }
 
+
+  // if (_position.y <= 0.0)
+  // {
+  //   col.rgb = vec3( 0.2, 0.5, 1.0 );
+  // }
+
   // mix lit and unlit bassed on emissive
   FragColor = vec4(col, 1.0);
   // FragColor = ( vec4(col, 1.0) * min(emissive - 1.0, 0.0)) + ( vec4(albedo, 1.0) * emissive);

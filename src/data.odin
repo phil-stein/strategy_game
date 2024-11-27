@@ -32,6 +32,9 @@ material_t :: struct
   metallic_idx     : int,
   normal_idx       : int,
 
+  uv_tile          : linalg.vec2,
+  uv_offs          : linalg.vec2,
+
   tint             : linalg.vec3,
   roughness_f      : f32,
   metallic_f       : f32,
@@ -177,6 +180,9 @@ data_t :: struct
     female_normal       : int,  
     female_roughness    : int,
     female_metallic     : int,  
+    water_albedo        : int,
+    water_normal        : int,  
+    water_roughness     : int,
   },
   material_idxs : struct
   {
@@ -187,6 +193,7 @@ data_t :: struct
     dirt_cube_02 : int,
     robot        : int,
     female       : int,
+    water        : int,
   },
   mesh_idxs : struct
   {

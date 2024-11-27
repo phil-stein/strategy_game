@@ -27,6 +27,10 @@ timer_static_arr      :  [dynamic]timer_t
 timer_stack_parent_idx := 0
 
 
+// @NOTE: only have this when debug
+when ODIN_DEBUG 
+{
+
 debug_timer_static_start :: proc( _name: string, _loc := #caller_location ) -> ( idx: int )
 {
   idx = len( timer_arr )
@@ -37,7 +41,8 @@ debug_timer_static_start :: proc( _name: string, _loc := #caller_location ) -> (
   timer_stack_parent_idx += 1
 
   return idx
-}
+  
+} 
 debug_timer_start :: proc( _name: string, _loc := #caller_location ) -> ( idx: int )
 {
   idx = len( timer_arr )
@@ -100,4 +105,14 @@ debug_timer_cleanup :: proc()
   delete( timer_stopped_arr[0] )
   delete( timer_stopped_arr[1] )
   delete( timer_static_arr )
+}
+
+} // when ODIN_DEBUG
+else
+{
+debug_timer_static_start :: proc( _name: string, _loc := #caller_location ) {}
+debug_timer_start :: proc( _name: string, _loc := #caller_location ) {} 
+debug_timer_stop :: proc( loc := #caller_location ) {} 
+debug_timer_update :: proc() {}
+debug_timer_cleanup :: proc() {}
 }

@@ -88,8 +88,10 @@ use combo moves to extend your playable chars abilities/moveset with the other p
       - stylized pbr ( overwatch )
       - stylized pbr ( arcane inspired )
       - handpainted
-    - [ ] export level as fbx/obj/etc.
+      - [ ] collect ref images 
+      - [ ] make pureref reference board
     - [ ] make level art
+      - [ ] export level as fbx/obj/etc.
     - [ ] make character art
   * upkeep & organisation 
     - [ ] stack trace

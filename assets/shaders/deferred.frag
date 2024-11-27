@@ -27,12 +27,13 @@ uniform float     metallic_f;
 // uniform float     emissive_f;
 
 uniform vec2 uv_tile;
+uniform vec2 uv_offs;
 
 void main()
 {
   // store the fragment position vector in the first gbuffer texture
   position = vec4(_in.frag_pos, 1.0);
-  vec2 uv  = _in.uv_coords * uv_tile; 
+  vec2 uv  = ( _in.uv_coords * uv_tile ) + uv_offs; 
   
   // also store the per-fragment normals into the gbuffer
   if (texture(norm, uv).rgb == vec3(1.0, 1.0, 1.0))
@@ -61,4 +62,6 @@ void main()
   // color.rgb = ( texture(albedo, uv).rgb * tint * clamp(material.b + 1.0, 0.0, 1.0)) + ( texture(emissive,  uv).rgb * max(material.b, 0.0));
   color.rgb = texture(albedo, uv).rgb * tint;
   color.a   = 1.0;
+
+  // color.rgb = texture(roughness, uv).rgb;
 } 

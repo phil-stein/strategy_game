@@ -3,6 +3,13 @@ package core
 import        "core:math"
 import linalg "core:math/linalg/glsl"
 
+util_model_set_pos :: #force_inline proc( model: ^linalg.mat4, pos: linalg.vec3 )
+{
+  model[3][0] = pos.x 
+  model[3][1] = pos.y 
+  model[3][2] = pos.z 
+}
+
 util_make_model :: proc( pos, rot, scale: linalg.vec3 ) -> ( model: linalg.mat4 )
 {
 	// mat4_make_identity(model);

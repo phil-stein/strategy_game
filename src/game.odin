@@ -7,7 +7,7 @@ import linalg "core:math/linalg/glsl"
 
 
 
-game_a_star_pathfind :: proc( start, end: waypoint_t ) -> ( path: [dynamic]waypoint_t, success: bool  )
+game_a_star_pathfind :: proc( start, end: waypoint_t ) -> ( path: [dynamic]waypoint_t, ok: bool  )
 {
   current : waypoint_t = start
   append( &path, start )

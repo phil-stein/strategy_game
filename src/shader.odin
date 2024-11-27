@@ -1,6 +1,7 @@
 package core
 
 import        "core:fmt"
+import str    "core:strings"
 import gl     "vendor:OpenGL"
 import linalg "core:math/linalg/glsl"
 
@@ -12,19 +13,69 @@ shader_make :: proc( vertex_src, fragment_src: string, name := "unnamed") -> ( h
 {
   // Compile vertex shader and fragment shader.
   // Note how much easier this is in Odin than in C++!
-  program_ok      : bool
   // vertex_shader   := string( #load( "../assets/basic.vert" ) )
   // fragment_shader := string( #load( "../assets/basic.frag" ) )
   // handle, program_ok = gl.load_shaders_source( vertex_shader, fragment_shader )
-  handle, program_ok = gl.load_shaders_source( vertex_src, fragment_src )
 
-  if ( !program_ok )
+  // handle, program_ok = gl.load_shaders_source( vertex_src, fragment_src )
+  // if ( !program_ok )
+  // {
+  //   fmt.println( "ERROR: Failed to load and compile shaders: ", name )
+  //   panic( "shader comp failed" ) 
+  // }
+
+  vertex_src_cstr := str.clone_to_cstring( vertex_src, context.temp_allocator )
+  vert_shader := gl.CreateShader( gl.VERTEX_SHADER )
+  gl.ShaderSource( vert_shader, 1, &vertex_src_cstr, nil )
+  gl.CompileShader( vert_shader )
+
+  ok : i32 = 0
+  info_log : [512]u8
+  info_log_len : i32 = 0
+  gl.GetShaderiv( vert_shader, gl.COMPILE_STATUS, &ok )
+  if ok <= 0
   {
-    fmt.println( "ERROR: Failed to load and compile shaders: ", name )
+    gl.GetShaderInfoLog( vert_shader, 512, &info_log_len, raw_data(info_log[:]) )
+    fmt.println( "ERROR: Failed to load and compile vertex shader: ", name )
+    fmt.printfln( "       %s", info_log )
     panic( "shader comp failed" ) 
   }
 
-  return
+  fragment_src_cstr := str.clone_to_cstring( fragment_src, context.temp_allocator )
+  frag_shader := gl.CreateShader( gl.FRAGMENT_SHADER )
+  gl.ShaderSource( frag_shader, 1, &fragment_src_cstr, nil )
+  gl.CompileShader( frag_shader )
+
+  gl.GetShaderiv( frag_shader, gl.COMPILE_STATUS, &ok )
+  if ok <= 0
+  {
+    gl.GetShaderInfoLog( frag_shader, 512, &info_log_len, raw_data(info_log[:]) )
+    fmt.println( "ERROR: Failed to load and compile fragment shader: ", name )
+    fmt.printfln( "       %s", info_log )
+    panic( "shader comp failed" ) 
+  }
+
+	// link shaders
+  shader_program := gl.CreateProgram()
+	gl.AttachShader( shader_program, vert_shader )
+	gl.AttachShader( shader_program, frag_shader )
+	gl.LinkProgram( shader_program )
+
+	// check for linking errors
+	gl.GetProgramiv(shader_program, gl.LINK_STATUS, &ok);
+  if ok <= 0
+  {
+		gl.GetProgramInfoLog( shader_program, 512, &info_log_len, raw_data(info_log[:]) )
+    fmt.println( "ERROR: Failed to load and compile shader program: ", name )
+    fmt.printfln( "       %s", info_log )
+    panic( "shader comp failed" ) 
+	}
+
+	// free the shaders
+	gl.DeleteShader( vert_shader )
+	gl.DeleteShader( frag_shader )
+
+  return shader_program
 }
 
 

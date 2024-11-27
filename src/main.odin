@@ -14,6 +14,9 @@ import        "core:mem"
 import        "core:time"
 import        "core:debug/trace"
 
+EDITOR :: #config(EDITOR, false)
+
+
 // setup debug/trace
 global_trace_ctx: trace.Context
 debug_trace_assertion_failure_proc :: proc(prefix, message: string, loc := #caller_location) -> ! 
@@ -97,10 +100,15 @@ main :: proc()
 
   debug_timer_static_start( "init()" )
 
-  if ( !window_create( 1500, 1075, "title", Window_Type.MINIMIZED, vsync=true ) ) // /* 1000, 750, */
-  {
-    fmt.print( "ERROR: failed to create window\n" )
-    return;
+  when EDITOR
+  { 
+    if ( !window_create( 1500, 1075, "title", Window_Type.MINIMIZED, vsync=true ) ) 
+    { fmt.print( "ERROR: failed to create window\n" ); return }
+  } 
+  else 
+  { 
+    if ( !window_create( 1, 1, "title", Window_Type.FULLSCREEN, vsync=true ) ) 
+    { fmt.print( "ERROR: failed to create window\n" ); return }
   }
   debug_timer_static_start( "input_init()" )
   input_init()
@@ -161,6 +169,13 @@ main :: proc()
                              rot = { 0, 180, 0 }, scl = { 1, 1, 1 },
                              mesh_idx = data.mesh_idxs.suzanne, 
                              mat_idx  = data.material_idxs.default
+                           } )
+
+  sphere_pos := util_tile_to_pos( waypoint_t{ level_idx=1, x=0, z=6 } )
+  data_entity_add( entity_t{ pos = sphere_pos + linalg.vec3{ 0, 2, 0 }, 
+                             rot = { 0, 180, 0 }, scl = { 1, 1, 1 },
+                             mesh_idx = data.mesh_idxs.suzanne, 
+                             mat_idx  = data.material_idxs.water
                            } )
 
 
@@ -292,12 +307,15 @@ main :: proc()
     // renderer_draw_quad( linalg.vec2{ -0.75, -0.75 }, quad_size, data.fb_deferred.buffer04 )
     // renderer_draw_quad( linalg.vec2{ -0.25,  0.75 }, quad_size, data.fb_lighting.buffer01 )
 
-    // --- editor ui ---
-    debug_timer_start( "ui_update()" )
-    if input.key_states[Key.BACKSPACE].pressed && input.key_states[Key.LEFT_CONTROL].down
-    { data.editor_ui.active = !data.editor_ui.active }
-    if data.editor_ui.active { ui_update() }
-    debug_timer_stop() // ui_update()
+    when EDITOR
+    {
+      // --- editor ui ---
+      debug_timer_start( "ui_update()" )
+      if input.key_states[Key.BACKSPACE].pressed && input.key_states[Key.LEFT_CONTROL].down
+      { data.editor_ui.active = !data.editor_ui.active }
+      if data.editor_ui.active { ui_update() }
+      debug_timer_stop() // ui_update()
+    }
 
     glfw.SwapBuffers( data.window )
     

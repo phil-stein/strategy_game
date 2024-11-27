@@ -24,7 +24,8 @@ void main()
   
   normal   = vec4(dir, 1.0);
   position = vec4(dir, 1.0);
- 
+  // position = vec4(dir, 1.0) * -10;
+
   // @TODO: render cubemap after lighting using the old depth buffer or something
 
 }
