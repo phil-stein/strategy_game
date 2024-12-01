@@ -95,9 +95,9 @@ assetm_init :: proc()
            normal_idx    = data.texture_idxs.water_normal, 
 
            uv_tile       = linalg.vec2{ 15, 15 },
-           uv_offs       = linalg.vec2{ 0, 0 },
+           uv_offs       = linalg.vec2{ 0,   0 },
 
-           tint        = linalg.vec3{ 1.0, 1.0, 1.0 },
+           tint        = linalg.vec3{ 0.17, 1.0, 0.625 },
            roughness_f = 1.0,
            metallic_f  = 0.0,
   }
@@ -197,19 +197,15 @@ assetm_init :: proc()
   
   // ---- mesh ----
 
-  // time.stopwatch_reset( &stopwatch )
-  // time.stopwatch_start( &stopwatch )
   debug_timer_static_start( "loading meshes" )
+  data.mesh_idxs.quad        = assetio_load_mesh( "quad.fbx" )
   data.mesh_idxs.cube        = assetio_load_mesh( "cube.fbx" )
   data.mesh_idxs.sphere      = assetio_load_mesh( "sphere.fbx" ) 
   data.mesh_idxs.suzanne     = assetio_load_mesh( "suzanne_02.fbx" )
   data.mesh_idxs.dirt_cube   = assetio_load_mesh( "dirt_cube.fbx" )
   data.mesh_idxs.robot_char  = assetio_load_mesh( "robot_character_06_01.fbx" )
   data.mesh_idxs.female_char = assetio_load_mesh( "female_char_01_01.fbx" )
-  // time.stopwatch_stop( &stopwatch )
-  // log.info( "TIMER: loading meshes: ", stopwatch._accumulation )
   debug_timer_stop()
-  // time.stopwatch_reset( &stopwatch )
 }
 assetm_cleanup :: proc()
 {

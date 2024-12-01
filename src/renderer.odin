@@ -91,43 +91,6 @@ renderer_update :: proc()
 
       shader_act_reset_tex_idx()
     }
-    { // water
-      shader_use( data.deferred_shader )
-      shader_act_reset_tex_idx()
-      model := util_make_model( linalg.vec3{ 0, -1, 0 }, linalg.vec3{ -90, 0, 0 }, linalg.vec3{ 50, 50, 50 } )
-      // @TODO:
-      // e.inv_model = linalg.inverse( e.model )
-      shader_act_set_mat4( "model", &model[0][0] )
-      shader_act_set_mat4( "view",  &data.cam.view_mat[0][0] )
-      shader_act_set_mat4( "proj",  &data.cam.pers_mat[0][0] )
-
-      mat := assetm_get_material( data.material_idxs.water )
-      
-      shader_act_bind_texture( "albedo",    assetm_get_texture( mat.albedo_idx ).handle )
-      shader_act_bind_texture( "roughness", assetm_get_texture( mat.roughness_idx ).handle )
-      shader_act_bind_texture( "metallic",  assetm_get_texture( mat.metallic_idx ).handle )
-      shader_act_bind_texture( "norm",      assetm_get_texture( mat.normal_idx ).handle )
-      shader_act_set_vec3( "tint",        mat.tint )
-      shader_act_set_f32(  "roughness_f", mat.roughness_f )
-      shader_act_set_f32(  "metallic_f",  mat.metallic_f )
-      
-      // // shader_act_set_vec2_f( "uv_tile", 15.0, 15.0 )
-      // shader_act_set_vec2_f( "uv_tile", 1.0, 1.0 )
-      // @static offs : f32 = 0.0
-      // offs  += data.delta_t
-      // speed_x := math.max( 0.2, 1 + math.sin( data.total_t * 0.5 ) )
-      // speed_x += offs  * 0.5
-      // speed_x *= 0.5
-      // speed_y := 0.1 * speed_x * ( 1 + math.cos( data.total_t * 0.3 ) )
-      // // shader_act_set_vec2_f( "uv_offs", speed_x, speed_y )
-      // shader_act_set_vec2_f( "uv_offs", 0, 0 )
-      
-      shader_act_set_vec2( "uv_tile", mat.uv_tile )
-      shader_act_set_vec2( "uv_offs", mat.uv_offs )
-
-      gl.BindVertexArray( data.quad_vao )
-      gl.DrawArrays( gl.TRIANGLES, 0, 6 )
-    }
 
     if ( data.wireframe_mode_enabled == true )
 	  { gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL) }

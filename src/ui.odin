@@ -476,6 +476,8 @@ ui_assetm_tab :: proc()
           m.tint[0] = f32(color_int[0]) / 255.0
           m.tint[1] = f32(color_int[1]) / 255.0
           m.tint[2] = f32(color_int[2]) / 255.0
+          
+          im.SeparatorText( "properties" )
 
           im.DragFloat( fmt.ctprintf( "roughness_f : f32" ), &m.roughness_f, 0.05, 0.0, 1.0  )
           im.DragFloat( fmt.ctprintf( "metallic_f : f32" ), &m.metallic_f,   0.05, 0.0, 1.0 )
@@ -489,59 +491,12 @@ ui_assetm_tab :: proc()
           t_metallic  := assetm_get_texture( m.metallic_idx )
           t_normal    := assetm_get_texture( m.normal_idx )
  
-          //  im.Text( "albedo" )
-          //  im.SameLine()
-          //  im.Text( "roughness" )
-          //  im.Text( str.clone_to_cstring( t_albedo.name, context.temp_allocator ) )
-          //  im.SameLine()
-          //  im.Text( str.clone_to_cstring( t_roughness.name, context.temp_allocator ) )
- 
-          //  SCALE :: 225
- 
-          //  t := t_albedo
-          //  // t_w : f32 = SCALE * ( f32(t.width) / f32(t.height) )
-          //  // t_h : f32 = SCALE
-          //  t_w : f32 = SCALE
-          //  t_h : f32 = SCALE * ( f32(t.height) / f32(t.width) )
-          //  im.Image( im.TextureID(uintptr(t.handle)),    im.Vec2{ t_w, t_h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
-          //  // ui_display_texture( albedo,  )
- 
-          //  im.SameLine()
-          //  t = t_roughness
-          //  // t_w = SCALE * ( f32(t.width) / f32(t.height) )
-          //  // t_h = SCALE
-          //  t_w = SCALE
-          //  t_h = SCALE * ( f32(t.height) / f32(t.width) )
-          //  im.Image( im.TextureID(uintptr(t.handle)),    im.Vec2{ t_w, t_h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
-  
-          //  im.Text( "metallic" )
-          //  im.SameLine()
-          //  im.Text( "normal" )
-          //  im.Text( str.clone_to_cstring( t_metallic.name, context.temp_allocator ) )
-          //  im.SameLine()
-          //  im.Text( str.clone_to_cstring( t_normal.name, context.temp_allocator ) )
- 
-          //  // t_w = SCALE * ( f32(t.width) / f32(t.height) )
-          //  // t_h = SCALE
-          //  t_w = SCALE
-          //  t_h = SCALE * ( f32(t.height) / f32(t.width) )
-          //  t = t_metallic
-          //  im.Image( im.TextureID(uintptr(t.handle)),    im.Vec2{ t_w, t_h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
- 
-          //  im.SameLine()
-          //  // t_w = SCALE * ( f32(t.width) / f32(t.height) )
-          //  // t_h = SCALE
-          //  t_w = SCALE
-          //  t_h = SCALE * ( f32(t.height) / f32(t.width) )
-          //  t = t_normal
-          //  im.Image( im.TextureID(uintptr(t.handle)),    im.Vec2{ t_w, t_h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
-
           SCALE :: 225
           
-          t_00 := t_albedo
+          t_00   := t_albedo
           t_w_00 : f32 = SCALE
           t_h_00 : f32 = SCALE * ( f32(t_00.height) / f32(t_00.width) )
-          t_01 := t_roughness
+          t_01   := t_roughness
           t_w_01 : f32 = SCALE
           t_h_01 : f32 = SCALE * ( f32(t_01.height) / f32(t_01.width) )
           ui_display_2_texture( fmt.ctprintf( "albedo: %s",    t_albedo.name ),    t_w_00, t_h_00, t_w_00*4, t_h_00*4, t_albedo.handle,

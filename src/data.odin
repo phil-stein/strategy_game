@@ -197,6 +197,7 @@ data_t :: struct
   },
   mesh_idxs : struct
   {
+    quad        : int,
     cube        : int,
     sphere      : int,
     suzanne     : int,

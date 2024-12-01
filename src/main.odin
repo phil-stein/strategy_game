@@ -177,6 +177,14 @@ main :: proc()
                              mesh_idx = data.mesh_idxs.suzanne, 
                              mat_idx  = data.material_idxs.water
                            } )
+ 
+  data_entity_add( entity_t{ pos = linalg.vec3{ 0, -1, 0 }, 
+                             rot = linalg.vec3{ 0, 0, 0 }, 
+                             scl = linalg.vec3{ 50, 50, 50 },
+                             mesh_idx = data.mesh_idxs.quad, 
+                             mat_idx  = data.material_idxs.water
+                           } )
+
 
 
   // --- create map ---
@@ -255,8 +263,15 @@ main :: proc()
       start_pos := util_tile_to_pos(data.player_chars[data.player_chars_current].tile )
       start_pos.y += 1.0
       debug_draw_sphere( start_pos, linalg.vec3{ 0.35, 0.35, 0.35 }, linalg.vec3{ 0, 1, 0 } )
+      // path, path_found := game_simple_pathfind( start, cam_hit_tile )
       path, path_found := game_a_star_pathfind( start, cam_hit_tile )
-      debug_draw_path( path, path_found ? linalg.vec3{ 0, 1, 0 } : linalg.vec3{ 1, 0, 0 } )
+      if path_found
+      { 
+        // fmt.println( "found path len:", len(path) )
+        debug_draw_path( path, path_found ? linalg.vec3{ 0, 1, 0 } : linalg.vec3{ 1, 0, 0 } ) 
+        delete( path )
+      }
+
 
       pos := util_tile_to_pos( cam_hit_tile )
 
@@ -275,8 +290,6 @@ main :: proc()
         data.player_chars[data.player_chars_current].path = make( [dynamic]waypoint_t, len(path), cap(path) )
         copy( data.player_chars[data.player_chars_current].path[:], path[:] )
       }
-
-      delete( path )
     }
 
     for char in data.player_chars
@@ -298,6 +311,15 @@ main :: proc()
         // os.exit(1)
       }
     }
+
+    // move the water
+    @static offs : f32 = 0.0
+    offs  += data.delta_t
+    speed_x := math.max( 0.2, 1 + math.sin( data.total_t * 0.5 ) )
+    speed_x += offs  * 0.5
+    speed_x *= 0.5
+    speed_y := 0.1 * speed_x * ( 1 + math.cos( data.total_t * 0.3 ) )
+    data.material_arr[data.material_idxs.water].uv_offs = linalg.vec2{ speed_x, speed_y }
 
     // // draw the gbuffer and lighting buffer onto screen as quads
     // quad_size :: linalg.vec2{ 0.25, -0.25 }

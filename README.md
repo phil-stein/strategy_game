@@ -23,11 +23,12 @@ use combo moves to extend your playable chars abilities/moveset with the other p
   * gameplay
     - [ ] a* pathfinding `WIP`
       - [X] very basic pathfinding
-      - [ ] actual a*
+      - [X] actual a*
+      - [ ] a* up / down slopes
     - [X] player chars
       - [X] multiple player chars ( 3 probably )
       - [X] switch
-      - [ ] move to pathfinding result
+      - [ ] move to pathfinding result ?(actually play out result at end of turn)
     - [ ] enemies
       - [ ] stationary
       - [ ] ai
@@ -51,14 +52,16 @@ use combo moves to extend your playable chars abilities/moveset with the other p
       - [ ] ice
       - [ ] breakable
   * graphics
-    - [ ] transparency
-    - [ ] graphic effects
-      - [ ] ambient occlusion
-      - [ ] shadows
-      - [ ] bloom
-    - [ ] special stuff
-      - [ ] water shader
-      - [ ] leaves / bushes / vegetation
+    - [ ] __make renderer forward not defferred__
+      - [ ] transparency
+      - [ ] graphic effects
+        - [ ] ambient occlusion
+        - [ ] shadows
+        - [ ] bloom
+        - [ ] [subsurface scattering](https://www.youtube.com/watch?v=wfPoVnBFv-0)
+      - [ ] special stuff
+        - [ ] water shader
+        - [ ] leaves / bushes / vegetation
   * core
     - [X] custom asset formats
       - [X] texture
