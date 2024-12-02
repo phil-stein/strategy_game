@@ -319,7 +319,7 @@ ui_map_tab :: proc()
   im.SeparatorText( "" )
 
   tile_strs   := [?]cstring{ "empty", "blocked", "tile" }
-  id_strs     := [?]cstring{ " ",     "X",       "#" }
+  id_strs     := [?]cstring{ " ",     "X",       "#", "^", "v", "<", ">" }
   id_strs_idx := 0
   selected    := false
 
@@ -368,6 +368,26 @@ ui_map_tab :: proc()
           id_strs_idx = 2 
           selected = true 
         }
+        case Tile_Nav_Type.RAMP_UP:
+        {
+          id_strs_idx = 3 
+          selected = true 
+        }
+        case Tile_Nav_Type.RAMP_DOWN:
+        {
+          id_strs_idx = 4 
+          selected = true 
+        }
+        case Tile_Nav_Type.RAMP_LEFT:
+        {
+          id_strs_idx = 5 
+          selected = true 
+        }
+        case Tile_Nav_Type.RAMP_RIGHT:
+        {
+          id_strs_idx = 6 
+          selected = true 
+        }
       }
       im.PushStyleVarImVec2( im.StyleVar.SelectableTextAlign, im.Vec2{ 0.5, 0.5 } )
       im.PushFont( font_big )
@@ -391,8 +411,9 @@ ui_map_tab :: proc()
       }
       if im.BeginPopup( "tile_type_popup" )
       {
+        im.Text( fmt.ctprintf( "%v %v %v", level, x, z ) )
         im.SeparatorText( tile_strs[id_strs_idx] )
-        if im.Button( "empty" ) 
+        if data.tile_type_arr[level][x][z] != Tile_Nav_Type.EMPTY && im.Button( "empty" ) 
         { 
           if data.tile_type_arr[level][x][z] == Tile_Nav_Type.TRAVERSABLE ||
              data.tile_type_arr[level][x][z] == Tile_Nav_Type.BLOCKED
@@ -401,7 +422,7 @@ ui_map_tab :: proc()
           }
           data.tile_type_arr[level][x][z] = Tile_Nav_Type.EMPTY
         }
-        if im.Button( "tile" )  
+        if data.tile_type_arr[level][x][z] == Tile_Nav_Type.EMPTY && im.Button( "tile" )  
         {
           data_entity_add( 
                   entity_t{ pos = util_tile_to_pos( waypoint_t{ level, x, z } ), 

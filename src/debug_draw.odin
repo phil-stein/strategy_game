@@ -109,7 +109,15 @@ debug_draw_line :: proc(pos0, pos1, tint: linalg.vec3, width: f32)
   gl.Enable( gl.CULL_FACE )
 }
 
-debug_draw_aabb :: proc(min, max, color: linalg.vec3, width: f32)
+debug_draw_aabb_wp :: proc( wp: waypoint_t, color: linalg.vec3, width: f32 )
+{
+  pos := util_tile_to_pos( wp )
+
+  min := pos + linalg.vec3{ -1, -1, -1 }
+  max := pos + linalg.vec3{  1,  1,  1 }
+  debug_draw_aabb( min, max, color, width )
+}
+debug_draw_aabb :: proc( min, max, color: linalg.vec3, width: f32 )
 {
   top0 := linalg.vec3{ max[0], max[1], max[2] }
   top1 := linalg.vec3{ max[0], max[1], min[2] } 
@@ -162,23 +170,40 @@ debug_draw_tiles :: proc()
         switch nav_type
         {
           case Tile_Nav_Type.EMPTY:
+          {
             // debug_draw_aabb( min, max, 
                              // linalg.vec3{ 1, 1, 1 }, 
                              // 5 )
             debug_draw_sphere( pos, linalg.vec3{ 0.25, 0.25, 0.25 },
                              linalg.vec3{ 1, 1, 1 } )
+          }
           case Tile_Nav_Type.BLOCKED:
+          {
             // debug_draw_aabb( min, max, 
             //                  linalg.vec3{ 1, 0, 0 }, 
             //                  5 )
             debug_draw_sphere( pos, linalg.vec3{ 0.25, 0.25, 0.25 },
                              linalg.vec3{ 1, 0, 0 } ) 
+          }
           case Tile_Nav_Type.TRAVERSABLE:
+          {
             // debug_draw_aabb( min, max, 
             //                  linalg.vec3{ 0, 1, 0 }, 
             //                  15 )
             debug_draw_sphere( pos, linalg.vec3{ 0.25, 0.25, 0.25 },
                              linalg.vec3{ 0, 1, 0 } ) 
+          }
+          case Tile_Nav_Type.RAMP_UP:   fallthrough
+          case Tile_Nav_Type.RAMP_DOWN: fallthrough
+          case Tile_Nav_Type.RAMP_LEFT: fallthrough
+          case Tile_Nav_Type.RAMP_RIGHT: 
+          {
+            // debug_draw_aabb( min, max, 
+            //                  linalg.vec3{ 0, 1, 0 }, 
+            //                  15 )
+            debug_draw_sphere( pos, linalg.vec3{ 0.25, 0.25, 0.25 },
+                             linalg.vec3{ 0, 1, 0 } ) 
+          }
   
         }
       }
@@ -191,6 +216,9 @@ debug_draw_path :: proc( path: [dynamic]waypoint_t, color: linalg.vec3 )
 
   for i in 0 ..< len(path) -1
   {
+    c : f32 = f32(i +1) / f32( len( path ) )
+    // debug_draw_aabb_wp( w, linalg.vec3{ 1, 1, 1 }, 10 )
+    col := linalg.vec3{ c, c, c }
 
     p00 := linalg.vec3{ 
             f32(path[i].x)         * 2 - f32(TILE_ARR_X_MAX) +1,
@@ -202,7 +230,7 @@ debug_draw_path :: proc( path: [dynamic]waypoint_t, color: linalg.vec3 )
             f32(path[i +1].level_idx) * 2 + 1.0, 
             f32(path[i +1].z)         * 2 - f32(TILE_ARR_Z_MAX) +1
            }
-    debug_draw_line( p00, p01, color, 25 ) 
+    debug_draw_line( p00, p01, col, 25 ) 
   }
   p_sphere := linalg.vec3{ 
           f32(path[len(path) -1].x)         * 2 - f32(TILE_ARR_X_MAX) +1,

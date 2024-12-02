@@ -21,10 +21,10 @@ use combo moves to extend your playable chars abilities/moveset with the other p
         - [ ] port the text rendering code
         - [ ] instanced / batched rendering
   * gameplay
-    - [ ] a* pathfinding `WIP`
+    - [X] a* pathfinding
       - [X] very basic pathfinding
       - [X] actual a*
-      - [ ] a* up / down slopes
+      - [X] a* up / down slopes
     - [X] player chars
       - [X] multiple player chars ( 3 probably )
       - [X] switch

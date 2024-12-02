@@ -264,7 +264,8 @@ main :: proc()
       start_pos.y += 1.0
       debug_draw_sphere( start_pos, linalg.vec3{ 0.35, 0.35, 0.35 }, linalg.vec3{ 0, 1, 0 } )
       // path, path_found := game_simple_pathfind( start, cam_hit_tile )
-      path, path_found := game_a_star_pathfind( start, cam_hit_tile )
+      // path, path_found := game_a_star_pathfind( start, cam_hit_tile )
+      path, path_found := game_a_star_pathfind_levels( start, cam_hit_tile )
       if path_found
       { 
         // fmt.println( "found path len:", len(path) )
@@ -289,6 +290,7 @@ main :: proc()
         data.player_chars[data.player_chars_current].has_path = true
         data.player_chars[data.player_chars_current].path = make( [dynamic]waypoint_t, len(path), cap(path) )
         copy( data.player_chars[data.player_chars_current].path[:], path[:] )
+        fmt.println( "old path:", len(data.player_chars[data.player_chars_current].path), len(path) )
       }
     }
 

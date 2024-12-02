@@ -83,7 +83,10 @@ Tile_Nav_Type :: enum
   EMPTY,
   BLOCKED,
   TRAVERSABLE,
-  // slopes, etc.
+  RAMP_UP,      // @NOTE: this technically is forward
+  RAMP_DOWN,    // @NOTE: this technically is backward
+  RAMP_LEFT,
+  RAMP_RIGHT,
 }
 nav_type_level_arr :: [TILE_ARR_X_MAX][TILE_ARR_Z_MAX]Tile_Nav_Type
 
@@ -202,6 +205,7 @@ data_t :: struct
     sphere      : int,
     suzanne     : int,
     dirt_cube   : int,
+    dirt_ramp   : int,
     robot_char  : int,
     female_char : int,
   },
@@ -212,6 +216,7 @@ data_t :: struct
   tile_str_arr       : [TILE_LEVELS_MAX]string,
   tile_type_arr      : [TILE_LEVELS_MAX]nav_type_level_arr,
   tile_entity_id_arr : [TILE_LEVELS_MAX][TILE_ARR_X_MAX][TILE_ARR_Z_MAX]int,
+  tile_ramp_wp_arr : [TILE_LEVELS_MAX][dynamic]waypoint_t,
 
   player_chars : [3]character_t,
   player_chars_current : int,
@@ -250,7 +255,7 @@ data : data_t =
   tile_00_str = 
   "XXXXXXXXXX"+
   "X.XXXX.XXX"+
-  "XXX.X.XXXX"+
+  "XXXXX.XXXX"+
   "X.XXXX..XX"+
   "X..XXXXX.X"+
   "X..XXXXX.X"+
@@ -260,16 +265,16 @@ data : data_t =
   "XXXXXXXXXX",
   
   tile_01_str = 
-  "XXXXX...XX"+
-  "X..X......"+
+  "XXXXX...>X"+
+  "X..^......"+
   "X.......X."+
-  "..XX.....X"+
+  "..Xv.....X"+
   "...X...X.X"+
-  "...X......"+
+  "...X....XX"+
   "......XX.."+
-  "...X...XXX"+
+  "...X...X<."+
   "XX....X..."+
-  "XXXX......",
+  "XXX<......",
 
   player_chars_current = 0,
 }
@@ -434,6 +439,12 @@ data_cleanup :: proc()
   delete( data.mesh_arr )
   delete( data.texture_arr )
   delete( data.material_arr )
+
+  for arr, i in data.tile_ramp_wp_arr
+  {
+    fmt.printfln( "data.tile_ramp_wp_arr[%d] len -> %d", i, len(arr) )
+    delete( arr )
+  }
 }
 
 
@@ -479,19 +490,7 @@ data_create_map :: proc()
 
         if tile_str[tile_str_idx] == 'X'
         {
-          // idx := len(data.entity_arr)
-          // append( &data.entity_arr, 
-          //         entity_t{ pos = { f32(x) * 2 - f32(TILE_ARR_X_MAX) +1, 
-          //                           f32(y) * 2, 
-          //                           f32(z) * 2 - f32(TILE_ARR_Z_MAX) +1
-          //                         }, 
-          //                   rot = { 0, 0, 0 }, scl = { 1, 1, 1 },
-          //                   mesh_idx = data.mesh_idxs.cube, 
-          //                   mat_idx  = data.material_idxs.brick 
-          //                 } )
-
           data.tile_entity_id_arr[y][x][z] = len(data.entity_arr)
-          // append( &data.entity_arr, 
           data_entity_add( 
                   entity_t{ pos = util_tile_to_pos( waypoint_t{ level_idx=y, x=x, z=z } ), 
                             rot = { 0, 0, 0 }, scl = { 1, 1, 1 },
@@ -502,15 +501,37 @@ data_create_map :: proc()
           //              " \t| x, z: ", x, z, "MAX: ", TILE_ARR_X_MAX, TILE_ARR_Z_MAX ,
           //              ", ", f32(x) * 2 - f32(TILE_ARR_X_MAX) , f32(z) * 2 - f32(TILE_ARR_Z_MAX))
         }
+        else if tile_str[tile_str_idx] == '^' ||
+                tile_str[tile_str_idx] == 'v' ||
+                tile_str[tile_str_idx] == '<' ||
+                tile_str[tile_str_idx] == '>' 
+        {
+          y_rot : f32 = 0   if tile_str[tile_str_idx] == '^' else 
+                        180 if tile_str[tile_str_idx] == 'v' else 
+                        90  if tile_str[tile_str_idx] == '<' else 
+                        270 if tile_str[tile_str_idx] == '>' else 0 
+
+          data.tile_entity_id_arr[y][x][z]   = len(data.entity_arr)
+          append( &data.tile_ramp_wp_arr[y], waypoint_t{ level_idx=y, x=x, z=z } /* len(data.entity_arr) */ )
+          data_entity_add( 
+                  entity_t{ pos = util_tile_to_pos( waypoint_t{ level_idx=y, x=x, z=z } ), 
+                            rot = { 0, y_rot, 0 }, scl = { 1, 1, 1 },
+                            mesh_idx = data.mesh_idxs.dirt_ramp, 
+                            mat_idx  = y == 1 ? data.material_idxs.dirt_cube_02 : data.material_idxs.dirt_cube_01
+                          } )
+          // fmt.println( "idx: ", idx, "pos: ", data.entity_arr[idx].pos, 
+          //              " \t| x, z: ", x, z, "MAX: ", TILE_ARR_X_MAX, TILE_ARR_Z_MAX ,
+          //              ", ", f32(x) * 2 - f32(TILE_ARR_X_MAX) , f32(z) * 2 - f32(TILE_ARR_Z_MAX))
+        }
+        else if tile_str[tile_str_idx] != '.' 
+        { fmt.eprintln("[ERROR] uknown char in tile_str:", rune(tile_str[tile_str_idx]), ", idx:", tile_str_idx ) }
       }
     }
   }
 
 
   // populate data.tile_type_arr
-// // game_build_nav_struct :: proc( /* num_levels: int, levels: []string */ ) -> ( nav: [len(data.tile_str_arr)]nav_type_level_arr )
-// data_build_nav_struct :: proc(  )
-// {
+  // @TODO: check if this tile is even allowed to be blocked
   for level, level_idx in data.tile_str_arr
   {
 
@@ -528,15 +549,39 @@ data_create_map :: proc()
         switch level[ tile_str_idx ] 
         {
           case '.':
-            data.tile_type_arr[level_idx][x][z] = Tile_Nav_Type.EMPTY
+          { data.tile_type_arr[level_idx][x][z] = Tile_Nav_Type.EMPTY }
           case 'X':
+          {
             data.tile_type_arr[level_idx][x][z] = Tile_Nav_Type.TRAVERSABLE
             if level_idx > 0
-            {
-              data.tile_type_arr[level_idx -1][x][z] = Tile_Nav_Type.BLOCKED
-            }
+            { data.tile_type_arr[level_idx -1][x][z] = Tile_Nav_Type.BLOCKED }
+          }
+          case '^': 
+          { 
+            data.tile_type_arr[level_idx][x][z] = Tile_Nav_Type.RAMP_UP
+            if level_idx > 0
+            { data.tile_type_arr[level_idx -1][x][z] = Tile_Nav_Type.BLOCKED }
+          }
+          case 'v': 
+          { 
+            data.tile_type_arr[level_idx][x][z] = Tile_Nav_Type.RAMP_DOWN
+            if level_idx > 0
+            { data.tile_type_arr[level_idx -1][x][z] = Tile_Nav_Type.BLOCKED }
+          }
+          case '<': 
+          { 
+            data.tile_type_arr[level_idx][x][z] = Tile_Nav_Type.RAMP_LEFT
+            if level_idx > 0
+            { data.tile_type_arr[level_idx -1][x][z] = Tile_Nav_Type.BLOCKED }
+          }
+          case '>': 
+          {
+            data.tile_type_arr[level_idx][x][z] = Tile_Nav_Type.RAMP_RIGHT
+            if level_idx > 0
+            { data.tile_type_arr[level_idx -1][x][z] = Tile_Nav_Type.BLOCKED }
+          }
           case:
-            data.tile_type_arr[level_idx][x][z] = Tile_Nav_Type.EMPTY
+          { data.tile_type_arr[level_idx][x][z] = Tile_Nav_Type.EMPTY }
         }
       }
     }
