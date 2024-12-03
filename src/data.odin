@@ -7,11 +7,6 @@ import        "vendor:glfw"
 import gl     "vendor:OpenGL"
 
 
-waypoint_t :: struct
-{
-  level_idx : int,
-  x, z      : int,
-}
 
 Window_Type :: enum { MINIMIZED, MAXIMIZED, FULLSCREEN };
 
@@ -90,14 +85,37 @@ Tile_Nav_Type :: enum
 }
 nav_type_level_arr :: [TILE_ARR_X_MAX][TILE_ARR_Z_MAX]Tile_Nav_Type
 
+waypoint_t :: struct
+{
+  level_idx : int,
+  x, z      : int,
+
+  // usually will be NONE
+  combo_type : Combo_Type,
+}
+
+Combo_Type :: enum
+{
+  NONE,
+  JUMP,
+}
+// intersections_t :: struct
+// {
+//   wp   : waypoint_t,
+//   type : Combo_Type,
+// }
 character_t :: struct
 {
-  tile       : waypoint_t,
-  entity_idx : int,
-
-  has_path        : bool,
-  path            : [dynamic]waypoint_t,
+  tile            : waypoint_t,
+  entity_idx      : int,
   halo_entity_idx : int,
+  color           : linalg.vec3,
+
+  // has_path        : bool,
+
+  paths_arr              : [dynamic][dynamic]waypoint_t,
+  // path_intersections_arr : [dynamic]intersections_t,
+  path_finished          : bool,
 }
 
 data_t :: struct
@@ -208,6 +226,7 @@ data_t :: struct
     dirt_ramp   : int,
     robot_char  : int,
     female_char : int,
+    icon_jump   : int,
   },
 
   tile_00_str : string,
@@ -252,28 +271,52 @@ data : data_t =
     active = true,
   },
 
+  // tile_00_str = 
+  // "XXXXXXXXXX"+
+  // "X.XXXX.XXX"+
+  // "XXXXX.XXXX"+
+  // "X.XXXX..XX"+
+  // "X..XXXXX.X"+
+  // "X..XXXXX.X"+
+  // "XXX.XXXX.X"+
+  // "X.XXXXXXXX"+
+  // "XXXXX.X..X"+
+  // "XXXXXXXXXX",
+  // 
+  // tile_01_str = 
+  // "XXXXX...>X"+
+  // "X..^......"+
+  // "X.......X."+
+  // "..Xv.....X"+
+  // "...X...X.X"+
+  // "...X....XX"+
+  // "......XX.."+
+  // "...X...X<."+
+  // "XX....X..."+
+  // "XXX<......",
+  
   tile_00_str = 
   "XXXXXXXXXX"+
-  "X.XXXX.XXX"+
-  "XXXXX.XXXX"+
-  "X.XXXX..XX"+
-  "X..XXXXX.X"+
-  "X..XXXXX.X"+
-  "XXX.XXXX.X"+
-  "X.XXXXXXXX"+
-  "XXXXX.X..X"+
+  "XXXXXXXXXX"+
+  "XXXXXXXXXX"+
+  "XXXXXXXXXX"+
+  "XXXXXXXXXX"+
+  "XXXXXXXXXX"+
+  "XXXXXXXXXX"+
+  "XXXXXXXXXX"+
+  "XXXXXXXXXX"+
   "XXXXXXXXXX",
   
   tile_01_str = 
   "XXXXX...>X"+
-  "X..^......"+
-  "X.......X."+
-  "..Xv.....X"+
-  "...X...X.X"+
-  "...X....XX"+
-  "......XX.."+
+  "X........X"+
+  "^..X.....X"+
+  "...X.....X"+
+  "...X...XXX"+
   "...X...X<."+
-  "XX....X..."+
+  "......XX.."+
+  ".......X.."+
+  "XX........"+
   "XXX<......",
 
   player_chars_current = 0,
@@ -285,9 +328,10 @@ data_init :: proc()
 // init .player_chars
   for &char in data.player_chars
   {
-    char.has_path = false
+    // char.has_path = false
     char.tile     = waypoint_t{ level_idx=0, x=0, z=0 }
     char.entity_idx = -1
+    char.path_finished = false
   }
 
 
@@ -427,10 +471,12 @@ data_pre_updated :: proc()
 
 data_cleanup :: proc()
 {
-  for char in data.player_chars
+  for &char in data.player_chars
   {
-    if char.has_path
-    { delete( char.path ) }
+    // if char.has_path
+    for p in char.paths_arr
+    { delete( p ) }
+    clear( &char.paths_arr )
   }
 
   delete( data.entity_arr )

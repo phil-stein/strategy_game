@@ -458,11 +458,11 @@ game_a_star_pathfind_levels :: proc( start, end: waypoint_t ) -> ( path_arr: [dy
 game_find_tile_hit_by_camera :: proc() -> ( hit_tile: waypoint_t, has_hit_tile: bool )
 {
   has_hit_tile = false
-  hit_tile     = waypoint_t{ level_idx = 0, x = 0, z = 0 }
+  hit_tile     = waypoint_t{ level_idx = 0, x = 0, z = 0, combo_type=Combo_Type.NONE }
 
   any_hits    := false
   closest_hit := linalg.vec3{ 10000000, 1000000, 1000000 }
-  closest_hit_tile := waypoint_t{ 0, 0, 0 }
+  closest_hit_tile := waypoint_t{ 0, 0, 0, Combo_Type.NONE }
   for y := 0; y < len(data.tile_str_arr); y += 1
   {
     tile_str := data.tile_str_arr[y]
@@ -492,7 +492,7 @@ game_find_tile_hit_by_camera :: proc() -> ( hit_tile: waypoint_t, has_hit_tile: 
             if linalg.distance( data.cam.pos, pos ) < linalg.distance( data.cam.pos, closest_hit )
             {
               closest_hit = pos
-              closest_hit_tile = waypoint_t{ y, x, z }
+              closest_hit_tile = waypoint_t{ y, x, z, Combo_Type.NONE }
             }
             // debug_draw_aabb( min, max, 
             //                  hit.hit ? linalg.vec3{ 1, 0, 1 } : linalg.vec3{ 1, 1, 1 }, 
@@ -504,15 +504,12 @@ game_find_tile_hit_by_camera :: proc() -> ( hit_tile: waypoint_t, has_hit_tile: 
   }
   if any_hits
   { 
-    // draw red target indicator line
-    debug_draw_line( closest_hit + linalg.vec3{ 0, 0.5, 0 }, closest_hit + linalg.vec3{ 0, 1.5, 0 }, linalg.vec3{ 1, 0, 0 }, 10 ) 
-    // // draw blue line from character
-    // debug_draw_line( data.entity_arr[0].pos + linalg.vec3{ 0, 0, 0 }, closest_hit + linalg.vec3{ 0, 1.5, 0 }, linalg.vec3{ 0.6, 0.8, 1 }, 10 )
-    
-    debug_draw_sphere( closest_hit + linalg.vec3{ 0, 1.5, 0 }, linalg.vec3{ 0.2, 0.2, 0.2 }, linalg.vec3{ 0.6, 0.8, 1 } )
-
-
-  
+    // // draw red target indicator line
+    // debug_draw_line( closest_hit + linalg.vec3{ 0, 0.5, 0 }, closest_hit + linalg.vec3{ 0, 1.5, 0 }, linalg.vec3{ 1, 0, 0 }, 10 ) 
+    // // // draw blue line from character
+    // // debug_draw_line( data.entity_arr[0].pos + linalg.vec3{ 0, 0, 0 }, closest_hit + linalg.vec3{ 0, 1.5, 0 }, linalg.vec3{ 0.6, 0.8, 1 }, 10 )
+    // 
+    // debug_draw_sphere( closest_hit + linalg.vec3{ 0, 1.5, 0 }, linalg.vec3{ 0.2, 0.2, 0.2 }, linalg.vec3{ 0.6, 0.8, 1 } )
 
     hit_tile     = closest_hit_tile
     has_hit_tile = true

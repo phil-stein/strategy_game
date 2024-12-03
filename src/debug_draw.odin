@@ -231,11 +231,23 @@ debug_draw_path :: proc( path: [dynamic]waypoint_t, color: linalg.vec3 )
             f32(path[i +1].z)         * 2 - f32(TILE_ARR_Z_MAX) +1
            }
     debug_draw_line( p00, p01, col, 25 ) 
+   
+    // draw combo-actions
+    if path[i].combo_type != Combo_Type.NONE
+    { 
+      // debug_draw_aabb_wp( path[i], linalg.vec3{ 1, 1, 0 }, 20 ) 
+      // debug_draw_sphere( util_tile_to_pos( path[i] ), linalg.vec3{ 0.35, 0.35, 0.35 }, color )
+      debug_draw_mesh( data.mesh_idxs.icon_jump, 
+                       util_tile_to_pos( path[i] ) + linalg.vec3{ 0, 1, 0 },  // pos 
+                       linalg.vec3{ 0, 0, 0 },                                // rot
+                       linalg.vec3{ 0.5, 0.5, 0.5 },                          // scl
+                       linalg.vec3{ 1, 1, 0 } )                               // color
+    }
   }
   p_sphere := linalg.vec3{ 
           f32(path[len(path) -1].x)         * 2 - f32(TILE_ARR_X_MAX) +1,
           f32(path[len(path) -1].level_idx) * 2 + 1.0, 
           f32(path[len(path) -1].z)         * 2 - f32(TILE_ARR_Z_MAX) +1
          }
-  debug_draw_sphere( p_sphere, linalg.vec3{ 0.35, 0.35, 0.35 }, color )
+  // debug_draw_sphere( p_sphere, linalg.vec3{ 0.35, 0.35, 0.35 }, color )
 }

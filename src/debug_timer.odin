@@ -27,7 +27,7 @@ timer_static_arr      :  [dynamic]timer_t
 timer_stack_parent_idx := 0
 
 
-// @NOTE: only have this when debug
+// @NOTE: only have this when -debug
 when ODIN_DEBUG 
 {
 

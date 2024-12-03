@@ -35,6 +35,7 @@ use combo moves to extend your playable chars abilities/moveset with the other p
       - [ ] show their turn
     - [ ] turns
     - [ ] combo-moves
+      - [X] basics
       - [ ] jumping off other player chars
       - [ ] tackle/kick/etc. enemies
       - [ ] carry enemies/player chars ?

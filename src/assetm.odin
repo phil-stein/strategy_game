@@ -198,6 +198,8 @@ assetm_init :: proc()
   // ---- mesh ----
 
   debug_timer_static_start( "loading meshes" )
+  data.mesh_idxs.icon_jump   = assetio_load_mesh( "icon_jump.fbx" ) 
+  
   data.mesh_idxs.quad        = assetio_load_mesh( "quad.fbx" )
   data.mesh_idxs.cube        = assetio_load_mesh( "cube.fbx" )
   data.mesh_idxs.sphere      = assetio_load_mesh( "sphere.fbx" ) 

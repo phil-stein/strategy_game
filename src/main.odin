@@ -253,56 +253,129 @@ main :: proc()
     if input.key_states[Key.UP].pressed
     { 
       data.player_chars_current += 1
-      data.player_chars_current = data.player_chars_current >= len(data.player_chars) ? 0 : data.player_chars_current
+      data.player_chars_current = data.player_chars_current >= len(data.player_chars) ? -1 : data.player_chars_current
+    }
+    if input.key_states[Key.DOWN].pressed
+    { 
+      data.player_chars_current -= 1
+      data.player_chars_current = data.player_chars_current < -1 ? len(data.player_chars) : data.player_chars_current
     }
 
     cam_hit_tile, has_cam_hit_tile := game_find_tile_hit_by_camera()
-    if has_cam_hit_tile
+    if has_cam_hit_tile && data.player_chars_current >= 0
     {
       start := data.player_chars[data.player_chars_current].tile
-      start_pos := util_tile_to_pos(data.player_chars[data.player_chars_current].tile )
-      start_pos.y += 1.0
-      debug_draw_sphere( start_pos, linalg.vec3{ 0.35, 0.35, 0.35 }, linalg.vec3{ 0, 1, 0 } )
+      if !data.player_chars[data.player_chars_current].path_finished &&
+         len(data.player_chars[data.player_chars_current].paths_arr) > 0
+      {
+        idx00 := len(data.player_chars[data.player_chars_current].paths_arr) -1
+        idx01 := len(data.player_chars[data.player_chars_current].paths_arr[idx00]) -1
+        start = data.player_chars[data.player_chars_current].paths_arr[idx00][idx01]
+      }
+      // start_pos := util_tile_to_pos(data.player_chars[data.player_chars_current].tile )
+      // start_pos.y += 1.0
+      // debug_draw_sphere( start_pos, linalg.vec3{ 0.35, 0.35, 0.35 }, linalg.vec3{ 0, 1, 0 } )
+
       // path, path_found := game_simple_pathfind( start, cam_hit_tile )
       // path, path_found := game_a_star_pathfind( start, cam_hit_tile )
       path, path_found := game_a_star_pathfind_levels( start, cam_hit_tile )
       if path_found
       { 
+        intersecting_path     := false
+        intersecting_char_idx := -1
+        intersecting_wp_idx   := -1
+        for char, i in data.player_chars
+        {
+          if i == data.player_chars_current { continue }
+          // if char.has_path
+          if len(char.paths_arr) > 0
+          {
+            for p in char.paths_arr
+            {
+              for w, path_idx in p
+              {
+                // end of path intersects with other chars path
+                if w.level_idx == path[len(path) -1].level_idx &&
+                   w.x         == path[len(path) -1].x &&
+                   w.z         == path[len(path) -1].z   
+                {
+                  intersecting_path     = true 
+                  intersecting_char_idx = i
+                  intersecting_wp_idx   = path_idx
+                  debug_draw_sphere( util_tile_to_pos( w ), linalg.vec3{ 1, 1, 1 }, linalg.vec3{ 0, 1, 1 } )
+                }
+              }
+            }
+          }
+        }
+
+        if input.mouse_button_states[Mouse_Button.LEFT].pressed && input.mouse_button_states[Mouse_Button.RIGHT].down && path_found
+        { 
+          if data.player_chars[data.player_chars_current].path_finished 
+          {
+            data.player_chars[data.player_chars_current].path_finished = true
+
+            if len(data.player_chars[data.player_chars_current].paths_arr) > 0
+            {
+              for p in data.player_chars[data.player_chars_current].paths_arr
+              { delete(p) }
+              clear( &data.player_chars[data.player_chars_current].paths_arr )
+              fmt.println( "paths_arr len:", len(data.player_chars[data.player_chars_current].paths_arr) )
+            }
+
+            resize( &data.player_chars[data.player_chars_current].paths_arr, 1 ) 
+            data.player_chars[data.player_chars_current].paths_arr[0] = make( [dynamic]waypoint_t, len(path), cap(path) )
+            copy( data.player_chars[data.player_chars_current].paths_arr[0][:], path[:] )
+            // fmt.println( "old path:", len(data.player_chars[data.player_chars_current].path), len(path) )
+          }
+          else
+          {
+            data.player_chars[data.player_chars_current].path_finished = !intersecting_path
+
+            if intersecting_path
+            {
+              path[len(path) -1].combo_type = Combo_Type.JUMP 
+            }
+
+            append( &data.player_chars[data.player_chars_current].paths_arr, make( [dynamic]waypoint_t, len(path), cap(path) ) )
+            idx := len(data.player_chars[data.player_chars_current].paths_arr) -1
+            copy( data.player_chars[data.player_chars_current].paths_arr[idx][:], path[:] )
+            fmt.println( "paths_arr:", len(data.player_chars[data.player_chars_current].paths_arr) )
+          }
+        }
+
         // fmt.println( "found path len:", len(path) )
         debug_draw_path( path, path_found ? linalg.vec3{ 0, 1, 0 } : linalg.vec3{ 1, 0, 0 } ) 
         delete( path )
       }
 
-
-      pos := util_tile_to_pos( cam_hit_tile )
-
-      min := pos + linalg.vec3{ -1, -1, -1 }
-      max := pos + linalg.vec3{  1,  1,  1 }
-      debug_draw_aabb( min, max, linalg.vec3{ 0, 1, 0 }, 15)
-
-      if input.mouse_button_states[Mouse_Button.LEFT].pressed && input.mouse_button_states[Mouse_Button.RIGHT].down && path_found
-      { 
-        if data.player_chars[data.player_chars_current].has_path
-        {
-          delete(data.player_chars[data.player_chars_current].path)
-        }
-
-        data.player_chars[data.player_chars_current].has_path = true
-        data.player_chars[data.player_chars_current].path = make( [dynamic]waypoint_t, len(path), cap(path) )
-        copy( data.player_chars[data.player_chars_current].path[:], path[:] )
-        fmt.println( "old path:", len(data.player_chars[data.player_chars_current].path), len(path) )
-      }
+      debug_draw_aabb_wp( cam_hit_tile, path_found ? linalg.vec3{ 0, 1, 0 } : linalg.vec3{ 1, 0, 0 }, 15)
     }
 
-    for char in data.player_chars
+    for char, i in data.player_chars
     {
       data.entity_arr[char.entity_idx].rot.y += 15 * data.delta_t
-      if char.has_path
+      if i == data.player_chars_current
       {
-        debug_draw_path( char.path, linalg.vec3{ 0, 1, 1 } )
+        // debug_draw_sphere( util_tile_to_pos( char.tile ), linalg.vec3{ 0.5, 0.5, 0.5 }, linalg.vec3{ 0, 1, 1 } ) 
+        debug_draw_sphere( util_tile_to_pos( char.tile ) + linalg.vec3{ 0, 1, 0 }, linalg.vec3{ 0.35, 0.35, 0.35 }, linalg.vec3{ 0, 1, 0 } ) 
+      }
+      // if char.has_path
+      if len(char.paths_arr) > 0
+      {
+        // debug_draw_path( char.path, linalg.vec3{ 0, 1, 1 } )
+        for p in char.paths_arr 
+        { 
+          debug_draw_path( p, linalg.vec3{ 0, 1, 1 } ) 
+          // debug_draw_sphere( util_tile_to_pos( p[len(p) -1] ), linalg.vec3{ 1, 1, 1 }, linalg.vec3{ 0, 1, 1 } ) 
+        }
+        debug_draw_sphere( linalg.vec3{ 0, 1, 0 } + util_tile_to_pos( char.paths_arr[0][0] ), linalg.vec3{ 0.35, 0.35, 0.35 }, linalg.vec3{ 0, 1, 1 } )
+        debug_draw_sphere( linalg.vec3{ 0, 1, 0 } + util_tile_to_pos( char.paths_arr[len(char.paths_arr) -1][len(char.paths_arr[len(char.paths_arr) -1]) -1] ), linalg.vec3{ 0.35, 0.35, 0.35 }, linalg.vec3{ 0, 1, 1 } )
 
-        pos := util_tile_to_pos( char.path[len(char.path) -1] )
-        pos +=  linalg.vec3{ 0, 2, 0 }
+        // pos := util_tile_to_pos( char.path[len(char.path) -1] )
+        idx := len(char.paths_arr) -1
+        pos := util_tile_to_pos( char.paths_arr[idx][ len(char.paths_arr[idx]) -1 ] )
+        pos += linalg.vec3{ 0, 2, 0 }
         rot := data.entity_arr[char.entity_idx].rot
         debug_draw_mesh( data.entity_arr[char.entity_idx].mesh_idx,
                          pos, 

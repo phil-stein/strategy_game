@@ -298,8 +298,8 @@ ui_player_chars_tab :: proc()
       {
         im.Text( "entity_idx:      %d", char.entity_idx )
         im.Text( "halo_entity_idx: %d", char.halo_entity_idx )
-        im.Text( "has_path:        %d", char.has_path )
-        im.Text( "path_len:        %d", len(char.path) )
+        // im.Text( "has_path:        %d", char.has_path )
+        im.Text( "path_len:        %d", len(char.paths_arr) )
 
         // im.TreePop()
       }
@@ -425,7 +425,7 @@ ui_map_tab :: proc()
         if data.tile_type_arr[level][x][z] == Tile_Nav_Type.EMPTY && im.Button( "tile" )  
         {
           data_entity_add( 
-                  entity_t{ pos = util_tile_to_pos( waypoint_t{ level, x, z } ), 
+                  entity_t{ pos = util_tile_to_pos( waypoint_t{ level, x, z, Combo_Type.NONE } ), 
                             rot = { 0, 0, 0 }, scl = { 1, 1, 1 },
                             mesh_idx = data.mesh_idxs.dirt_cube, 
                             mat_idx  = level == 1 ? data.material_idxs.dirt_cube_02 : 
