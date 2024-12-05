@@ -111,11 +111,22 @@ character_t :: struct
   halo_entity_idx : int,
   color           : linalg.vec3,
 
-  // has_path        : bool,
+  // -- gameplay --
+  max_walk_dist   : int,
+  max_jump_dist   : int,
 
+  // -- paths --
   paths_arr              : [dynamic][dynamic]waypoint_t,
-  // path_intersections_arr : [dynamic]intersections_t,
-  path_finished          : bool,
+  left_turns             : int,
+  // path_finished          : bool,
+  path_current_combo     : Combo_Type,
+}
+
+Pathfind_Error :: enum
+{
+  NONE,
+  NOT_FOUND,
+  TOO_LONG,
 }
 
 data_t :: struct
@@ -331,8 +342,16 @@ data_init :: proc()
     // char.has_path = false
     char.tile     = waypoint_t{ level_idx=0, x=0, z=0 }
     char.entity_idx = -1
-    char.path_finished = false
+    char.left_turns    = 0
+    // char.path_finished = false
+
+    char.max_walk_dist = 10
+    char.max_jump_dist = 4
   }
+  data.player_chars[0].color = linalg.vec3{ 0, 1, 1 }
+  data.player_chars[1].color = linalg.vec3{ 1, 0, 1 }
+  data.player_chars[2].color = linalg.vec3{ 1, 1, 0 }
+  
 
 
   // init .title_str_arr

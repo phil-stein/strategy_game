@@ -21,22 +21,23 @@ use combo moves to extend your playable chars abilities/moveset with the other p
         - [ ] port the text rendering code
         - [ ] instanced / batched rendering
   * gameplay
-    - [X] a* pathfinding
+    - [O] a* pathfinding
       - [X] very basic pathfinding
       - [X] actual a*
       - [X] a* up / down slopes
+        - [ ] a* down ramps doesnt work yet
     - [X] player chars
       - [X] multiple player chars ( 3 probably )
       - [X] switch
-      - [ ] move to pathfinding result ?(actually play out result at end of turn)
+      - [ ] ??? move to pathfinding result (actually play out result at end of turn)
     - [ ] enemies
       - [ ] stationary
       - [ ] ai
       - [ ] show their turn
-    - [ ] turns
-    - [ ] combo-moves
+    - [.] combo-moves
       - [X] basics
       - [ ] jumping off other player chars
+        - [ ] curved line
       - [ ] tackle/kick/etc. enemies
       - [ ] carry enemies/player chars ?
       - [ ] push enemies/player chars ?
@@ -46,9 +47,10 @@ use combo moves to extend your playable chars abilities/moveset with the other p
         - [ ] push blocks / obstacles
       - [ ] ...
       - [ ] show moves
+    - [ ] turns
     - [ ] differrent tile types
       - [X] regular
-      - [ ] slopes
+      - [X] slopes
       - [ ] ladders / climable
       - [ ] ice
       - [ ] breakable
@@ -98,9 +100,10 @@ use combo moves to extend your playable chars abilities/moveset with the other p
       - [ ] export level as fbx/obj/etc.
     - [ ] make character art
   * upkeep & organisation 
-    - [ ] stack trace
+    - [X] stack trace
       - [X] dump stack-trace ( core:debug/trace -> only works on assert not crash )
       - [X] try [dump stack trace](https://github.com/DaseinPhaos/pdb) ( doesnt work )
+    - [X] factor out gameplay from main.odin 
     - [ ] hot-reloading
     - [ ] factor out code into packages 
       - [ ] assetm

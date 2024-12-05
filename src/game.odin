@@ -6,6 +6,300 @@ import linalg "core:math/linalg/glsl"
 import        "core:slice"
 
 
+game_update :: proc()
+{
+  if input.key_states[Key.UP].pressed
+  { 
+    data.player_chars_current += 1
+    data.player_chars_current = data.player_chars_current >= len(data.player_chars) ? -1 : data.player_chars_current
+  }
+  if input.key_states[Key.DOWN].pressed
+  { 
+    data.player_chars_current -= 1
+    data.player_chars_current = data.player_chars_current < -1 ? len(data.player_chars) : data.player_chars_current
+  }
+
+  cam_hit_tile, has_cam_hit_tile := game_find_tile_hit_by_camera()
+  if has_cam_hit_tile && data.player_chars_current >= 0
+  {
+    new_turn := true
+    start := data.player_chars[data.player_chars_current].tile
+    // if !data.player_chars[data.player_chars_current].path_finished &&
+    //    len(data.player_chars[data.player_chars_current].paths_arr) > 0
+    if data.player_chars[data.player_chars_current].left_turns > 0 &&
+       len(data.player_chars[data.player_chars_current].paths_arr) > 0
+    {
+      new_turn = false
+      idx00 := len(data.player_chars[data.player_chars_current].paths_arr) -1
+      idx01 := len(data.player_chars[data.player_chars_current].paths_arr[idx00]) -1
+      start = data.player_chars[data.player_chars_current].paths_arr[idx00][idx01]
+    }
+
+    // start_pos := util_tile_to_pos(data.player_chars[data.player_chars_current].tile )
+    // start_pos.y += 1.0
+    // debug_draw_sphere( start_pos, linalg.vec3{ 0.35, 0.35, 0.35 }, linalg.vec3{ 0, 1, 0 } )
+    
+    path       : [dynamic]waypoint_t = nil
+    path_found     := false
+    path_found_err := Pathfind_Error.NONE
+    path_type      := Combo_Type.NONE
+    switch data.player_chars[data.player_chars_current].path_current_combo
+    {
+      case Combo_Type.NONE:
+      {
+        path, path_found = game_a_star_pathfind_levels( start, cam_hit_tile )
+        // fmt.println( "path_found:", path_found, "len(path):", len(path) )
+        if !path_found 
+        { path_found_err = Pathfind_Error.NOT_FOUND }
+        else if len(path) > data.player_chars[data.player_chars_current].max_walk_dist
+        { path_found_err = Pathfind_Error.TOO_LONG; path_found = false }
+        // fmt.println( "len(path):", len(path), ", max_walk_dist:", data.player_chars[data.player_chars_current].max_walk_dist, ", path_found_err:", path_found_err )
+
+        path_type = Combo_Type.NONE
+      }
+      case Combo_Type.JUMP:
+      {
+        path, path_found_err = game_check_jump_valid( data.player_chars[data.player_chars_current], start, cam_hit_tile )
+        fmt.println( "path_found:", path_found, "len(path):", len(path) )
+        // if !path_found { path_found_err = Pathfind_Error.NOT_FOUND }
+        if path_found_err != Pathfind_Error.NONE { path_found = false }
+        else { path_found = true }
+        path_type = Combo_Type.JUMP
+        // data.player_chars[data.player_chars_current].path_current_combo = Combo_Type.NONE // set for next turn
+      }
+    }
+    
+
+
+    if path_found
+    { 
+      intersecting_path       := false
+      intersecting_char_idx   := -1
+      intersecting_wp_idx     := -1
+      intersecting_combo_type := Combo_Type.NONE
+      // if path_type != Combo_Type.JUMP   // only need to check interections for paths along the floor 
+      // {
+        for &char, i in data.player_chars
+        {
+          if i == data.player_chars_current { continue }
+
+          if len(char.paths_arr) > 0
+          {
+            for p in char.paths_arr
+            {
+              for w, wp_idx in p
+              {
+                // end of path intersects with other chars path
+                if w.level_idx == path[len(path) -1].level_idx &&
+                   w.x         == path[len(path) -1].x &&
+                   w.z         == path[len(path) -1].z   
+                {
+                  intersecting_path     = true 
+                  intersecting_char_idx = i
+                  intersecting_wp_idx   = wp_idx
+                  // @TODO: add more types, like landing on enemy head and tackling them
+                  intersecting_combo_type = Combo_Type.JUMP
+                  // @TODO: make like a debug_draw_debug_icon() proc
+                  debug_draw_sphere( util_tile_to_pos( w ) + linalg.vec3{ 0, 1, 0 }, linalg.vec3{ 0.35, 0.35, 0.35 }, char.color )
+                }
+              }
+            }
+          }
+        }
+      // }
+
+      if input.mouse_button_states[Mouse_Button.LEFT].pressed && input.mouse_button_states[Mouse_Button.RIGHT].down && path_found
+      { 
+        if intersecting_path && data.player_chars[data.player_chars_current].left_turns < 1 
+        { 
+          data.player_chars[data.player_chars_current].left_turns += 1; fmt.println( "intersecting added 1" ) 
+        } 
+
+        // clear all the old paths when its a new turn
+        if new_turn 
+        {
+          if len(data.player_chars[data.player_chars_current].paths_arr) > 0
+          {
+            for p in data.player_chars[data.player_chars_current].paths_arr
+            { delete( p ) }
+            clear( &data.player_chars[data.player_chars_current].paths_arr )
+            // fmt.println( "paths_arr len:", len(data.player_chars[data.player_chars_current].paths_arr) )
+          }
+        }
+
+        // if last turn, resize to 1 path in char.paths_arr
+        if data.player_chars[data.player_chars_current].left_turns <= 0  
+        {
+          data.player_chars[data.player_chars_current].left_turns    = 0
+
+          // free all paths
+          if len(data.player_chars[data.player_chars_current].paths_arr) > 0
+          {
+            for p in data.player_chars[data.player_chars_current].paths_arr
+            { delete( p ) }
+            clear( &data.player_chars[data.player_chars_current].paths_arr )
+            // fmt.println( "paths_arr len:", len(data.player_chars[data.player_chars_current].paths_arr) )
+          }
+
+          resize( &data.player_chars[data.player_chars_current].paths_arr, 1 ) 
+          // fmt.println( "paths_arr len:", len(data.player_chars[data.player_chars_current].paths_arr) )
+          data.player_chars[data.player_chars_current].paths_arr[0] = make( [dynamic]waypoint_t, len(path), cap(path) )
+          copy( data.player_chars[data.player_chars_current].paths_arr[0][:], path[:] )
+          // fmt.println( "old path:", len(data.player_chars[data.player_chars_current].path), len(path) )
+        }
+        else // if still have more turns, append next turn
+        {
+          data.player_chars[data.player_chars_current].left_turns -= 0 if intersecting_path else 1
+
+          if intersecting_path
+          {
+            path[len(path) -1].combo_type = Combo_Type.JUMP 
+            data.player_chars[data.player_chars_current].path_current_combo = Combo_Type.JUMP
+          }
+          else { data.player_chars[data.player_chars_current].path_current_combo = Combo_Type.NONE } // set for next turn
+
+          append( &data.player_chars[data.player_chars_current].paths_arr, make( [dynamic]waypoint_t, len(path), cap(path) ) )
+          idx := len(data.player_chars[data.player_chars_current].paths_arr) -1
+          copy( data.player_chars[data.player_chars_current].paths_arr[idx][:], path[:] )
+          // fmt.println( "paths_arr:", len(data.player_chars[data.player_chars_current].paths_arr) )
+        }
+
+      }
+    }
+    // draw the path we pathfound(?), in character_t.color or red if failed 
+    if path_found_err != Pathfind_Error.NOT_FOUND
+    {
+      switch path_type
+      {
+        case Combo_Type.NONE:
+        { 
+          // debug_draw_path( path, path_found ? linalg.vec3{ 0, 1, 0 } : linalg.vec3{ 1, 0, 0 } ) 
+          debug_draw_path( path, path_found ? data.player_chars[data.player_chars_current].color : linalg.vec3{ 1, 0, 0 } ) 
+        }
+        case Combo_Type.JUMP:
+        { 
+          assert( len( path ) == 2 )
+          debug_draw_curve_path( path[0], path[1], 15, path_found ? data.player_chars[data.player_chars_current].color : linalg.vec3{ 1, 0, 0 } ) 
+        }
+      }
+
+      // fmt.println( "found path len:", len(path)
+      // path was copied into character_t.paths_arr
+      delete( path )
+    }
+
+    // draw the tile hit by camera that we pathfound(?) to
+    // debug_draw_aabb_wp( cam_hit_tile, path_found ? linalg.vec3{ 0, 1, 0 } : linalg.vec3{ 1, 0, 0 }, 15)
+    debug_draw_aabb_wp( cam_hit_tile, path_found ? data.player_chars[data.player_chars_current].color : linalg.vec3{ 1, 0, 0 }, 15)
+  }
+
+  // @TMP: 
+  // debug_draw_sphere( util_tile_to_pos( waypoint_t{ 1, 2, 2, Combo_Type.NONE } ), linalg.vec3{ 0.3, 0.3, 0.3 }, linalg.vec3{ 0, 1, 1 } )
+  // debug_draw_sphere( util_tile_to_pos( waypoint_t{ 0, 2, 2, Combo_Type.NONE } ), linalg.vec3{ 0.3, 0.3, 0.3 }, linalg.vec3{ 1, 0, 0 } )
+  // debug_draw_curve_path( data.player_chars[0].tile, waypoint_t{ 1, 2, 2, Combo_Type.NONE }, 20, linalg.vec3{ 1, 1, 1 } )
+
+  for char, i in data.player_chars
+  {
+    data.entity_arr[char.entity_idx].rot.y += 15 * data.delta_t
+    if i == data.player_chars_current
+    {
+      // debug_draw_sphere( util_tile_to_pos( char.tile ), linalg.vec3{ 0.5, 0.5, 0.5 }, linalg.vec3{ 0, 1, 1 } ) 
+      // debug_draw_sphere( util_tile_to_pos( char.tile ) + linalg.vec3{ 0, 1, 0 }, linalg.vec3{ 0.35, 0.35, 0.35 }, linalg.vec3{ 0, 1, 0 } ) 
+      debug_draw_sphere( util_tile_to_pos( char.tile ) + linalg.vec3{ 0, 1, 0 }, linalg.vec3{ 0.35, 0.35, 0.35 }, char.color ) 
+    }
+    // if char.has_path
+    if len(char.paths_arr) > 0
+    {
+      // debug_draw_path( char.path, linalg.vec3{ 0, 1, 1 } )
+      for p in char.paths_arr 
+      { 
+        switch p[0].combo_type
+        {
+          case Combo_Type.NONE:
+          {
+            // debug_draw_path( p, linalg.vec3{ 0, 1, 1 } ) 
+            debug_draw_path( p, char.color ) 
+          }
+          case Combo_Type.JUMP:
+          {
+            // debug_draw_curve_path( p[0], p[len(p) -1], 20, linalg.vec3{ 1, 1, 1 } )
+            debug_draw_curve_path( p[0], p[len(p) -1], 20, char.color )
+          }
+        }
+        // debug_draw_path_icons( p, linalg.vec3{ 1, 1, 0 } )
+        debug_draw_path_icons( p, char.color )
+
+        // debug_draw_sphere( util_tile_to_pos( p[len(p) -1] ), linalg.vec3{ 1, 1, 1 }, linalg.vec3{ 0, 1, 1 } ) 
+      }
+      // debug_draw_sphere( linalg.vec3{ 0, 1, 0 } + util_tile_to_pos( char.paths_arr[0][0] ), linalg.vec3{ 0.35, 0.35, 0.35 }, linalg.vec3{ 0, 1, 1 } )
+      // debug_draw_sphere( linalg.vec3{ 0, 1, 0 } + util_tile_to_pos( char.paths_arr[len(char.paths_arr) -1][len(char.paths_arr[len(char.paths_arr) -1]) -1] ), linalg.vec3{ 0.35, 0.35, 0.35 }, linalg.vec3{ 0, 1, 1 } )
+      debug_draw_sphere( linalg.vec3{ 0, 1, 0 } + util_tile_to_pos( char.paths_arr[0][0] ), linalg.vec3{ 0.35, 0.35, 0.35 }, char.color )
+      debug_draw_sphere( linalg.vec3{ 0, 1, 0 } + util_tile_to_pos( char.paths_arr[len(char.paths_arr) -1][len(char.paths_arr[len(char.paths_arr) -1]) -1] ), linalg.vec3{ 0.35, 0.35, 0.35 }, char.color )
+
+      // pos := util_tile_to_pos( char.path[len(char.path) -1] )
+      idx := len(char.paths_arr) -1
+      pos := util_tile_to_pos( char.paths_arr[idx][ len(char.paths_arr[idx]) -1 ] )
+      pos += linalg.vec3{ 0, 2, 0 }
+      rot := data.entity_arr[char.entity_idx].rot
+      debug_draw_mesh( data.entity_arr[char.entity_idx].mesh_idx,
+                       pos, 
+                       rot,
+                       data.entity_arr[char.entity_idx].scl, 
+                       // linalg.vec3{ 0, 1, 1 } )
+                       char.color )
+      // fmt.println( "data.entity_arr[char.entity_idx]: ", data.entity_arr[char.entity_idx] )
+      // os.exit(1)
+    }
+  }
+}
+
+// game_check_jump_valid :: proc( char: character_t, start, end: waypoint_t ) -> ( path_arr: [dynamic]waypoint_t, ok: bool )
+game_check_jump_valid :: proc( char: character_t, start, end: waypoint_t ) -> ( path_arr: [dynamic]waypoint_t, err: Pathfind_Error )
+{
+  ok := int(linalg.distance_vec2( linalg.vec2{ f32(start.x), f32(start.z) }, linalg.vec2{ f32(end.x), f32(end.z) } )) <= char.max_jump_dist
+  // fmt.println( "len jump:", int(linalg.distance_vec2( linalg.vec2{ f32(start.x), f32(start.z) }, linalg.vec2{ f32(end.x), f32(end.z) } )), "max_jump_dist:", char.max_jump_dist )
+  // { return nil, false }
+
+  append( &path_arr, start )
+  append( &path_arr, end )
+  
+  if !ok
+  { 
+    return path_arr, Pathfind_Error.TOO_LONG 
+  }
+
+  // start_pos := util_tile_to_pos( start ) + linalg.vec3{ 0, 1, 0 }
+  // end_pos   := util_tile_to_pos( end )   + linalg.vec3{ 0, 1, 0 }
+  // step := ( end_pos - start_pos ) / f32(divisions)
+  // p00  := start_pos
+  // p01  := start_pos
+  //
+  // up := linalg.cross( step, linalg.vec3{ 1, 0, 0 } )
+  // up  = linalg.normalize( up )
+  //
+  // for i in 0 ..< divisions
+  // {
+  //   c : f32 = f32(i) / f32(divisions -1)
+  //   col := linalg.vec3{ c, c, c } * color
+  //
+  //   p01 = start_pos + ( step * f32(i) )
+  //   y := p01.y
+  //
+  //   perc := f32(i) / f32(divisions -1)
+  //   y_offs := math.sin( perc * math.PI )
+  //   // fmt.println( "p01.y:", p01.y, ", \tperc:", perc )
+  //   y_offs *= 5  // scale height
+  //  
+  //   p01.y += y_offs
+  //   // debug_draw_line( p00, p01, col, 25 ) 
+  //   append( &path_arr,  )
+  //
+  //   p00 = p01
+  // }
+
+  // return path_arr, true 
+  return path_arr, Pathfind_Error.NONE
+}
 
 game_simple_pathfind :: proc( start, end: waypoint_t ) -> ( path: [dynamic]waypoint_t, ok: bool  )
 {
@@ -98,6 +392,7 @@ game_a_star_f_cost :: #force_inline proc( wp, end: waypoint_t ) -> ( f_cost: f32
 game_a_star_pathfind :: proc( _start, _end: waypoint_t ) -> ( path_arr: [dynamic]waypoint_t, ok: bool  )
 {
   ok = false
+  // err = Pathfind_Error.NOT_FOUND
 
   open_arr   : [dynamic]node_t
   closed_arr : [dynamic]node_t
@@ -113,6 +408,7 @@ game_a_star_pathfind :: proc( _start, _end: waypoint_t ) -> ( path_arr: [dynamic
      start.wp.x         == end.wp.x
   { 
     append( &path_arr, _start )
+    // return path_arr, Pathfind_Error.NONE 
     return path_arr, true 
   }
 
@@ -146,7 +442,8 @@ game_a_star_pathfind :: proc( _start, _end: waypoint_t ) -> ( path_arr: [dynamic
       }
     }
     // remove current from open and add to closed
-    if current_idx >= len(open_arr) { return path_arr, false }
+    // if current_idx >= len(open_arr) { return path_arr, Pathfind_Error.NOT_FOUND }
+    if current_idx >= len(open_arr) { delete( path_arr ); return nil, false }
     assert( current_idx < len(open_arr) )
     ordered_remove( &open_arr, current_idx )
     append( &closed_arr, current )
@@ -159,6 +456,7 @@ game_a_star_pathfind :: proc( _start, _end: waypoint_t ) -> ( path_arr: [dynamic
     {
       // return path, true 
       ok = true
+      // err = Pathfind_Error.NONE 
       break
     }
 
@@ -225,6 +523,7 @@ game_a_star_pathfind :: proc( _start, _end: waypoint_t ) -> ( path_arr: [dynamic
   }
 
   if !ok { return nil, false }
+  // if err != Pathfind_Error.NONE { return nil, err }
 
   // current is the end node
   append( &path_arr, current.wp )
@@ -256,6 +555,7 @@ game_a_star_pathfind :: proc( _start, _end: waypoint_t ) -> ( path_arr: [dynamic
   // reverse path_arr
   slice.reverse( path_arr[:] )
   
+  // return path_arr, Pathfind_Error.NONE 
   return path_arr, true
 
 }
