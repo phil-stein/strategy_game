@@ -8,6 +8,20 @@ import        "core:slice"
 
 game_update :: proc()
 {
+
+  if input.mouse_button_states[Mouse_Button.RIGHT].down
+  {
+    camera_rotate_by_mouse()
+    camera_move_by_keys()
+
+    input_set_cursor_visibile( false )
+    input_center_cursor()
+  }
+  else
+  {
+    input_set_cursor_visibile( true )
+    // input_center_cursor()
+  }
   if input.key_states[Key.UP].pressed
   { 
     data.player_chars_current += 1
@@ -16,7 +30,7 @@ game_update :: proc()
   if input.key_states[Key.DOWN].pressed
   { 
     data.player_chars_current -= 1
-    data.player_chars_current = data.player_chars_current < -1 ? len(data.player_chars) : data.player_chars_current
+    data.player_chars_current = data.player_chars_current < -1 ? len(data.player_chars) -1 : data.player_chars_current
   }
 
 
@@ -653,7 +667,7 @@ game_a_star_pathfind_levels :: proc( start, end: waypoint_t ) -> ( path_arr: [dy
   // }
   // // if 1 == 1 { return nil, false }
 
-  end_path : [denamic]waypoint_t
+  end_path : [dynamic]waypoint_t
   defer delete( end_path )
   start_path : [dynamic]waypoint_t
   defer delete( start_path )

@@ -41,6 +41,7 @@ assetm_init :: proc()
    
   data.fb_deferred = framebuffer_create_gbuffer( 1 ) 
   data.fb_lighting = framebuffer_create_hdr()
+  data.fb_outline  = framebuffer_create_single_channel_f( 1 )
 
 
   // // blank_tex_srgb  := make_texture( "assets/blank.png", true )

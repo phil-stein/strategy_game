@@ -54,6 +54,7 @@ use combo moves to extend your playable chars abilities/moveset with the other p
       - [ ] ladders / climable
       - [ ] ice
       - [ ] breakable
+    - [ ] mouse picking (id-buffer) 
   * graphics
     - [ ] __make renderer forward not defferred__
       - [ ] transparency
@@ -63,6 +64,7 @@ use combo moves to extend your playable chars abilities/moveset with the other p
         - [ ] bloom
         - [ ] [subsurface scattering](https://www.youtube.com/watch?v=wfPoVnBFv-0)
       - [ ] special stuff
+        - [X] current player-char outline
         - [ ] water shader
         - [ ] leaves / bushes / vegetation
   * core

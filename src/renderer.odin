@@ -1,5 +1,6 @@
 package core
 
+import        "core:log"
 import        "core:math"
 import linalg "core:math/linalg/glsl"
 import gl     "vendor:OpenGL"
@@ -152,6 +153,11 @@ renderer_update :: proc()
     framebuffer_unbind()
   }
 
+  { // outline
+    if data.player_chars_current >= 0
+    { renderer_draw_scene_outline( data.player_chars[data.player_chars_current].entity_idx ) }
+  }
+
   { // post fx
     shader_use( data.post_fx_shader )
 
@@ -164,6 +170,12 @@ renderer_update :: proc()
     shader_act_bind_texture( "tex", data.fb_lighting.buffer01 )
     shader_act_bind_texture( "position", data.fb_deferred.buffer04 )
     // shader_act_bind_texture( "water_tex", data.texture_arr[data.texture_idxs.brick_albedo].handle )
+
+    if data.player_chars_current >= 0
+    { 
+      shader_act_bind_texture( "outline", data.fb_outline.buffer01 )
+      shader_act_set_vec3( "outline_color", data.player_chars[data.player_chars_current].color )
+    }
     
 
     gl.BindVertexArray(data.quad_vao);
@@ -200,3 +212,52 @@ renderer_draw_quad :: proc( pos, scl: linalg.vec2, texture_handle: u32 )
   gl.Enable( gl.DEPTH_TEST)
 }
 
+renderer_draw_scene_outline :: proc( entity_idx: int )
+{
+  // @OPTIMIZATION: only clear buffer when deselecting
+  gl.ClearColor( 0.0, 0.0, 0.0, 0.0 )
+  w, h := window_get_size()
+  gl.Viewport( 0, 0, i32(w), i32(h) )
+  framebuffer_bind( &data.fb_outline )
+  gl.Clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT ) // clear bg
+  
+  // draw in solid-mode for fbo
+	if data.wireframe_mode_enabled == true
+	{ gl.PolygonMode( gl.FRONT_AND_BACK, gl.FILL ) }
+  
+  e := &data.entity_arr[entity_idx]
+  if e.dead { log.error( "entity_idx passed to renderer_draw_scene_outline() invalid:", entity_idx ) } 
+
+  // mesh
+  // mesh = assetm_get_mesh_by_idx(e->mesh); // [m]
+  // renderer_direct_draw_mesh_textured_mat(e->model, mesh, tex, RGB_F_RGB(1));
+  gl.Disable( gl.BLEND )
+  gl.Enable( gl.CULL_FACE )
+
+	// ---- shader & draw call -----	
+
+	shader_use( data.basic_shader )
+	// gl.ActiveTexture( gl.TEXTURE0 )
+	// gl.BindTexture( gl.TEXTURE_2D, assetm_get_texture( data.texture_idxs.blank ).handle ) 
+	// shader_act_set_int( "tex", 0 )
+	shader_act_bind_texture( "tex", assetm_get_texture( data.texture_idxs.blank ).handle )
+	shader_act_set_vec3( "tint", linalg.vec3{ 1, 1, 1 } )
+	
+	shader_act_set_mat4( "model", &e.model[0][0] )
+	shader_act_set_mat4( "view",  &data.cam.view_mat[0][0] )
+	shader_act_set_mat4( "proj",  &data.cam.pers_mat[0][0] )
+
+  mesh := assetm_get_mesh( e.mesh_idx )
+  gl.BindVertexArray( mesh.vao )
+  gl.DrawElements( gl.TRIANGLES,             // Draw triangles.
+                   i32(mesh.indices_len),  // indices length
+                   gl.UNSIGNED_INT,          // Data type of the indices.
+                   rawptr(uintptr(0)) )      // Pointer to indices. (Not needed.)
+
+  
+	// reset if wireframe-mode
+  if data.wireframe_mode_enabled == true
+	{ gl.PolygonMode( gl.FRONT_AND_BACK, gl.LINE ) }
+	
+	framebuffer_unbind()
+}

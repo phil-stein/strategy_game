@@ -7,7 +7,6 @@ import "vendor:glfw"
 import gl "vendor:OpenGL"
 
 
-
 // intis glfw & glad, also creates the window
 // returns: <stddef.h> return_code
 window_create :: proc( width, height: int, title: cstring, type: Window_Type, vsync: bool ) -> bool
@@ -31,8 +30,8 @@ window_create :: proc( width, height: int, title: cstring, type: Window_Type, vs
 // 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 // #endif
 
-  monitor   := glfw.GetPrimaryMonitor()
-  mode      := glfw.GetVideoMode( monitor )
+  data.monitor   = glfw.GetPrimaryMonitor()
+  mode      := glfw.GetVideoMode( data.monitor )
   data.monitor_width  = int(mode.width)
   data.monitor_height = int(mode.height)
  
@@ -44,7 +43,7 @@ window_create :: proc( width, height: int, title: cstring, type: Window_Type, vs
   // open a window and create its opengl context
 	if type == Window_Type.FULLSCREEN
   {
-    data.window = glfw.CreateWindow( mode.width, mode.height, title, monitor, nil )
+    data.window = glfw.CreateWindow( mode.width, mode.height, title, data.monitor, nil )
     data.window_width  = int(mode.width)
     data.window_height = int(mode.height)
   }
@@ -80,11 +79,12 @@ window_create :: proc( width, height: int, title: cstring, type: Window_Type, vs
 	{
 		glfw.MaximizeWindow( data.window )
 	}
+  data.window_type = type
 
 	// set the resize callback
 	glfw.SetFramebufferSizeCallback( data.window, cast(glfw.FramebufferSizeProc)resize_callback )
   // @NOTE: causes inability to restore maximized after fullscreen, also framebuffers crash when minimizing to system tray
-  // glfwSetWindowMaximizeCallback(core_data->window,  (GLFWwindowmaximizefun)maximize_callback); 
+  glfw.SetWindowMaximizeCallback( data.window,  cast(glfw.WindowMaximizeProc)maximize_callback); 
 
 	glfw.SetWindowAttrib( data.window, glfw.FOCUS_ON_SHOW, 1 )  // 1: true
 	// glfwSetWindowAttrib(window, GLFW_AUTO_ICONIFY, true);
@@ -102,7 +102,7 @@ window_create :: proc( width, height: int, title: cstring, type: Window_Type, vs
 }
 
 // glfw error callback func
-@(private)
+@(private="file")
 error_callback :: proc( error: c.int, description: cstring )
 {
 	fmt.printf( "GLFW-Error: %s\n", description );
@@ -111,7 +111,7 @@ error_callback :: proc( error: c.int, description: cstring )
 // window resize callback
 // resizes the "glViewport" according to the resized window
 // window is type GLFWwindow*
-@(private)
+@(private="file")
 resize_callback :: proc( window: glfw.WindowHandle, width, height: c.int )
 {
 	gl.Viewport( 0, 0, width, height );
@@ -124,6 +124,11 @@ resize_callback :: proc( window: glfw.WindowHandle, width, height: c.int )
 
   data.fb_deferred = framebuffer_create_gbuffer( 1 ) 
   data.fb_lighting = framebuffer_create_hdr()
+}
+@(private="file")
+maximize_callback :: proc(window: glfw.WindowHandle, maximized: c.int )
+{
+  data.window_type = maximized == 1 ? Window_Type.MAXIMIZED : Window_Type.MINIMIZED 
 }
 
 Gl_Debug_Enum :: enum
@@ -210,11 +215,25 @@ window_get_size :: #force_inline proc() -> ( width, height: int )
 	w, h := glfw.GetWindowSize( data.window )
   return int(w), int(h)
 }
+window_set_type :: proc( type: Window_Type )
+{
+	// maximize window
+	switch type
+  {
+    case Window_Type.MINIMIZED:
+	  {
+	  	glfw.RestoreWindow( data.window )
+	  }
+    case Window_Type.MAXIMIZED:
+	  {
+	  	glfw.MaximizeWindow( data.window )
+	  }
+    case Window_Type.FULLSCREEN:
+    {
+      mode : ^glfw.VidMode = glfw.GetVideoMode( data.monitor )
+      glfw.SetWindowMonitor( data.window, data.monitor, 0, 0, mode.width, mode.height, mode.refresh_rate )
+    }
+  }
+  data.window_type = type
+}
 
-// void maximize_callback(void* window, int maximized)
-// {
-//   TRACE();
-//
-//   (void)window;
-//   win_type = maximized ? WINDOW_MAX : WINDOW_MIN; // : win_type;
-// }

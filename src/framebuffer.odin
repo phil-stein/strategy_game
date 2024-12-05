@@ -1,9 +1,9 @@
 package core
 
-// import    "core:fmt"
+import    "core:fmt"
 import gl "vendor:OpenGL"
 
-FRAMEBUFFER_TYPE :: enum
+Framebuffer_Type :: enum
 {
 	RGB				       = gl.RGB,
 	RGB16F			     = gl.RGBA16F, // @TODO: check if GL_RGB16F works as well
@@ -15,7 +15,7 @@ FRAMEBUFFER_TYPE :: enum
 
 framebuffer_t :: struct
 {
-  type: FRAMEBUFFER_TYPE,
+  type: Framebuffer_Type,
   
   buffer01 : u32, 
   buffer02 : u32,  
@@ -49,13 +49,13 @@ framebuffer_unbind :: #force_inline proc()
 framebuffer_delete :: #force_inline proc(fb: ^framebuffer_t)
 {
   gl.DeleteTextures(1, &fb.buffer01);
-  if (fb.type == FRAMEBUFFER_TYPE.DEFERRED)
+  if (fb.type == Framebuffer_Type.DEFERRED)
   {
     gl.DeleteTextures(1, &fb.buffer02);
     gl.DeleteTextures(1, &fb.buffer03);
     gl.DeleteTextures(1, &fb.buffer04);
   }
-  if (fb.type != FRAMEBUFFER_TYPE.SINGLE_CHANNEL)
+  if (fb.type != Framebuffer_Type.SINGLE_CHANNEL)
   {
     gl.DeleteRenderbuffers(1, &fb.rbo);
   }
@@ -63,9 +63,11 @@ framebuffer_delete :: #force_inline proc(fb: ^framebuffer_t)
 }
 
 // u32* tex_buffer, u32* fbo, u32* rbo, f32 size_divisor, int* width, int* height
-framebuffer_create_hdr :: proc() -> ( fb: framebuffer_t )
+framebuffer_create_hdr :: proc( loc := #caller_location) -> ( fb: framebuffer_t )
 {
-  fb.type = FRAMEBUFFER_TYPE.RGB16F
+  fmt.println( loc )
+
+  fb.type = Framebuffer_Type.RGB16F
 
 	// create framebuffer object
 	gl.GenFramebuffers(1, &fb.fbo);
@@ -136,7 +138,7 @@ framebuffer_create_gbuffer :: proc( size_divisor: int ) -> ( fb: framebuffer_t )
 	fb.width  = w
 	fb.height = h
   fb.size_divisor = size_divisor
-  fb.type = FRAMEBUFFER_TYPE.DEFERRED
+  fb.type = Framebuffer_Type.DEFERRED
 
 
   // - color buffer
@@ -194,4 +196,51 @@ framebuffer_create_gbuffer :: proc( size_divisor: int ) -> ( fb: framebuffer_t )
 	gl.BindFramebuffer(gl.FRAMEBUFFER, 0);
 
   return
+}
+
+framebuffer_create_single_channel_f :: proc( size_divisor: f32 ) -> ( fb: framebuffer_t )
+{
+  fb.type = Framebuffer_Type.SINGLE_CHANNEL_F
+  // create framebuffer object
+	gl.GenFramebuffers( 1, &fb.fbo )
+	// set fbo to be the active framebuffer to be modified
+	gl.BindFramebuffer( gl.FRAMEBUFFER, fb.fbo )
+
+  w := data.window_width
+  h := data.window_height
+	// scale the resolution 
+	w = int( f32(w) / size_divisor )
+	h = int( f32(h) / size_divisor )
+
+	// generate texture
+	gl.GenTextures( 1, &fb.buffer01 )
+	gl.BindTexture( gl.TEXTURE_2D, fb.buffer01 )
+
+	gl.TexImage2D( gl.TEXTURE_2D, 0, gl.R16F, i32(w), i32(h), 0, gl.RED, gl.FLOAT, nil ) // gl.UNSIGNED_BYTE
+	gl.TexParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR )
+	gl.TexParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR )
+	// attach it to currently bound framebuffer object
+	gl.FramebufferTexture2D( gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, fb.buffer01, 0 )
+
+	// create render buffer object
+	gl.GenRenderbuffers( 1, &fb.rbo )
+	gl.BindRenderbuffer( gl.RENDERBUFFER, fb.rbo )  // &rbo
+	gl.RenderbufferStorage( gl.RENDERBUFFER, gl.DEPTH24_STENCIL8, i32(w), i32(h) )
+	gl.BindRenderbuffer( gl.RENDERBUFFER, 0 )
+
+	// attach render buffer object to the depth and stencil buffer
+	gl.FramebufferRenderbuffer( gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, fb.rbo )  // &rbo
+
+	if (gl.CheckFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE)
+	{
+	  panic("-!!!-> ERROR_CREATING_FRAMEBUFFER")
+	}
+
+	// unbind the framebuffer, opengl now renders to the default buffer again
+	gl.BindFramebuffer( gl.FRAMEBUFFER, 0 )
+
+	// free memory
+	// glDeleteFramebuffers(1, &fbo);
+
+  return fb
 }

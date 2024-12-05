@@ -141,9 +141,11 @@ data_t :: struct
   window: glfw.WindowHandle,
   window_width   : int,
   window_height  : int,
+  monitor        : glfw.MonitorHandle,
   monitor_width  : int,
   monitor_height : int,
   vsync_enabled  : bool,
+  window_type    : Window_Type,
 
   quad_vao : u32,
   quad_vbo : u32,
@@ -171,6 +173,7 @@ data_t :: struct
 
   fb_deferred : framebuffer_t,
   fb_lighting : framebuffer_t,
+  fb_outline  : framebuffer_t,
 
   wireframe_mode_enabled : bool,
   

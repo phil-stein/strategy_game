@@ -5,7 +5,9 @@ out vec4 FragColor;
 in vec2 uv_coords;
 
 uniform sampler2D tex;  	// color buffer
-// uniform sampler2D outline;	// outline buffer
+                          //
+uniform sampler2D outline;	// outline buffer
+uniform vec3 outline_color;	// outline buffer
                             //
 // uniform sampler2D position;  	// position buffer
 // uniform sampler2D water_tex;  	
@@ -38,58 +40,58 @@ void main()
 	float gamma = 2.2;
 	col = pow(col, vec3(1 / gamma));
 
-	// // ---- outline ----
-	// const float width = 1.0 / 800.0; 
+	// ---- outline ----
+	const float width = 1.0 / 800.0; 
 	// const vec3  outline_color = vec3(11.0f / 255.0f, 1.0, 249.0f / 255.0f);
-	// int use_outline_color = 0;
-	// float x = uv_coords.x;
-	// float y = uv_coords.y;
-	// vec2 coord = vec2(x, y);	
-	//
-	// // sample around the current fragment and check if outside the mesh
-	//
-	// float base = texture(outline, coord).r;
-	// x = uv_coords.x + width;
-	// y = uv_coords.y;
-	// coord = vec2(x, y);
-	// float c = texture(outline, coord).r;
-	// if (c > 0.0 && base == 0.0) { use_outline_color = 1; }
-	//
-	// x = uv_coords.x - width;
-	// y = uv_coords.y;
-	// coord = vec2(x, y);
-	// c = texture(outline, coord).r;
-	// if (c > 0.0 && base == 0.0) { use_outline_color = 1; }
-	//
-	// x = uv_coords.x;
-	// y = uv_coords.y + width;
-	// coord = vec2(x, y);
-	// c = texture(outline, coord).r;
-	// if (c > 0.0 && base == 0.0) { use_outline_color = 1; }
-	//
-	// x = uv_coords.x;
-	// y = uv_coords.y - width;
-	// coord = vec2(x, y);
-	// c = texture(outline, coord).r;
-	// if (c > 0.0 && base == 0.0) { use_outline_color = 1; }
-	//
-	// x = uv_coords.x + width;
-	// y = uv_coords.y + width;
-	// coord = vec2(x, y);
-	// c = texture(outline, coord).r;
-	// if (c > 0.0 && base == 0.0) { use_outline_color = 1; }
-	//
-	// x = uv_coords.x - width;
-	// y = uv_coords.y - width;
-	// coord = vec2(x, y);
-	// c = texture(outline, coord).r;
-	// if (c > 0.0 && base == 0.0) { use_outline_color = 1; }
-	//
-	//
-	// if (use_outline_color == 1)
-	// {
-	// 	col = outline_color;
-	// }
+	int use_outline_color = 0;
+	float x = uv_coords.x;
+	float y = uv_coords.y;
+	vec2 coord = vec2(x, y);	
+	
+	// sample around the current fragment and check if outside the mesh
+	
+	float base = texture(outline, coord).r;
+	x = uv_coords.x + width;
+	y = uv_coords.y;
+	coord = vec2(x, y);
+	float c = texture(outline, coord).r;
+	if (c > 0.0 && base == 0.0) { use_outline_color = 1; }
+	
+	x = uv_coords.x - width;
+	y = uv_coords.y;
+	coord = vec2(x, y);
+	c = texture(outline, coord).r;
+	if (c > 0.0 && base == 0.0) { use_outline_color = 1; }
+	
+	x = uv_coords.x;
+	y = uv_coords.y + width;
+	coord = vec2(x, y);
+	c = texture(outline, coord).r;
+	if (c > 0.0 && base == 0.0) { use_outline_color = 1; }
+	
+	x = uv_coords.x;
+	y = uv_coords.y - width;
+	coord = vec2(x, y);
+	c = texture(outline, coord).r;
+	if (c > 0.0 && base == 0.0) { use_outline_color = 1; }
+	
+	x = uv_coords.x + width;
+	y = uv_coords.y + width;
+	coord = vec2(x, y);
+	c = texture(outline, coord).r;
+	if (c > 0.0 && base == 0.0) { use_outline_color = 1; }
+	
+	x = uv_coords.x - width;
+	y = uv_coords.y - width;
+	coord = vec2(x, y);
+	c = texture(outline, coord).r;
+	if (c > 0.0 && base == 0.0) { use_outline_color = 1; }
+	
+	
+	if (use_outline_color == 1)
+	{
+		col = outline_color;
+	}
 
   // col = quantize(col, uv_coords); 
  

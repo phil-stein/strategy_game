@@ -217,25 +217,16 @@ main :: proc()
     data_pre_updated()
     debug_timer_stop() // data_pre_updated()
 
-    if input.mouse_button_states[Mouse_Button.RIGHT].down
-    {
-      camera_rotate_by_mouse()
-      camera_move_by_keys()
-
-      input_set_cursor_visibile( false )
-      input_center_cursor()
-    }
-    else
-    {
-      input_set_cursor_visibile( true )
-      // input_center_cursor()
-    }
-
     if ( input.key_states[Key.ESCAPE].pressed )
     { break }
 
     if ( input.key_states[Key.TAB].pressed )
     { data.wireframe_mode_enabled  = !data.wireframe_mode_enabled }
+
+    if ( input.key_states[Key.F11].pressed )
+    { 
+      window_set_type( Window_Type.MAXIMIZED if data.window_type != Window_Type.MAXIMIZED else Window_Type.MINIMIZED )
+    }
 
     if ( input.key_states[Key.ENTER].pressed )
     {
