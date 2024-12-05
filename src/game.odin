@@ -19,6 +19,7 @@ game_update :: proc()
     data.player_chars_current = data.player_chars_current < -1 ? len(data.player_chars) : data.player_chars_current
   }
 
+
   cam_hit_tile, has_cam_hit_tile := game_find_tile_hit_by_camera()
   if has_cam_hit_tile && data.player_chars_current >= 0
   {
@@ -43,6 +44,7 @@ game_update :: proc()
     path_found     := false
     path_found_err := Pathfind_Error.NONE
     path_type      := Combo_Type.NONE
+
     switch data.player_chars[data.player_chars_current].path_current_combo
     {
       case Combo_Type.NONE:
@@ -53,6 +55,11 @@ game_update :: proc()
         { path_found_err = Pathfind_Error.NOT_FOUND }
         else if len(path) > data.player_chars[data.player_chars_current].max_walk_dist
         { path_found_err = Pathfind_Error.TOO_LONG; path_found = false }
+        if start.level_idx == cam_hit_tile.level_idx &&
+           start.x         == cam_hit_tile.x && 
+           start.z         == cam_hit_tile.z 
+        { path_found_err = Pathfind_Error.START_END_SAME_TILE; path_found = false }
+
         // fmt.println( "len(path):", len(path), ", max_walk_dist:", data.player_chars[data.player_chars_current].max_walk_dist, ", path_found_err:", path_found_err )
 
         path_type = Combo_Type.NONE
@@ -60,8 +67,7 @@ game_update :: proc()
       case Combo_Type.JUMP:
       {
         path, path_found_err = game_check_jump_valid( data.player_chars[data.player_chars_current], start, cam_hit_tile )
-        fmt.println( "path_found:", path_found, "len(path):", len(path) )
-        // if !path_found { path_found_err = Pathfind_Error.NOT_FOUND }
+        // fmt.println( "path_found:", path_found, "len(path):", len(path) )
         if path_found_err != Pathfind_Error.NONE { path_found = false }
         else { path_found = true }
         path_type = Combo_Type.JUMP
@@ -173,6 +179,7 @@ game_update :: proc()
       {
         case Combo_Type.NONE:
         { 
+          assert( len( path ) >= 1 )
           // debug_draw_path( path, path_found ? linalg.vec3{ 0, 1, 0 } : linalg.vec3{ 1, 0, 0 } ) 
           debug_draw_path( path, path_found ? data.player_chars[data.player_chars_current].color : linalg.vec3{ 1, 0, 0 } ) 
         }
@@ -261,46 +268,24 @@ game_check_jump_valid :: proc( char: character_t, start, end: waypoint_t ) -> ( 
   // { return nil, false }
 
   append( &path_arr, start )
-  append( &path_arr, end )
+  append( &path_arr, end)
+
+  if start.level_idx == end.level_idx &&
+     start.x         == end.x && 
+     start.z         == end.z 
+  { 
+    return path_arr, Pathfind_Error.START_END_SAME_TILE
+  }
   
   if !ok
   { 
     return path_arr, Pathfind_Error.TOO_LONG 
   }
-
-  // start_pos := util_tile_to_pos( start ) + linalg.vec3{ 0, 1, 0 }
-  // end_pos   := util_tile_to_pos( end )   + linalg.vec3{ 0, 1, 0 }
-  // step := ( end_pos - start_pos ) / f32(divisions)
-  // p00  := start_pos
-  // p01  := start_pos
-  //
-  // up := linalg.cross( step, linalg.vec3{ 1, 0, 0 } )
-  // up  = linalg.normalize( up )
-  //
-  // for i in 0 ..< divisions
-  // {
-  //   c : f32 = f32(i) / f32(divisions -1)
-  //   col := linalg.vec3{ c, c, c } * color
-  //
-  //   p01 = start_pos + ( step * f32(i) )
-  //   y := p01.y
-  //
-  //   perc := f32(i) / f32(divisions -1)
-  //   y_offs := math.sin( perc * math.PI )
-  //   // fmt.println( "p01.y:", p01.y, ", \tperc:", perc )
-  //   y_offs *= 5  // scale height
-  //  
-  //   p01.y += y_offs
-  //   // debug_draw_line( p00, p01, col, 25 ) 
-  //   append( &path_arr,  )
-  //
-  //   p00 = p01
-  // }
-
   // return path_arr, true 
   return path_arr, Pathfind_Error.NONE
 }
 
+@(deprecated="use game_a_star_pathfind() or game_a_start_pathfind_levels() instead")
 game_simple_pathfind :: proc( start, end: waypoint_t ) -> ( path: [dynamic]waypoint_t, ok: bool  )
 {
   current : waypoint_t = start
@@ -398,7 +383,7 @@ game_a_star_pathfind :: proc( _start, _end: waypoint_t ) -> ( path_arr: [dynamic
   closed_arr : [dynamic]node_t
   defer delete( open_arr )
   defer delete( closed_arr )
-  
+
   start := node_t{ wp=_start, f_cost=0.0, parent=waypoint_t{ level_idx=0, x=0, z=0 } }
   end   := node_t{ wp=_end,   f_cost=0.0, parent=waypoint_t{ level_idx=0, x=0, z=0 } }
 
@@ -560,26 +545,77 @@ game_a_star_pathfind :: proc( _start, _end: waypoint_t ) -> ( path_arr: [dynamic
 
 }
 // use mutliple levels:
-//  1. find nearest ramp to goal
-//    - need to know if player can even reach it
-//    - floodfill ?
-//    - brute-force all of them ?
-//  2. a* to that ramp
-// reverse: XXX
-//  1. a* to ramps (prob in order of dist to goal)
+//  1. a* to ramps (in order of dist to goal)
 //  2. a* to goal
 //  3. repeat for all ramps until one works both tims
-//  -> stich together the two paths
+//  4. stich together the two paths
 
-@private a_star_current_end : waypoint_t
-@private 
+@(private="file") a_star_current_end : waypoint_t
+@(private="file")
 sort_proc :: proc( i, j: waypoint_t ) -> bool
 {
   i_dist := linalg.distance( util_tile_to_pos( i ), util_tile_to_pos( a_star_current_end ) )
   j_dist := linalg.distance( util_tile_to_pos( j ), util_tile_to_pos( a_star_current_end ) )
   return i_dist < j_dist
 }
+@(private="file")
+game_find_ramp_top :: proc( ramp: waypoint_t, ramp_type: Tile_Nav_Type ) -> ( ramp_top: waypoint_t, ok: bool )
+{
+  ok = true
 
+  // find the tile the ramp spits u out on
+  //    [0]
+  // [1] X [2]
+  //    [3]
+  if ramp.z > 0 && 
+     ramp_type == Tile_Nav_Type.RAMP_DOWN &&
+     data.tile_type_arr[ramp.level_idx][ramp.x][ramp.z -1] == Tile_Nav_Type.TRAVERSABLE
+  { ramp_top = waypoint_t{ level_idx = ramp.level_idx, x = ramp.x, z = ramp.z -1 } }
+  else if ramp.x > 0 && 
+          ramp_type == Tile_Nav_Type.RAMP_RIGHT &&
+          data.tile_type_arr[ramp.level_idx][ramp.x -1][ramp.z] == Tile_Nav_Type.TRAVERSABLE
+  { ramp_top = waypoint_t{ level_idx = ramp.level_idx, x = ramp.x -1, z = ramp.z } }
+  else if ramp.x < TILE_ARR_X_MAX -1 && 
+          ramp_type == Tile_Nav_Type.RAMP_LEFT &&
+          data.tile_type_arr[ramp.level_idx][ramp.x +1][ramp.z] == Tile_Nav_Type.TRAVERSABLE
+  { ramp_top = waypoint_t{ level_idx = ramp.level_idx, x = ramp.x +1, z = ramp.z } }
+  else if ramp.z < TILE_ARR_Z_MAX -1 && 
+          ramp_type == Tile_Nav_Type.RAMP_UP &&
+          data.tile_type_arr[ramp.level_idx][ramp.x][ramp.z +1] == Tile_Nav_Type.TRAVERSABLE
+  { ramp_top = waypoint_t{ level_idx = ramp.level_idx, x = ramp.x, z = ramp.z +1 } }
+  else { /* fmt.eprintln( "[ERROR] didnt find ramp_top", i ); */ ok = false }
+
+  return ramp_top, ok
+}
+@(private="file")
+game_find_ramp_bottom :: proc( ramp: waypoint_t, ramp_type: Tile_Nav_Type ) -> ( ramp_bottom: waypoint_t, ok: bool )
+{
+  ok = true
+
+  // find the tile at the foot of the ramp
+  //    [0]
+  // [1] X [2]
+  //    [3]
+  if ramp.z > 0 && 
+     ramp_type == Tile_Nav_Type.RAMP_UP &&
+     data.tile_type_arr[ramp.level_idx -1][ramp.x][ramp.z -1] == Tile_Nav_Type.TRAVERSABLE
+  { ramp_bottom = waypoint_t{ level_idx = ramp.level_idx -1, x = ramp.x, z = ramp.z -1 } }
+  else if ramp.x > 0 && 
+          ramp_type == Tile_Nav_Type.RAMP_LEFT &&
+          data.tile_type_arr[ramp.level_idx -1][ramp.x -1][ramp.z] == Tile_Nav_Type.TRAVERSABLE
+  { ramp_bottom = waypoint_t{ level_idx = ramp.level_idx -1, x = ramp.x -1, z = ramp.z } }
+  else if ramp.x < TILE_ARR_X_MAX -1 && 
+          ramp_type == Tile_Nav_Type.RAMP_RIGHT &&
+          data.tile_type_arr[ramp.level_idx -1][ramp.x +1][ramp.z] == Tile_Nav_Type.TRAVERSABLE
+  { ramp_bottom = waypoint_t{ level_idx = ramp.level_idx -1, x = ramp.x +1, z = ramp.z } }
+  else if ramp.z < TILE_ARR_Z_MAX -1 && 
+          ramp_type == Tile_Nav_Type.RAMP_DOWN &&
+          data.tile_type_arr[ramp.level_idx -1][ramp.x][ramp.z +1] == Tile_Nav_Type.TRAVERSABLE
+  { ramp_bottom = waypoint_t{ level_idx = ramp.level_idx -1, x = ramp.x, z = ramp.z +1 } }
+  else { /* fmt.eprintln( "[ERROR] didnt find ramp_bottom", i ); */ ok = false }
+
+  return ramp_bottom, ok
+}
 game_a_star_pathfind_levels :: proc( start, end: waypoint_t ) -> ( path_arr: [dynamic]waypoint_t, ok: bool  )
 {
   if start.level_idx == end.level_idx { return game_a_star_pathfind( start, end ) }
@@ -592,69 +628,32 @@ game_a_star_pathfind_levels :: proc( start, end: waypoint_t ) -> ( path_arr: [dy
   // {
   // }
   a_star_current_end = end
-  sorted_ramp_arr := data.tile_ramp_wp_arr[end.level_idx][:]
+  sorted_ramp_arr : []waypoint_t
+  if start.level_idx < end.level_idx
+  { sorted_ramp_arr = data.tile_ramp_wp_arr[end.level_idx][:] }
+  else
+  { sorted_ramp_arr = data.tile_ramp_wp_arr[start.level_idx][:] }
   // fmt.println( "data.tile_ramp_wp_arr[end.level_idx] len ->", len(data.tile_ramp_wp_arr[end.level_idx]) )
   // fmt.println( "data.tile_ramp_wp_arr[end.level_idx][:] len ->", len(data.tile_ramp_wp_arr[end.level_idx][:]) )
   // fmt.println( "sorted_ramp_arr len ->", len(sorted_ramp_arr) )
   slice.sort_by( sorted_ramp_arr, sort_proc )
 
-  // @TMP:
-  for w, i in sorted_ramp_arr
-  {
-    // fmt.println( w )
-    c : f32 = f32(i +1) / f32( len( sorted_ramp_arr ) )
-    // debug_draw_aabb_wp( w, linalg.vec3{ 1, 1, 1 }, 10 )
-    // debug_draw_aabb_wp( w, linalg.vec3{ c, c, c }, 10 )
+  // // @TMP:
+  // for w, i in sorted_ramp_arr
+  // {
+  //   // fmt.println( w )
+  //   c : f32 = f32(i +1) / f32( len( sorted_ramp_arr ) )
+  //   // debug_draw_aabb_wp( w, linalg.vec3{ 1, 1, 1 }, 10 )
+  //   // debug_draw_aabb_wp( w, linalg.vec3{ c, c, c }, 10 )
 
-    ramp := w
-    ramp_type := data.tile_type_arr[ramp.level_idx][ramp.x][ramp.z]
-    ramp_top : waypoint_t
-    ramp_bottom : waypoint_t
+  //   ramp := w
+  //   ramp_type := data.tile_type_arr[ramp.level_idx][ramp.x][ramp.z]
+  //   ramp_top : waypoint_t
+  //   ramp_bottom : waypoint_t
+  // }
+  // // if 1 == 1 { return nil, false }
 
-    // if ramp.z > 0 && 
-    //    ramp_type == Tile_Nav_Type.RAMP_DOWN &&
-    //    data.tile_type_arr[ramp.level_idx][ramp.x][ramp.z -1] == Tile_Nav_Type.TRAVERSABLE
-    // { ramp_top = waypoint_t{ level_idx = ramp.level_idx, x = ramp.x, z = ramp.z -1 } }
-    // else if ramp.x > 0 && 
-    //         ramp_type == Tile_Nav_Type.RAMP_RIGHT &&
-    //         data.tile_type_arr[ramp.level_idx][ramp.x -1][ramp.z] == Tile_Nav_Type.TRAVERSABLE
-    // { ramp_top = waypoint_t{ level_idx = ramp.level_idx, x = ramp.x -1, z = ramp.z } }
-    // else if ramp.x < TILE_ARR_X_MAX -1 && 
-    //         ramp_type == Tile_Nav_Type.RAMP_LEFT &&
-    //         data.tile_type_arr[ramp.level_idx][ramp.x +1][ramp.z] == Tile_Nav_Type.TRAVERSABLE
-    // { ramp_top = waypoint_t{ level_idx = ramp.level_idx, x = ramp.x +1, z = ramp.z } }
-    // else if ramp.z < TILE_ARR_Z_MAX -1 && 
-    //         ramp_type == Tile_Nav_Type.RAMP_UP &&
-    //         data.tile_type_arr[ramp.level_idx][ramp.x][ramp.z +1] == Tile_Nav_Type.TRAVERSABLE
-    // { ramp_top = waypoint_t{ level_idx = ramp.level_idx, x = ramp.x, z = ramp.z +1 } }
-    // else { debug_draw_sphere( util_tile_to_pos( ramp ), linalg.vec3{ 1, 1, 1 }, linalg.vec3{ 1, 0, 0 } ); continue }
-    //
-    // debug_draw_aabb_wp( ramp_top, linalg.vec3{ 1, 1, 0 }, 10 )
-
-    // if ramp.z > 0 && 
-    //    ramp_type == Tile_Nav_Type.RAMP_UP &&
-    //    data.tile_type_arr[ramp.level_idx -1][ramp.x][ramp.z -1] == Tile_Nav_Type.TRAVERSABLE
-    // { ramp_bottom = waypoint_t{ level_idx = ramp.level_idx -1, x = ramp.x, z = ramp.z -1 } }
-    // else if ramp.x > 0 && 
-    //         ramp_type == Tile_Nav_Type.RAMP_LEFT &&
-    //         data.tile_type_arr[ramp.level_idx -1][ramp.x -1][ramp.z] == Tile_Nav_Type.TRAVERSABLE
-    // { ramp_bottom = waypoint_t{ level_idx = ramp.level_idx -1, x = ramp.x -1, z = ramp.z } }
-    // else if ramp.x < TILE_ARR_X_MAX -1 && 
-    //         ramp_type == Tile_Nav_Type.RAMP_RIGHT &&
-    //         data.tile_type_arr[ramp.level_idx -1][ramp.x +1][ramp.z] == Tile_Nav_Type.TRAVERSABLE
-    // { ramp_bottom = waypoint_t{ level_idx = ramp.level_idx -1, x = ramp.x +1, z = ramp.z } }
-    // else if ramp.z < TILE_ARR_Z_MAX -1 && 
-    //         ramp_type == Tile_Nav_Type.RAMP_DOWN &&
-    //         data.tile_type_arr[ramp.level_idx -1][ramp.x][ramp.z +1] == Tile_Nav_Type.TRAVERSABLE
-    // { ramp_bottom = waypoint_t{ level_idx = ramp.level_idx -1, x = ramp.x, z = ramp.z +1 } }
-    // else { debug_draw_sphere( util_tile_to_pos( ramp ), linalg.vec3{ 1, 1, 1 }, linalg.vec3{ 1, 0, 0 } ); continue }
-    // // else { fmt.eprintln( "[ERROR] didnt find ramp_bottom", i ); continue }
-    // fmt.println( "found ramp_bottom:", ramp_bottom )
-    // debug_draw_aabb_wp( ramp_bottom, linalg.vec3{ 1, 0, 1 }, 10 )
-  }
-  // if 1 == 1 { return nil, false }
-
-  end_path : [dynamic]waypoint_t
+  end_path : [denamic]waypoint_t
   defer delete( end_path )
   start_path : [dynamic]waypoint_t
   defer delete( start_path )
@@ -669,32 +668,13 @@ game_a_star_pathfind_levels :: proc( start, end: waypoint_t ) -> ( path_arr: [dy
     //    [0]
     // [1] X [2]
     //    [3]
-    // if ramp.z > 0 && data.tile_type_arr[ramp.level_idx][ramp.x][ramp.z -1] == Tile_Nav_Type.RAMP_UP  
-    // { ramp_top = waypoint_t{ level_idx = ramp.level_idx, x = ramp.x, z = ramp.z -1 } }
-    // else if ramp.x > 0 && data.tile_type_arr[ramp.level_idx][ramp.x -1][ramp.z] == Tile_Nav_Type.RAMP_LEFT 
-    // { ramp_top = waypoint_t{ level_idx = ramp.level_idx, x = ramp.x -1, z = ramp.z } }
-    // else if ramp.x < TILE_ARR_X_MAX -1 && data.tile_type_arr[ramp.level_idx][ramp.x +1][ramp.z] == Tile_Nav_Type.RAMP_RIGHT  
-    // { ramp_top = waypoint_t{ level_idx = ramp.level_idx, x = ramp.x +1, z = ramp.z } }
-    // else if ramp.z < TILE_ARR_Z_MAX -1 && data.tile_type_arr[ramp.level_idx][ramp.x][ramp.z +1] == Tile_Nav_Type.RAMP_DOWN
-    // { ramp_top = waypoint_t{ level_idx = ramp.level_idx, x = ramp.x, z = ramp.z +1 } }
-    // else { continue }
-    if ramp.z > 0 && 
-       ramp_type == Tile_Nav_Type.RAMP_DOWN &&
-       data.tile_type_arr[ramp.level_idx][ramp.x][ramp.z -1] == Tile_Nav_Type.TRAVERSABLE
-    { ramp_top = waypoint_t{ level_idx = ramp.level_idx, x = ramp.x, z = ramp.z -1 } }
-    else if ramp.x > 0 && 
-            ramp_type == Tile_Nav_Type.RAMP_RIGHT &&
-            data.tile_type_arr[ramp.level_idx][ramp.x -1][ramp.z] == Tile_Nav_Type.TRAVERSABLE
-    { ramp_top = waypoint_t{ level_idx = ramp.level_idx, x = ramp.x -1, z = ramp.z } }
-    else if ramp.x < TILE_ARR_X_MAX -1 && 
-            ramp_type == Tile_Nav_Type.RAMP_LEFT &&
-            data.tile_type_arr[ramp.level_idx][ramp.x +1][ramp.z] == Tile_Nav_Type.TRAVERSABLE
-    { ramp_top = waypoint_t{ level_idx = ramp.level_idx, x = ramp.x +1, z = ramp.z } }
-    else if ramp.z < TILE_ARR_Z_MAX -1 && 
-            ramp_type == Tile_Nav_Type.RAMP_UP &&
-            data.tile_type_arr[ramp.level_idx][ramp.x][ramp.z +1] == Tile_Nav_Type.TRAVERSABLE
-    { ramp_top = waypoint_t{ level_idx = ramp.level_idx, x = ramp.x, z = ramp.z +1 } }
-    else { /* fmt.eprintln( "[ERROR] didnt find ramp_top", i ); */ continue }
+    found_top : bool
+    if start.level_idx < end.level_idx
+    { ramp_top, found_top = game_find_ramp_top( ramp, ramp_type ) }
+    else
+    { ramp_top, found_top = game_find_ramp_bottom( ramp, ramp_type ) }
+    if !found_top { continue }
+    // debug_draw_aabb_wp( ramp_top, linalg.vec3{ 1, 1, 1 }, 20 )
 
     // fmt.println( "found ramp_top:", ramp_top )
     // debug_draw_aabb_wp( ramp_top, linalg.vec3{ 1, 1, 0 }, 10 )
@@ -708,23 +688,13 @@ game_a_star_pathfind_levels :: proc( start, end: waypoint_t ) -> ( path_arr: [dy
     //    [0]
     // [1] X [2]
     //    [3]
-    if ramp.z > 0 && 
-       ramp_type == Tile_Nav_Type.RAMP_UP &&
-       data.tile_type_arr[ramp.level_idx -1][ramp.x][ramp.z -1] == Tile_Nav_Type.TRAVERSABLE
-    { ramp_bottom = waypoint_t{ level_idx = ramp.level_idx -1, x = ramp.x, z = ramp.z -1 } }
-    else if ramp.x > 0 && 
-            ramp_type == Tile_Nav_Type.RAMP_LEFT &&
-            data.tile_type_arr[ramp.level_idx -1][ramp.x -1][ramp.z] == Tile_Nav_Type.TRAVERSABLE
-    { ramp_bottom = waypoint_t{ level_idx = ramp.level_idx -1, x = ramp.x -1, z = ramp.z } }
-    else if ramp.x < TILE_ARR_X_MAX -1 && 
-            ramp_type == Tile_Nav_Type.RAMP_RIGHT &&
-            data.tile_type_arr[ramp.level_idx -1][ramp.x +1][ramp.z] == Tile_Nav_Type.TRAVERSABLE
-    { ramp_bottom = waypoint_t{ level_idx = ramp.level_idx -1, x = ramp.x +1, z = ramp.z } }
-    else if ramp.z < TILE_ARR_Z_MAX -1 && 
-            ramp_type == Tile_Nav_Type.RAMP_DOWN &&
-            data.tile_type_arr[ramp.level_idx -1][ramp.x][ramp.z +1] == Tile_Nav_Type.TRAVERSABLE
-    { ramp_bottom = waypoint_t{ level_idx = ramp.level_idx -1, x = ramp.x, z = ramp.z +1 } }
-    else { /* fmt.eprintln( "[ERROR] didnt find ramp_bottom", i ); */ continue }
+    found_bottom : bool
+    if start.level_idx < end.level_idx
+    { ramp_bottom, found_bottom = game_find_ramp_bottom( ramp, ramp_type ) }
+    else 
+    { ramp_bottom, found_bottom = game_find_ramp_top( ramp, ramp_type ) }
+    if !found_bottom { continue }
+    // debug_draw_aabb_wp( ramp_top, linalg.vec3{ 0, 0, 0 }, 10 )
 
     // fmt.println( "found ramp_bottom:", ramp_bottom )
     // debug_draw_aabb_wp( ramp_bottom, linalg.vec3{ 1, 0, 1 }, 10 )
@@ -733,6 +703,7 @@ game_a_star_pathfind_levels :: proc( start, end: waypoint_t ) -> ( path_arr: [dy
     start_path, ok = game_a_star_pathfind( start, ramp_bottom )
 
     if !ok { /* fmt.eprintln( "[ERROR] didnt find start_path", i ); */ continue }
+    // debug_draw_path( start_path, linalg.vec3{ 0, 0, 0 } )
     if ok { ramp_path_found = true; break }
   }
   if !ramp_path_found { /* fmt.eprintln( "[ERROR] no ramp path found" ); */ return nil, false }

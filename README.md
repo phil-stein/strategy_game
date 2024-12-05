@@ -21,11 +21,11 @@ use combo moves to extend your playable chars abilities/moveset with the other p
         - [ ] port the text rendering code
         - [ ] instanced / batched rendering
   * gameplay
-    - [O] a* pathfinding
+    - [X] a* pathfinding
       - [X] very basic pathfinding
       - [X] actual a*
       - [X] a* up / down slopes
-        - [ ] a* down ramps doesnt work yet
+        - [X] a* down ramps doesnt work yet
     - [X] player chars
       - [X] multiple player chars ( 3 probably )
       - [X] switch
@@ -115,6 +115,7 @@ use combo moves to extend your playable chars abilities/moveset with the other p
 ## buggs
   - [X] debug_draw_mesh() rotates around center (0, 0, 0) not pos, see main.odin
   - [ ] not freed in main.odin -> 231: data.player_chars[data.player_chars_current].path = make( [dynamic]waypoint_t, len(path), cap(path) )
+  - [ ] not freed in game.odin -> 514, 538, game_a_star_pathfind()  
 
 
 ## naming-conventions

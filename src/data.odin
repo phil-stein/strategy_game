@@ -127,6 +127,7 @@ Pathfind_Error :: enum
   NONE,
   NOT_FOUND,
   TOO_LONG,
+  START_END_SAME_TILE, // @TODO:
 }
 
 data_t :: struct
@@ -345,7 +346,7 @@ data_init :: proc()
     char.left_turns    = 0
     // char.path_finished = false
 
-    char.max_walk_dist = 10
+    char.max_walk_dist = 14
     char.max_jump_dist = 4
   }
   data.player_chars[0].color = linalg.vec3{ 0, 1, 1 }
@@ -507,7 +508,7 @@ data_cleanup :: proc()
 
   for arr, i in data.tile_ramp_wp_arr
   {
-    fmt.printfln( "data.tile_ramp_wp_arr[%d] len -> %d", i, len(arr) )
+    // fmt.printfln( "data.tile_ramp_wp_arr[%d] len -> %d", i, len(arr) )
     delete( arr )
   }
 }
