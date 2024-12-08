@@ -19,13 +19,19 @@ use combo moves to extend your playable chars abilities/moveset with the other p
     - game ui
       - [ ] text
         - [ ] port the text rendering code
-        - [ ] instanced / batched rendering
+        - [ ] batched rendering
   * gameplay
-    - [X] a* pathfinding
+    - [o] a* pathfinding
       - [X] very basic pathfinding
       - [X] actual a*
       - [X] a* up / down slopes
         - [X] a* down ramps doesnt work yet
+        - [X] cant go off one ramp onto another
+          - because wp.level_idx is same, need to do floodfill or some to check for that case
+            and then use game_a_star_pathfind_levels() multiple times
+      - [ ] proper f-cost 
+      - [ ] doesnt always take the shortest route
+        - i think happens when walking back route through closed_arr
     - [X] player chars
       - [X] multiple player chars ( 3 probably )
       - [X] switch
@@ -55,6 +61,8 @@ use combo moves to extend your playable chars abilities/moveset with the other p
       - [ ] ice
       - [ ] breakable
     - [ ] mouse picking (id-buffer) 
+      - [ ] select between player_chars
+      - [ ] use mouse-picking when setting the path
   * graphics
     - [ ] __make renderer forward not defferred__
       - [ ] transparency

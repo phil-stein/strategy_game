@@ -194,9 +194,9 @@ debug_draw_tiles :: proc()
             debug_draw_sphere( pos, linalg.vec3{ 0.25, 0.25, 0.25 },
                              linalg.vec3{ 0, 1, 0 } ) 
           }
-          case Tile_Nav_Type.RAMP_UP:   fallthrough
-          case Tile_Nav_Type.RAMP_DOWN: fallthrough
-          case Tile_Nav_Type.RAMP_LEFT: fallthrough
+          case Tile_Nav_Type.RAMP_FORWARD:  fallthrough
+          case Tile_Nav_Type.RAMP_BACKWARD: fallthrough
+          case Tile_Nav_Type.RAMP_LEFT:     fallthrough
           case Tile_Nav_Type.RAMP_RIGHT: 
           {
             // debug_draw_aabb( min, max, 
@@ -261,8 +261,8 @@ debug_draw_path :: proc( path: [dynamic]waypoint_t, color: linalg.vec3 )
          }
   // debug_draw_sphere( p_sphere, linalg.vec3{ 0.35, 0.35, 0.35 }, color )
 }
-// debug_draw_curve_path :: proc( path: [dynamic]waypoint_t, color: linalg.vec3 )
-// @TODO: not super accurate, wrote this while drunk, but mostly kinda works 😉👍
+
+// @TODO: @NOTE: not super accurate, wrote this while drunk, but mostly kinda works 😉👍
 debug_draw_curve_path :: proc( start, end: waypoint_t, divisions: int, color: linalg.vec3 )
 {
   start_pos := util_tile_to_pos( start ) + linalg.vec3{ 0, 1, 0 }
@@ -271,44 +271,25 @@ debug_draw_curve_path :: proc( start, end: waypoint_t, divisions: int, color: li
   p00  := start_pos
   p01  := start_pos
 
-  // up := linalg.cross( start_pos, end_pos )
-  // up := linalg.cross( end_pos, start_pos )
   up := linalg.cross( step, linalg.vec3{ 1, 0, 0 } )
-  // up := linalg.cross( linalg.vec3{ 1, 0, 1 }, step )
-  // up := linalg.cross( linalg.vec3{ 1, 0, 0 }, step )
-  // up  = linalg.abs( up )
-  // up.y = math.abs( up.y )
   up  = linalg.normalize( up )
 
   // for i in 0 ..= divisions
   for i in 0 ..< divisions
   {
-    // c : f32 = f32(i +1) / f32(divisions)
     c : f32 = f32(i) / f32(divisions -1)
     col := linalg.vec3{ c, c, c } * color
     // debug_draw_aabb_wp( w, linalg.vec3{ 1, 1, 1 }, 10 )
 
-    // p01 += step
     p01 = start_pos + ( step * f32(i) )
-    // p01 = ( end_pos - start_pos ) * perc
     y := p01.y
 
-    // perc := f32(i +1) / f32(divisions)
     perc := f32(i) / f32(divisions -1)
     y_offs := math.sin( perc * math.PI )
-    // fmt.println( "p01.y:", p01.y, ", \tperc:", perc )
     y_offs *= 5  // scale height
-    // p01.y += 1  // constant y offs 
-    
-    // p01 += up  // constant y offs 
-    // p01.y += up.y  // constant y offs 
-    
-    // y_offs += 1  // constant y offs 
     
     p01.y += y_offs
     debug_draw_line( p00, p01, col, 25 ) 
-    
-    // debug_draw_line( p00, p00 + up, linalg.vec3{ 0, 1, 0 }, 25 ) 
 
     p00 = p01
   }

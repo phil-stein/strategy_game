@@ -78,8 +78,8 @@ Tile_Nav_Type :: enum
   EMPTY,
   BLOCKED,
   TRAVERSABLE,
-  RAMP_UP,      // @NOTE: this technically is forward
-  RAMP_DOWN,    // @NOTE: this technically is backward
+  RAMP_FORWARD,  // used to be RAMP_UP 
+  RAMP_BACKWARD, // used to be RAMP_DOWN 
   RAMP_LEFT,
   RAMP_RIGHT,
 }
@@ -128,6 +128,7 @@ Pathfind_Error :: enum
   NOT_FOUND,
   TOO_LONG,
   START_END_SAME_TILE, // @TODO:
+  NOT_REACHABLE_VIA_GAME_A_STAR_PATHFIND,
 }
 
 data_t :: struct
@@ -349,7 +350,7 @@ data_init :: proc()
     char.left_turns    = 0
     // char.path_finished = false
 
-    char.max_walk_dist = 14
+    char.max_walk_dist = 20 // 14
     char.max_jump_dist = 4
   }
   data.player_chars[0].color = linalg.vec3{ 0, 1, 1 }
@@ -500,6 +501,7 @@ data_cleanup :: proc()
     for p in char.paths_arr
     { delete( p ) }
     clear( &char.paths_arr )
+    delete( char.paths_arr )
   }
 
   delete( data.entity_arr )
@@ -627,13 +629,13 @@ data_create_map :: proc()
           }
           case '^': 
           { 
-            data.tile_type_arr[level_idx][x][z] = Tile_Nav_Type.RAMP_UP
+            data.tile_type_arr[level_idx][x][z] = Tile_Nav_Type.RAMP_FORWARD
             if level_idx > 0
             { data.tile_type_arr[level_idx -1][x][z] = Tile_Nav_Type.BLOCKED }
           }
           case 'v': 
           { 
-            data.tile_type_arr[level_idx][x][z] = Tile_Nav_Type.RAMP_DOWN
+            data.tile_type_arr[level_idx][x][z] = Tile_Nav_Type.RAMP_BACKWARD
             if level_idx > 0
             { data.tile_type_arr[level_idx -1][x][z] = Tile_Nav_Type.BLOCKED }
           }

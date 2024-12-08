@@ -1,0 +1,19 @@
+{
+	"$schema": "https://raw.githubusercontent.com/DanielGavin/ols/master/misc/ols.schema.json",
+	"collections": [
+		{ "name": "custom_collection", "path": "c:/path/to/collection" }
+	],
+	"enable_semantic_tokens": false,  // syntax highlighting
+	"enable_document_symbols": false,
+	"enable_hover": true,
+	"enable_snippets": true,
+  "enable_format": false,
+  "enable_references": true, // experimental
+  "enable_rename": false,    // experimental
+	// "profile": "default",
+	// "profiles": [
+	// 	{ "name": "default", "checker_path": ["src"]},
+	// 	{ "name": "linux_profile", "os": "linux", "checker_path": ["src/main.odin"]},
+	// 	{ "name": "windows_profile", "os": "windows", "checker_path": ["src"]}
+	// ]
+}

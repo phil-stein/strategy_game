@@ -2,6 +2,7 @@ package core
 
 import        "base:runtime"
 import        "core:fmt"
+import str    "core:strings"
 import        "core:math"
 import linalg "core:math/linalg/glsl"
 import        "core:os"
@@ -13,6 +14,7 @@ import        "core:log"
 import        "core:mem"
 import        "core:time"
 import        "core:debug/trace"
+import        "core:encoding/ansi"
 
 EDITOR :: #config(EDITOR, false)
 
@@ -54,6 +56,169 @@ debug_trace_assertion_failure_proc :: proc(prefix, message: string, loc := #call
 	runtime.trap()
 }
 
+@(private="file")
+Default_Console_Logger_Opts :: log.Options {
+	.Level,
+	.Terminal_Color,
+	.Short_File_Path,
+	.Line,
+	.Procedure,
+} 
+@(private="file")
+create_console_logger :: proc(lowest := log.Level.Debug, opt := Default_Console_Logger_Opts, ident := "") -> log.Logger 
+{
+	data := new(log.File_Console_Logger_Data)
+	data.file_handle = os.INVALID_HANDLE
+	data.ident = ident
+	return log.Logger{file_console_logger_proc, data, lowest, opt}
+}
+
+@(private="file")
+destroy_console_logger :: proc(log: log.Logger) 
+{
+	free(log.data)
+}
+
+level_headers := [?]string{
+	 0..<10 = "[DEBUG] ",
+	10..<20 = "[INFO ] ",
+	20..<30 = "[WARN ] ",
+	30..<40 = "[ERROR] ",
+	40..<50 = "[FATAL] ",
+}
+@(private="file")
+file_console_logger_proc :: proc(logger_data: rawptr, level: log.Level, text: string, options: log.Options, location := #caller_location) {
+	data := cast(^log.File_Console_Logger_Data)logger_data
+	h: os.Handle = os.stdout if level <= log.Level.Error else os.stderr
+	if data.file_handle != os.INVALID_HANDLE 
+  {
+		h = data.file_handle
+	}
+	backing: [1024]byte //NOTE(Hoej): 1024 might be too much for a header backing, unless somebody has really long paths.
+	buf := str.builder_from_bytes(backing[:])
+
+
+	do_level_header(options, &buf, level)
+	do_location_header(options, &buf, location)
+	
+  fmt.sbprint(&buf, "| ")
+
+	// when time.IS_SUPPORTED {
+	// 	do_time_header(options, &buf, time.now())
+	// }
+
+
+	if .Thread_Id in options {
+		// NOTE(Oskar): not using context.thread_id here since that could be
+		// incorrect when replacing context for a thread.
+		fmt.sbprintf(&buf, "[{}] ", os.current_thread_id())
+	}
+
+	if data.ident != "" {
+		fmt.sbprintf(&buf, "[%s] ", data.ident)
+	}
+	//TODO(Hoej): When we have better atomics and such, make this thread-safe
+	fmt.fprintf(h, "%s%s\n", str.to_string(buf), text)
+}
+
+@(private="file")
+do_level_header :: proc(opts: log.Options, str: ^str.Builder, level: log.Level) 
+{
+	RESET     :: ansi.CSI + ansi.RESET           + ansi.SGR
+	RED       :: ansi.CSI + ansi.FG_RED          + ansi.SGR
+	YELLOW    :: ansi.CSI + ansi.FG_YELLOW       + ansi.SGR
+	DARK_GREY :: ansi.CSI + ansi.FG_BRIGHT_BLACK + ansi.SGR
+	CYAN      :: ansi.CSI + ansi.FG_CYAN         + ansi.SGR
+
+	col := RESET
+	switch level 
+  {
+	  case log.Level.Debug:         col = DARK_GREY
+	  case log.Level.Info:          col = CYAN // RESET
+	  case log.Level.Warning:       col = YELLOW
+	  case log.Level.Error, .Fatal: col = RED
+	}
+
+	if log.Options.Level in opts 
+  {
+		if log.Options.Terminal_Color in opts 
+    {
+			fmt.sbprint(str, col)
+		}
+		fmt.sbprint(str, level_headers[level])
+		if log.Options.Terminal_Color in opts 
+    {
+			fmt.sbprint(str, RESET)
+		}
+	}
+}
+
+@(private="file")
+do_time_header :: proc(opts: log.Options, buf: ^str.Builder, t: time.Time) {
+	when time.IS_SUPPORTED {
+		if log.Full_Timestamp_Opts & opts != nil {
+			fmt.sbprint(buf, "[")
+			y, m, d := time.date(t)
+			h, min, s := time.clock(t)
+			if .Date in opts {
+				fmt.sbprintf(buf, "%d-%02d-%02d", y, m, d)
+				if .Time in opts {
+					fmt.sbprint(buf, " ")
+				}
+			}
+			if .Time in opts { fmt.sbprintf(buf, "%02d:%02d:%02d", h, min, s) }
+			fmt.sbprint(buf, "] ")
+		}
+	}
+}
+
+@(private="file")
+do_location_header :: proc(opts: log.Options, buf: ^str.Builder, location := #caller_location) 
+{
+	if log.Location_Header_Opts & opts == nil 
+  {
+		return
+	}
+	fmt.sbprint(buf, "[")
+
+	file := location.file_path
+	if .Short_File_Path in opts 
+  {
+		last := 0
+		for r, i in location.file_path 
+    {
+			if r == '/' {
+				last = i+1
+			}
+		}
+		file = location.file_path[last:]
+	}
+
+	if log.Location_File_Opts & opts != nil 
+  {
+		fmt.sbprint(buf, file)
+	}
+	if .Line in opts 
+  {
+		if log.Location_File_Opts & opts != nil 
+    {
+			fmt.sbprint(buf, ":")
+		}
+		fmt.sbprint(buf, location.line)
+	}
+
+	if .Procedure in opts 
+  {
+		if (log.Location_File_Opts | {.Line}) & opts != nil 
+    {
+			fmt.sbprint(buf, ":")
+		}
+		fmt.sbprintf(buf, "%s()", location.procedure)
+	}
+
+	fmt.sbprint(buf, "] ")
+}
+
 main :: proc() 
 {
   // ---- init odin stuff ----
@@ -91,9 +256,21 @@ main :: proc()
 	  context.assertion_failure_proc = debug_trace_assertion_failure_proc
 	}
   // setup log
-  context.logger = log.create_console_logger()
+  // context.logger = log.create_console_logger()
+  context.logger = create_console_logger()
   when ODIN_DEBUG // no need to as windows does it automatically
-  { defer free( context.logger.data ) }
+  { defer destroy_console_logger( context.logger ) }
+  // { defer free( context.logger.data ) }
+
+  // @TMP:
+  var := 123
+  log.log( log.Level.Debug, "log" )
+  log.debug( "debug", "debug", var )
+  log.info( "info" )
+  log.warn( "warn" )
+  log.error( "error" )
+  log.fatal( "fatal" )
+  // if 0 == 0 { log.panic( "panic" ) }
   
   
   // ---- init ----

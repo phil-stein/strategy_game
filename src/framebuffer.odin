@@ -32,6 +32,28 @@ framebuffer_t :: struct
 	// int  samples;
 }
 
+framebuffer_resize_callback :: proc()
+{
+  framebuffer_resize_to_window( &data.fb_deferred )
+  framebuffer_resize_to_window( &data.fb_lighting )
+  framebuffer_resize_to_window( &data.fb_outline )
+}
+
+framebuffer_resize_to_window :: proc(fb: ^framebuffer_t)
+{
+  w := data.window_width
+  h := data.window_height
+	// if (fb->size_divisor > 1)
+	// {
+	//   w = (int)( w / fb->size_divisor );
+	//   h = (int)( h / fb->size_divisor );
+	// }
+	fb.width  = w
+	fb.height = h
+
+  framebuffer_delete( fb )
+  framebuffer_create( fb )
+}
 
 framebuffer_bind :: #force_inline proc(fb: ^framebuffer_t)
 {
@@ -62,10 +84,41 @@ framebuffer_delete :: #force_inline proc(fb: ^framebuffer_t)
   gl.DeleteFramebuffers(1, &fb.fbo);
 }
 
+framebuffer_create :: proc( fb: ^framebuffer_t )
+{
+  switch fb.type
+  {
+	  case Framebuffer_Type.RGB:
+    {
+      panic( "Framebuffer_Type.RGB not handled yet" )
+    }
+	  case Framebuffer_Type.RGB16F:
+    {
+      fb^ = framebuffer_create_hdr()
+    }
+	  case Framebuffer_Type.SINGLE_CHANNEL:
+    {
+      panic( "Framebuffer_Type.SINGLE_CHANNEL not handled yet" )
+    }
+	  case Framebuffer_Type.SINGLE_CHANNEL_F:
+    {
+      fb^ = framebuffer_create_single_channel_f( fb.size_divisor )
+    }
+	  case Framebuffer_Type.DEPTH:
+    {
+      panic( "Framebuffer_Type.DEPTH not handled yet" )
+    }
+    case Framebuffer_Type.DEFERRED:    
+    {
+      fb^ = framebuffer_create_gbuffer( fb.size_divisor )
+    }
+  }
+}
+
 // u32* tex_buffer, u32* fbo, u32* rbo, f32 size_divisor, int* width, int* height
 framebuffer_create_hdr :: proc( loc := #caller_location) -> ( fb: framebuffer_t )
 {
-  fmt.println( loc )
+  // fmt.println( loc )
 
   fb.type = Framebuffer_Type.RGB16F
 
@@ -198,9 +251,11 @@ framebuffer_create_gbuffer :: proc( size_divisor: int ) -> ( fb: framebuffer_t )
   return
 }
 
-framebuffer_create_single_channel_f :: proc( size_divisor: f32 ) -> ( fb: framebuffer_t )
+framebuffer_create_single_channel_f :: proc( size_divisor: int ) -> ( fb: framebuffer_t )
 {
   fb.type = Framebuffer_Type.SINGLE_CHANNEL_F
+  fb.size_divisor = size_divisor
+
   // create framebuffer object
 	gl.GenFramebuffers( 1, &fb.fbo )
 	// set fbo to be the active framebuffer to be modified
@@ -209,8 +264,8 @@ framebuffer_create_single_channel_f :: proc( size_divisor: f32 ) -> ( fb: frameb
   w := data.window_width
   h := data.window_height
 	// scale the resolution 
-	w = int( f32(w) / size_divisor )
-	h = int( f32(h) / size_divisor )
+	w = w / size_divisor 
+	h = h / size_divisor 
 
 	// generate texture
 	gl.GenTextures( 1, &fb.buffer01 )

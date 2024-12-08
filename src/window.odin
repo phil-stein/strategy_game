@@ -119,11 +119,11 @@ resize_callback :: proc( window: glfw.WindowHandle, width, height: c.int )
   data.window_width  = int(width)
   data.window_height = int(height)
 
-  framebuffer_delete( &data.fb_deferred )
-  framebuffer_delete( &data.fb_lighting )
-
-  data.fb_deferred = framebuffer_create_gbuffer( 1 ) 
-  data.fb_lighting = framebuffer_create_hdr()
+  // framebuffer_delete( &data.fb_deferred )
+  // framebuffer_delete( &data.fb_lighting )
+  // data.fb_deferred = framebuffer_create_gbuffer( 1 ) 
+  // data.fb_lighting = framebuffer_create_hdr()
+  framebuffer_resize_callback()
 }
 @(private="file")
 maximize_callback :: proc(window: glfw.WindowHandle, maximized: c.int )

@@ -368,12 +368,12 @@ ui_map_tab :: proc()
           id_strs_idx = 2 
           selected = true 
         }
-        case Tile_Nav_Type.RAMP_UP:
+        case Tile_Nav_Type.RAMP_FORWARD:
         {
           id_strs_idx = 3 
           selected = true 
         }
-        case Tile_Nav_Type.RAMP_DOWN:
+        case Tile_Nav_Type.RAMP_BACKWARD:
         {
           id_strs_idx = 4 
           selected = true 

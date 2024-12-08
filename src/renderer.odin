@@ -156,6 +156,12 @@ renderer_update :: proc()
   { // outline
     if data.player_chars_current >= 0
     { renderer_draw_scene_outline( data.player_chars[data.player_chars_current].entity_idx ) }
+    else
+    {
+      framebuffer_bind( &data.fb_outline )
+      gl.Clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT ) // clear bg
+      framebuffer_unbind()
+    }
   }
 
   { // post fx
@@ -171,9 +177,9 @@ renderer_update :: proc()
     shader_act_bind_texture( "position", data.fb_deferred.buffer04 )
     // shader_act_bind_texture( "water_tex", data.texture_arr[data.texture_idxs.brick_albedo].handle )
 
+    shader_act_bind_texture( "outline", data.fb_outline.buffer01 )
     if data.player_chars_current >= 0
     { 
-      shader_act_bind_texture( "outline", data.fb_outline.buffer01 )
       shader_act_set_vec3( "outline_color", data.player_chars[data.player_chars_current].color )
     }
     
@@ -227,6 +233,8 @@ renderer_draw_scene_outline :: proc( entity_idx: int )
   
   e := &data.entity_arr[entity_idx]
   if e.dead { log.error( "entity_idx passed to renderer_draw_scene_outline() invalid:", entity_idx ) } 
+  // e.model = util_make_model( e.pos, e.rot, e.scl )
+  // camera_set_view_mat() 
 
   // mesh
   // mesh = assetm_get_mesh_by_idx(e->mesh); // [m]
