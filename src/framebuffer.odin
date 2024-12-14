@@ -37,6 +37,7 @@ framebuffer_resize_callback :: proc()
   framebuffer_resize_to_window( &data.fb_deferred )
   framebuffer_resize_to_window( &data.fb_lighting )
   framebuffer_resize_to_window( &data.fb_outline )
+  framebuffer_resize_to_window( &data.fb_mouse_pick )
 }
 
 framebuffer_resize_to_window :: proc(fb: ^framebuffer_t)

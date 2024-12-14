@@ -87,6 +87,7 @@ Tile_Nav_Type :: enum
   RAMP_BACKWARD, // used to be RAMP_DOWN 
   RAMP_LEFT,
   RAMP_RIGHT,
+  SPRING,
 }
 nav_type_level_arr :: [TILE_ARR_X_MAX][TILE_ARR_Z_MAX]Tile_Nav_Type
 
@@ -102,7 +103,7 @@ waypoint_t :: struct
 Combo_Type :: enum
 {
   NONE,
-  JUMP,
+  JUMP, // also spring
 }
 // intersections_t :: struct
 // {
@@ -172,14 +173,16 @@ data_t :: struct
   irradiance_map_shader : u32,
   prefilter_shader      : u32,
   brdf_lut_shader       : u32,
+  mouse_pick_shader     : u32,
 
   brdf_lut : u32,
 
   cubemap : cubemap_t,
 
-  fb_deferred : framebuffer_t,
-  fb_lighting : framebuffer_t,
-  fb_outline  : framebuffer_t,
+  fb_deferred   : framebuffer_t,
+  fb_lighting   : framebuffer_t,
+  fb_outline    : framebuffer_t,
+  fb_mouse_pick : framebuffer_t,
 
   wireframe_mode_enabled : bool,
   
@@ -248,6 +251,7 @@ data_t :: struct
     robot_char  : int,
     female_char : int,
     icon_jump   : int,
+    spring      : int,
   },
 
   tile_00_str : string,
@@ -257,7 +261,7 @@ data_t :: struct
   tile_str_arr       : [TILE_LEVELS_MAX]string,
   tile_type_arr      : [TILE_LEVELS_MAX]nav_type_level_arr,
   tile_entity_id_arr : [TILE_LEVELS_MAX][TILE_ARR_X_MAX][TILE_ARR_Z_MAX]int,
-  tile_ramp_wp_arr : [TILE_LEVELS_MAX][dynamic]waypoint_t,
+  tile_ramp_wp_arr   : [TILE_LEVELS_MAX][dynamic]waypoint_t,
 
   player_chars : [3]character_t,
   player_chars_current : int,
@@ -334,22 +338,22 @@ data : data_t =
   "X........X"+
   "^..XX....X"+
   "...X.....X"+
-  "...X...XXX"+
-  "...^...X<."+
-  "......XX.."+
+  "...X..XXXX"+
+  "...^..XX<."+
+  ".O....XX.."+
   ".......X.."+
-  "XX........"+
+  "XX.....X.."+
   "XXX<......",
 
   tile_02_str = 
-  "XXXX......"+
+  "XXX<......"+
   "^........v"+
   ".........X"+
   ".........X"+
   "......XXXX"+
   "......X<.."+
   "......XX.."+
-  ".......X.."+
+  ".......^.."+
   "XX........"+
   "XX<.......",
 
@@ -578,13 +582,17 @@ data_create_map :: proc()
         // data.tile_str_idx := x + (z*TILE_ARR_X_MAX)
         tile_str_idx := ( TILE_ARR_X_MAX * TILE_ARR_Z_MAX ) - ( x + (z*TILE_ARR_X_MAX) +1 ) // reversed idx so the str aligns with the created map
 
-        if tile_str[tile_str_idx] == 'X'
+        if tile_str[tile_str_idx] == 'X' ||
+           tile_str[tile_str_idx] == 'O'
         {
+          mesh_idx := data.mesh_idxs.dirt_cube if tile_str[tile_str_idx] == 'X' else
+                      data.mesh_idxs.spring    if tile_str[tile_str_idx] == 'O' else
+                      data.mesh_idxs.sphere
           data.tile_entity_id_arr[y][x][z] = len(data.entity_arr)
           data_entity_add( 
                   entity_t{ pos = util_tile_to_pos( waypoint_t{ level_idx=y, x=x, z=z } ), 
                             rot = { 0, 0, 0 }, scl = { 1, 1, 1 },
-                            mesh_idx = data.mesh_idxs.dirt_cube, 
+                            mesh_idx = mesh_idx, 
                             mat_idx  = y == 1 ? data.material_idxs.dirt_cube_02 : data.material_idxs.dirt_cube_01
                           } )
           // fmt.println( "idx: ", idx, "pos: ", data.entity_arr[idx].pos, 
@@ -597,8 +605,8 @@ data_create_map :: proc()
                 tile_str[tile_str_idx] == '>' 
         {
           y_rot : f32 = 0   if tile_str[tile_str_idx] == '^' else 
-                        180 if tile_str[tile_str_idx] == 'v' else 
                         90  if tile_str[tile_str_idx] == '<' else 
+                        180 if tile_str[tile_str_idx] == 'v' else 
                         270 if tile_str[tile_str_idx] == '>' else 0 
 
           data.tile_entity_id_arr[y][x][z]   = len(data.entity_arr)
@@ -619,12 +627,10 @@ data_create_map :: proc()
     }
   }
 
-
   // populate data.tile_type_arr
   // @TODO: check if this tile is even allowed to be blocked
   for level, level_idx in data.tile_str_arr
   {
-
     // for z := TILE_ARR_Z_MAX -1; z >= 0; z -= 1    // reversed so the str aligns with the created map
     // {
     //   for x := TILE_ARR_X_MAX -1; x >= 0; x -= 1  // reversed so the str aligns with the created map
@@ -645,6 +651,10 @@ data_create_map :: proc()
             data.tile_type_arr[level_idx][x][z] = Tile_Nav_Type.TRAVERSABLE
             if level_idx > 0
             { data.tile_type_arr[level_idx -1][x][z] = Tile_Nav_Type.BLOCKED }
+          }
+          case 'O':
+          {
+            data.tile_type_arr[level_idx][x][z] = Tile_Nav_Type.SPRING
           }
           case '^': 
           { 

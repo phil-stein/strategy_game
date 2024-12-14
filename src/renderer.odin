@@ -269,3 +269,59 @@ renderer_draw_scene_outline :: proc( entity_idx: int )
 	
 	framebuffer_unbind()
 }
+
+renderer_draw_scene_mouse_pick :: proc()
+{
+  w, h := window_get_size()
+  
+  framebuffer_bind( &data.fb_mouse_pick )
+  gl.Viewport( 0, 0, i32(w / 4), i32(h / 4) )
+  gl.ClearColor( 0.0, 0.0, 0.0, 1.0 )
+  gl.Clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT )
+
+  // -- opengl state --
+  gl.Enable( gl.DEPTH_TEST ) // enable the z-buffer
+  gl.Enable( gl.CULL_FACE )
+  gl.CullFace( gl.BACK )
+
+  shader_use( data.mouse_pick_shader )
+  for char, i in data.player_chars
+  {
+    shader_act_set_f32(  "id",    f32(i) )
+    shader_act_set_mat4( "model", &data.entity_arr[char.entity_idx].model[0][0] )
+    shader_act_set_mat4( "view",  &data.cam.view_mat[0][0] )
+    shader_act_set_mat4( "proj",  &data.cam.pers_mat[0][0] )
+
+    mesh := assetm_get_mesh( data.entity_arr[char.entity_idx].mesh_idx )
+    gl.BindVertexArray( mesh.vao )
+    gl.DrawElements( gl.TRIANGLES,             // Draw triangles.
+                     i32(mesh.indices_len),  // indices length
+                     gl.UNSIGNED_INT,          // Data type of the indices.
+                     rawptr(uintptr(0)) )      // Pointer to indices. (Not needed.)
+  }
+
+  framebuffer_unbind()
+  gl.Viewport( 0, 0, i32(w), i32(h) )
+}
+
+renderer_mouse_position_mouse_pick_id :: proc() -> ( player_char_idx: int )
+{
+  x := input.mouse_x
+  y := input.mouse_y
+  w, h := window_get_size()
+  y = f32(h) - y // invert as buffer is rendered upside down
+  x *= 0.25
+  y *= 0.25
+
+  pixel : [1]f32
+
+  gl.BindFramebuffer( gl.READ_FRAMEBUFFER, data.fb_mouse_pick.fbo )
+  gl.ReadPixels( i32(x), i32(y), 1, 1, gl.RED, gl.FLOAT, &pixel )
+  gl.BindFramebuffer( gl.READ_FRAMEBUFFER, 0 )
+ 
+  framebuffer_unbind()
+
+  id := int(pixel[0] -1)
+
+  return id
+}

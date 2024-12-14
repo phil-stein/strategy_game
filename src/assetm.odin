@@ -38,10 +38,14 @@ assetm_init :: proc()
  
   data.prefilter_shader      = shader_make( #load( "../assets/shaders/cubemap/render_equirect.vert", string ), 
                                             #load( "../assets/shaders/cubemap/prefilter_map.frag", string ))
+
+  data.mouse_pick_shader     = shader_make( #load( "../assets/shaders/basic.vert",         string ), 
+                                            #load( "../assets/shaders/mouse_picking.frag", string ))
    
-  data.fb_deferred = framebuffer_create_gbuffer( 1 ) 
-  data.fb_lighting = framebuffer_create_hdr()
-  data.fb_outline  = framebuffer_create_single_channel_f( 1 )
+  data.fb_deferred   = framebuffer_create_gbuffer( 1 ) 
+  data.fb_lighting   = framebuffer_create_hdr()
+  data.fb_outline    = framebuffer_create_single_channel_f( 1 )
+  data.fb_mouse_pick = framebuffer_create_single_channel_f( 4 ) // @TODO: use size_divisor
 
 
   // // blank_tex_srgb  := make_texture( "assets/blank.png", true )
@@ -209,6 +213,7 @@ assetm_init :: proc()
   data.mesh_idxs.dirt_ramp   = assetio_load_mesh( "dirt_ramp.fbx" )
   data.mesh_idxs.robot_char  = assetio_load_mesh( "robot_character_06_01.fbx" )
   data.mesh_idxs.female_char = assetio_load_mesh( "female_char_01_01.fbx" )
+  data.mesh_idxs.spring      = assetio_load_mesh( "spring_01.fbx" )
   debug_timer_stop()
 }
 assetm_cleanup :: proc()

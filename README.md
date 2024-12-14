@@ -50,19 +50,20 @@ use combo moves to extend your playable chars abilities/moveset with the other p
       - [ ] push enemies/player chars ?
       - [ ] interact with environment
         - [ ] push buttons / pull levers / etc.
-        - [ ] bounce pads / trampolines
+        - [X] bounce pads / trampolines
         - [ ] push blocks / obstacles
       - [ ] ...
       - [ ] show moves
     - [ ] turns
-    - [ ] differrent tile types
+    - [.] differrent tile types
       - [X] regular
       - [X] slopes
       - [ ] ladders / climable
       - [ ] ice
+        - when on ice go straight until not on ice anymore ?
       - [ ] breakable
-    - [ ] mouse picking (id-buffer) 
-      - [ ] select between player_chars
+    - [.] mouse picking (id-buffer) 
+      - [X] select between player_chars
       - [ ] use mouse-picking when setting the path
   * graphics
     - [ ] __make renderer forward not defferred__

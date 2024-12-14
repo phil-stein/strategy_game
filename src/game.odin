@@ -40,6 +40,16 @@ game_update :: proc()
   {
     input_set_cursor_visibile( true )
     // input_center_cursor()
+    
+    if !input.mouse_over_ui && input.mouse_button_states[Mouse_Button.LEFT].pressed
+    {
+      id := renderer_mouse_position_mouse_pick_id()
+      if id >= 0 && id < len(data.player_chars)
+      {
+        data.player_chars_current = id
+      }
+      // else { log.panic( "id invalid: ", id ) }
+    }
   }
   if input.key_states[Key.UP].pressed
   { 
@@ -125,7 +135,6 @@ game_update :: proc()
     { 
       intersecting_path       := false
       intersecting_char_idx   := -1
-      intersecting_wp_idx     := -1
       intersecting_combo_type := Combo_Type.NONE
 
       // debug_draw_aabb_wp( path[len(path) -1], vec3{ 1, 1, 1 }, 20 )
@@ -148,7 +157,6 @@ game_update :: proc()
                 {
                   intersecting_path     = true 
                   intersecting_char_idx = i
-                  intersecting_wp_idx   = wp_idx
                   // @TODO: add more types, like landing on enemy head and tackling them
                   intersecting_combo_type = Combo_Type.JUMP
                   // debug_draw_sphere( util_tile_to_pos( w ) + linalg.vec3{ 0, 1, 0 }, linalg.vec3{ 0.35, 0.35, 0.35 }, char.color )
@@ -157,6 +165,18 @@ game_update :: proc()
               }
             }
           }
+        }
+        // end of path intersects with spring
+        if path[len(path) -1].level_idx < TILE_LEVELS_MAX -1 &&
+           data.tile_type_arr[path[len(path) -1].level_idx +1][path[len(path) -1].x][path[len(path) -1].z] == Tile_Nav_Type.SPRING
+        {
+          intersecting_path     = true 
+          intersecting_char_idx = data.player_chars_current
+          intersecting_combo_type = Combo_Type.JUMP
+
+          debug_draw_combo_icon( intersecting_combo_type, 
+                                 util_tile_to_pos( path[len(path) -1] ), 
+                                 data.player_chars[data.player_chars_current].color )
         }
       // }
 
@@ -631,7 +651,6 @@ game_a_star_02_pathfind :: proc( _start, _end: waypoint_t ) -> ( path_arr: [dyna
      start.wp.x         == end.wp.x
   { 
     append( &path_arr, _start )
-    // return path_arr, Pathfind_Error.NONE 
     return path_arr, Pathfind_Error.NONE, true 
   }
 
@@ -641,12 +660,11 @@ game_a_star_02_pathfind :: proc( _start, _end: waypoint_t ) -> ( path_arr: [dyna
 
   current        := node_t{ wp=waypoint_t{ level_idx=0, x=0, z=0 }, f_cost=0.0, parent=waypoint_t{ level_idx=0, x=0, z=0 } }
   current_pos    := util_tile_to_pos( current.wp )
-  current_f_cost : f32 = 999999999999999999.9 // game_a_star_f_cost( current.wp, end.wp ) // linalg.distance( current_pos, end_pos )
+  current_f_cost : f32 = 999999999999999999.9 
   current_idx    := 0
 
   next_points                : [4]node_t // waypoint_t
   next_points_viable         : [4]bool
-  // next_points_viable_is_ramp : [4]bool
 
   tries := 0
   for tries < TILE_ARR_Z_MAX * TILE_ARR_X_MAX 
@@ -668,7 +686,6 @@ game_a_star_02_pathfind :: proc( _start, _end: waypoint_t ) -> ( path_arr: [dyna
       }
     }
     // remove current from open and add to closed
-    // if current_idx >= len(open_arr) { return path_arr, Pathfind_Error.NOT_FOUND }
     if current_idx >= len(open_arr) 
     { delete( open_arr ); delete( closed_arr ); delete( path_arr ); return nil, Pathfind_Error.NOT_FOUND, false }
     assert( current_idx < len(open_arr) )
@@ -676,7 +693,6 @@ game_a_star_02_pathfind :: proc( _start, _end: waypoint_t ) -> ( path_arr: [dyna
     append( &closed_arr, current )
 
     // found path
-    // if current == end 
     if current.wp.level_idx == end.wp.level_idx &&
        current.wp.z         == end.wp.z         &&
        current.wp.x         == end.wp.x
@@ -719,7 +735,6 @@ game_a_star_02_pathfind :: proc( _start, _end: waypoint_t ) -> ( path_arr: [dyna
     { 
       next_points[2].wp, next_points_viable[2] = game_a_star_02_check_for_ramp( current.wp, Dir.LEFT )
       next_points[2].ramp_connector = Dir.LEFT
-      // log.debug( next_points_viable[2] )
     }
     // back 
     if current.wp.z < TILE_ARR_Z_MAX -1 && data.tile_type_arr[current.wp.level_idx][current.wp.x][current.wp.z +1] == Tile_Nav_Type.TRAVERSABLE
@@ -758,7 +773,6 @@ game_a_star_02_pathfind :: proc( _start, _end: waypoint_t ) -> ( path_arr: [dyna
       neighbour.f_cost = game_a_star_02_f_cost( next_points[i].wp, end.wp )
       neighbour.parent = current.wp
       neighbour.ramp_connector = next_points[i].ramp_connector
-      // parent_idx=closed_arr_idx 
                
       append( &open_arr, neighbour )
     }
@@ -771,24 +785,11 @@ game_a_star_02_pathfind :: proc( _start, _end: waypoint_t ) -> ( path_arr: [dyna
     delete( open_arr )
     delete( closed_arr )
     delete( path_arr )
-    // return nil, false 
     return nil, Pathfind_Error.NOT_FOUND, false 
-    // return nil, Pathfind_Error.NOT_REACHABLE_VIA_GAME_A_STAR_PATHFIND, false 
   }
-  // if err != Pathfind_Error.NONE { return nil, err }
-
-  // for n, i in closed_arr
-  // {
-  //   // log.info( i, "|", n )
-  //   log.info( i, "|", n.wp )
-  //   // log.info( i )
-  // }
 
   // current is the end node
   append( &path_arr, current.wp )
-  // fmt.println( "start:", start )
-  // fmt.println( "end:", end )
-  // fmt.println( "current:", current )
   // go through parent until hit start node
   for ( current.wp.level_idx != start_cur_path.wp.level_idx || 
         current.wp.z         != start_cur_path.wp.z         || 
@@ -818,11 +819,6 @@ game_a_star_02_pathfind :: proc( _start, _end: waypoint_t ) -> ( path_arr: [dyna
       for n, i in closed_arr { fmt.println( "closed_arr[", i ,"]:", n.wp, "parent:", n.parent ) }
       assert( found )
     }
-    // idx := current.parent_idx
-    // assert( idx >= 0 )
-    // assert( idx < len(closed_arr) )
-    // current = closed_arr[idx]
-    // log.info( "idx:", current.parent_idx, ", current.parent:", current.parent )
 
     
     append( &path_arr, current.wp )
@@ -830,12 +826,7 @@ game_a_star_02_pathfind :: proc( _start, _end: waypoint_t ) -> ( path_arr: [dyna
     // if ramp_connector do rest again individually
     if current.ramp_connector != nil
     {
-      // next_path, error, succsess := game_a_star_02_pathfind( current.wp, _start )
       next_path, error, succsess := game_a_star_02_pathfind( current.parent, _start )
-      // debug_draw_aabb_wp( current.wp, vec3{ 1, 1, 1 }, 20 )
-      // debug_draw_aabb_wp( current.parent, vec3{ 1, 0, 1 }, 20 )
-      // debug_draw_aabb_wp( _start,     vec3{ 1, 0, 1 }, 20 )
-      // log.debug( "succsess", succsess )
       
       if !succsess
       {
@@ -847,31 +838,12 @@ game_a_star_02_pathfind :: proc( _start, _end: waypoint_t ) -> ( path_arr: [dyna
 
       if error == Pathfind_Error.PATH_NEEDS_TO_BE_REVERSED
       { slice.reverse( next_path[:] ) }
-      // slice.reverse( next_path[:] )
 
       append( &path_arr, ..next_path[:] )
 
       // @TODO: @BUGG: game_a_star_02_pathfind() returns path reversed, cant do it in the proc leads to buggs for some reason
       // should reverse here but leads to buggs
       // slice.reverse( path_arr[:] )
-
-      // debug_draw_path( path_arr, vec3{ 1, 0, 1 }, vec3{ 0, 0, 0 } )
-      
-      // @TMP: @DEBUG:
-      smol_pp := false
-      for p, ip in path_arr
-      {
-        for x, ix in path_arr
-        {
-          if ip == ip { continue }
-          if p == x 
-          { 
-            log.errorf( "path_arr[%d] == path_arr[%d]\npath_arr[%d]: %v\npath_arr[%d]: %v\n", ip, ix, ip, p, ix, x ) 
-            smol_pp = true
-          }
-        }
-      }
-      assert( !smol_pp )
 
       delete( next_path )
       delete( open_arr )
@@ -889,11 +861,9 @@ game_a_star_02_pathfind :: proc( _start, _end: waypoint_t ) -> ( path_arr: [dyna
   delete( open_arr )
   delete( closed_arr )
 
-  // debug_draw_path( path_arr, vec3{ 0, 1, 1 } )
-
   return path_arr, Pathfind_Error.NONE, true
 }
-/// @TMP: 
+/* /// @TMP: 
 game_a_star_02_pathfind_old :: proc( _start, _end: waypoint_t ) -> ( path_arr: [dynamic]waypoint_t, err: Pathfind_Error, ok: bool  )
 {
   ok = false
@@ -1097,3 +1067,4 @@ game_a_star_02_pathfind_old :: proc( _start, _end: waypoint_t ) -> ( path_arr: [
 
   return path_arr, Pathfind_Error.NONE, true
 }
+*/

@@ -372,6 +372,7 @@ main :: proc()
 
   data.player_chars[1].tile = waypoint_t{ level_idx=0, x=4, z=3 }
   data.player_chars[1].tile = waypoint_t{ level_idx=2, x=6, z=9 }
+  data.player_chars[1].tile = waypoint_t{ level_idx=1, x=5, z=9 }
   player_char_01_pos := util_tile_to_pos( data.player_chars[1].tile )
   data.player_chars[1].entity_idx = len(data.entity_arr)
   data_entity_add( entity_t{ pos = player_char_01_pos + linalg.vec3{ 0, 1, 0 }, 
@@ -456,6 +457,7 @@ main :: proc()
     
     debug_timer_start( "renderer_update()" )
     renderer_update()
+    renderer_draw_scene_mouse_pick()
     debug_timer_stop() // renderer_update()
     // debug_draw_tiles()
 

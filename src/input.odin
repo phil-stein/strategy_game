@@ -192,6 +192,7 @@ input_t :: struct
   mouse_y           : f32,  
   mouse_delta_x     : f32,
   mouse_delta_y     : f32, 
+  mouse_over_ui     : bool,
 
   mouse_sensitivity : f32,
 }

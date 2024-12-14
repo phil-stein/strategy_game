@@ -174,36 +174,29 @@ debug_draw_tiles :: proc()
         {
           case Tile_Nav_Type.EMPTY:
           {
-            // debug_draw_aabb( min, max, 
-                             // linalg.vec3{ 1, 1, 1 }, 
-                             // 5 )
             debug_draw_sphere( pos, linalg.vec3{ 0.25, 0.25, 0.25 },
                              linalg.vec3{ 1, 1, 1 } )
           }
           case Tile_Nav_Type.BLOCKED:
           {
-            // debug_draw_aabb( min, max, 
-            //                  linalg.vec3{ 1, 0, 0 }, 
-            //                  5 )
             debug_draw_sphere( pos, linalg.vec3{ 0.25, 0.25, 0.25 },
                              linalg.vec3{ 1, 0, 0 } ) 
           }
           case Tile_Nav_Type.TRAVERSABLE:
           {
-            // debug_draw_aabb( min, max, 
-            //                  linalg.vec3{ 0, 1, 0 }, 
-            //                  15 )
             debug_draw_sphere( pos, linalg.vec3{ 0.25, 0.25, 0.25 },
                              linalg.vec3{ 0, 1, 0 } ) 
+          }
+          case Tile_Nav_Type.SPRING:
+          {
+            debug_draw_sphere( pos, linalg.vec3{ 0.25, 0.25, 0.25 },
+                             linalg.vec3{ 1, 1, 0 } )
           }
           case Tile_Nav_Type.RAMP_FORWARD:  fallthrough
           case Tile_Nav_Type.RAMP_BACKWARD: fallthrough
           case Tile_Nav_Type.RAMP_LEFT:     fallthrough
           case Tile_Nav_Type.RAMP_RIGHT: 
           {
-            // debug_draw_aabb( min, max, 
-            //                  linalg.vec3{ 0, 1, 0 }, 
-            //                  15 )
             debug_draw_sphere( pos, linalg.vec3{ 0.25, 0.25, 0.25 },
                              linalg.vec3{ 0, 1, 0 } ) 
           }

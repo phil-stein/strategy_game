@@ -10,6 +10,7 @@ import        "vendor:glfw"
 import gl     "vendor:OpenGL"
 
 import        "core:os"
+import        "core:log"
 import        "core:fmt"
 import        "core:strconv"
 import str    "core:strings"
@@ -102,9 +103,15 @@ ui_update :: proc()
 
   im.DockSpaceOverViewport( 0, im.GetMainViewport(), { im.DockNodeFlag.PassthruCentralNode } )
 
+  // log.debug( im.IsAnyItemFocused() )
+  // log.debug( im.IsMouse() )
+  // im.IsMouseHoveringAnyWindow()
+
   
   if /* p_open && */ im.Begin( "window", nil /* &p_open */,  win_flags ) 
   {
+    input.mouse_over_ui = im.IsWindowHovered()  
+
     map_tab, entities_tab, player_chars_tab, framebuffers_tab, assetm_tab, data_tab : bool
     if im.BeginTabBar( "tabs" )
     {
@@ -318,8 +325,8 @@ ui_map_tab :: proc()
   ui_display_any( data.tile_entity_id_arr, "data.tile_entity_id_arr" )
   im.SeparatorText( "" )
 
-  tile_strs   := [?]cstring{ "empty", "blocked", "tile", "ramp_forward", "ramp_backward", "ramp_left", "ramp_right" }
-  id_strs     := [?]cstring{ " ",     "X",       "#", "^", "v", "<", ">" }
+  tile_strs   := [?]cstring{ "empty", "blocked", "tile", "ramp_forward", "ramp_backward", "ramp_left", "ramp_right", "spring" }
+  id_strs     := [?]cstring{ " ",     "X",       "#", "^", "v", "<", ">", "O" }
   id_strs_idx := 0
   selected    := false
 
@@ -387,6 +394,11 @@ ui_map_tab :: proc()
         {
           id_strs_idx = 6 
           selected = true 
+        }
+        case Tile_Nav_Type.SPRING:
+        {
+          id_strs_idx = 7
+          selected = false
         }
       }
       im.PushStyleVarImVec2( im.StyleVar.SelectableTextAlign, im.Vec2{ 0.5, 0.5 } )
@@ -659,6 +671,9 @@ ui_data_tab :: proc()
       ui_display_texture( "normal",   w, h, w*2, h*2, data.fb_deferred.buffer03 )
       ui_display_texture( "position", w, h, w*2, h*2, data.fb_deferred.buffer04 )
       ui_display_texture( "lighting", w, h, w*2, h*2, data.fb_lighting.buffer01 )
+      ui_display_texture( "outline", w, h, w*2, h*2, data.fb_outline.buffer01 )
+      ui_display_texture( "mouse_pick", w, h, w*2, h*2, data.fb_mouse_pick.buffer01 )
+
 
       im.EndTabItem()
     }
