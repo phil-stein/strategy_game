@@ -98,8 +98,9 @@ file_console_logger_proc :: proc(logger_data: rawptr, level: log.Level, text: st
 	buf := str.builder_from_bytes(backing[:])
 
 
-	do_level_header(options, &buf, level)
-	do_location_header(options, &buf, location)
+	do_level_header( options, &buf, level )
+	do_location_header( options, &buf, location )
+  do_progress_header( options, &buf )
 	
   fmt.sbprint(&buf, "| ")
 
@@ -119,6 +120,7 @@ file_console_logger_proc :: proc(logger_data: rawptr, level: log.Level, text: st
 	}
 	//TODO(Hoej): When we have better atomics and such, make this thread-safe
 	fmt.fprintf(h, "%s%s\n", str.to_string(buf), text)
+
 }
 
 @(private="file")
@@ -171,14 +173,47 @@ do_time_header :: proc(opts: log.Options, buf: ^str.Builder, t: time.Time) {
 		}
 	}
 }
+@(private="file")
+log_progress    := [?]rune{ '|', '/', '-', '\\' } 
+@(private="file")
+log_process_idx : int
+@(private="file")
+do_progress_header :: proc(opts: log.Options, buf: ^str.Builder ) 
+{
+	RESET     :: ansi.CSI + ansi.RESET           + ansi.SGR
+	DARK_GREY :: ansi.CSI + ansi.FG_BRIGHT_BLACK + ansi.SGR
+
+	if log.Options.Terminal_Color in opts 
+  {
+		fmt.sbprint(buf, DARK_GREY)
+	}
+
+	fmt.sbprintf(buf, "[%v]", log_progress[log_process_idx] )
+
+  log_process_idx = log_process_idx +1 if log_process_idx+1 < len(log_progress) else 0
+
+	if log.Options.Terminal_Color in opts 
+  {
+		fmt.sbprint(buf, RESET)
+	}
+}
 
 @(private="file")
 do_location_header :: proc(opts: log.Options, buf: ^str.Builder, location := #caller_location) 
 {
+	RESET     :: ansi.CSI + ansi.RESET           + ansi.SGR
+	DARK_GREY :: ansi.CSI + ansi.FG_BRIGHT_BLACK + ansi.SGR
+
 	if log.Location_Header_Opts & opts == nil 
   {
 		return
 	}
+
+	if log.Options.Terminal_Color in opts 
+  {
+		fmt.sbprint(buf, DARK_GREY)
+	}
+
 	fmt.sbprint(buf, "[")
 
 	file := location.file_path
@@ -217,6 +252,11 @@ do_location_header :: proc(opts: log.Options, buf: ^str.Builder, location := #ca
 	}
 
 	fmt.sbprint(buf, "] ")
+
+	if log.Options.Terminal_Color in opts 
+  {
+		fmt.sbprint(buf, RESET)
+	}
 }
 
 main :: proc() 
@@ -330,7 +370,8 @@ main :: proc()
   // fmt.println( "player.tile -> pos: ", player_char_00_pos )
   // fmt.println( "data.player_chars[0].entity_idx: ", data.player_chars[0].entity_idx )
 
-  data.player_chars[1].tile = waypoint_t{ level_idx=0, x=3, z=4 }
+  data.player_chars[1].tile = waypoint_t{ level_idx=0, x=4, z=3 }
+  data.player_chars[1].tile = waypoint_t{ level_idx=2, x=6, z=9 }
   player_char_01_pos := util_tile_to_pos( data.player_chars[1].tile )
   data.player_chars[1].entity_idx = len(data.entity_arr)
   data_entity_add( entity_t{ pos = player_char_01_pos + linalg.vec3{ 0, 1, 0 }, 
@@ -339,7 +380,7 @@ main :: proc()
                              mat_idx  = data.material_idxs.female
                            } )
 
-  data.player_chars[2].tile = waypoint_t{ level_idx=1, x=0, z=7 }
+  data.player_chars[2].tile = waypoint_t{ level_idx=2, x=0, z=5 }
   player_char_02_pos := util_tile_to_pos( data.player_chars[2].tile )
   data.player_chars[2].entity_idx = len(data.entity_arr)
   data_entity_add( entity_t{ pos = player_char_02_pos + linalg.vec3{ 0, 2, 0 }, 

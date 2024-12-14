@@ -6,7 +6,12 @@ import        "core:fmt"
 import        "vendor:glfw"
 import gl     "vendor:OpenGL"
 
-
+// "typedefs" for linalg/glsl package
+vec2 :: linalg.vec2
+vec3 :: linalg.vec3
+vec4 :: linalg.vec4
+mat3 :: linalg.mat3
+mat4 :: linalg.mat4
 
 Window_Type :: enum { MINIMIZED, MAXIMIZED, FULLSCREEN };
 
@@ -118,7 +123,6 @@ character_t :: struct
   // -- paths --
   paths_arr              : [dynamic][dynamic]waypoint_t,
   left_turns             : int,
-  // path_finished          : bool,
   path_current_combo     : Combo_Type,
 }
 
@@ -128,7 +132,8 @@ Pathfind_Error :: enum
   NOT_FOUND,
   TOO_LONG,
   START_END_SAME_TILE, // @TODO:
-  NOT_REACHABLE_VIA_GAME_A_STAR_PATHFIND,
+  // NOT_REACHABLE_VIA_GAME_A_STAR_PATHFIND,
+  PATH_NEEDS_TO_BE_REVERSED,
 }
 
 data_t :: struct
@@ -247,6 +252,7 @@ data_t :: struct
 
   tile_00_str : string,
   tile_01_str : string,
+  tile_02_str : string,
 
   tile_str_arr       : [TILE_LEVELS_MAX]string,
   tile_type_arr      : [TILE_LEVELS_MAX]nav_type_level_arr,
@@ -259,7 +265,7 @@ data_t :: struct
 }
 TILE_ARR_X_MAX  :: 10
 TILE_ARR_Z_MAX  :: 10
-TILE_LEVELS_MAX :: 2
+TILE_LEVELS_MAX :: 3
 // global struct holding most data about the game, except input
 data : data_t =
 {
@@ -326,14 +332,26 @@ data : data_t =
   tile_01_str = 
   "XXXXX...>X"+
   "X........X"+
-  "^..X.....X"+
+  "^..XX....X"+
   "...X.....X"+
   "...X...XXX"+
-  "...X...X<."+
+  "...^...X<."+
   "......XX.."+
   ".......X.."+
   "XX........"+
   "XXX<......",
+
+  tile_02_str = 
+  "XXXX......"+
+  "^........v"+
+  ".........X"+
+  ".........X"+
+  "......XXXX"+
+  "......X<.."+
+  "......XX.."+
+  ".......X.."+
+  "XX........"+
+  "XX<.......",
 
   player_chars_current = 0,
 }
@@ -362,6 +380,7 @@ data_init :: proc()
   // init .title_str_arr
   data.tile_str_arr[0] = data.tile_00_str
   data.tile_str_arr[1] = data.tile_01_str
+  data.tile_str_arr[2] = data.tile_02_str
 
   // screen quad 
 	quad_verts := [?]f32{ 

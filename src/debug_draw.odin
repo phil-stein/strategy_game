@@ -1,6 +1,7 @@
 package core
 
 import        "core:fmt"
+import        "core:log"
 import        "core:math"
 import linalg "core:math/linalg/glsl"
 import gl     "vendor:OpenGL"
@@ -110,8 +111,9 @@ debug_draw_line :: proc(pos0, pos1, tint: linalg.vec3, width: f32)
   gl.Enable( gl.CULL_FACE )
 }
 
-debug_draw_aabb_wp :: proc( wp: waypoint_t, color: linalg.vec3, width: f32 )
+debug_draw_aabb_wp :: proc( wp: waypoint_t, color: linalg.vec3, width: f32, loc := #caller_location )
 {
+  // log.debug( loc )
   pos := util_tile_to_pos( wp )
 
   min := pos + linalg.vec3{ -1, -1, -1 }
@@ -212,29 +214,35 @@ debug_draw_tiles :: proc()
   }
 }
 
+debug_draw_combo_icon :: #force_inline proc( combo_type: Combo_Type, pos, color: vec3 )
+{
+  // draw combo-actions
+  switch combo_type
+  { 
+    case Combo_Type.NONE: {} 
+    case Combo_Type.JUMP:
+    {
+      // debug_draw_aabb_wp( path[i], linalg.vec3{ 1, 1, 0 }, 20 ) 
+      // debug_draw_sphere( util_tile_to_pos( path[i] ), linalg.vec3{ 0.35, 0.35, 0.35 }, color )
+      debug_draw_mesh( data.mesh_idxs.icon_jump, 
+                       pos + linalg.vec3{ 0, 1, 0 },  // pos 
+                       linalg.vec3{ 0, 0, 0 },        // rot
+                       linalg.vec3{ 0.5, 0.5, 0.5 },  // scl
+                       color )                        // color
+    }
+  }
+}
 debug_draw_path_icons :: proc( path: [dynamic]waypoint_t, color: linalg.vec3 ) 
 {
   for i in 0 ..< len(path) -1
   {
-    // draw combo-actions
-    switch path[i].combo_type
-    { 
-      case Combo_Type.NONE: {} 
-      case Combo_Type.JUMP:
-      {
-        // debug_draw_aabb_wp( path[i], linalg.vec3{ 1, 1, 0 }, 20 ) 
-        // debug_draw_sphere( util_tile_to_pos( path[i] ), linalg.vec3{ 0.35, 0.35, 0.35 }, color )
-        debug_draw_mesh( data.mesh_idxs.icon_jump, 
-                         util_tile_to_pos( path[i] ) + linalg.vec3{ 0, 1, 0 },  // pos 
-                         linalg.vec3{ 0, 0, 0 },                                // rot
-                         linalg.vec3{ 0.5, 0.5, 0.5 },                          // scl
-                         color )                                                // color
-      }
-    }
+    debug_draw_combo_icon( path[i].combo_type, util_tile_to_pos( path[i] ), color )
   }
 }
-debug_draw_path :: proc( path: [dynamic]waypoint_t, color: linalg.vec3 )
+debug_draw_path :: proc( path: [dynamic]waypoint_t, color: vec3, offset := vec3{ 0, 0, 0 }, loc := #caller_location )
 {
+
+  // log.debug( loc )
 
   for i in 0 ..< len(path) -1
   {
@@ -252,7 +260,12 @@ debug_draw_path :: proc( path: [dynamic]waypoint_t, color: linalg.vec3 )
             f32(path[i +1].level_idx) * 2 + 1.0, 
             f32(path[i +1].z)         * 2 - f32(TILE_ARR_Z_MAX) +1
            }
+    p00 += offset
+    p01 += offset
     debug_draw_line( p00, p01, col, 25 )  
+    
+    // // @TMP:
+    // debug_draw_sphere( p00, linalg.vec3{ 0.15, 0.15, 0.15 }, color )
   }
   p_sphere := linalg.vec3{ 
           f32(path[len(path) -1].x)         * 2 - f32(TILE_ARR_X_MAX) +1,

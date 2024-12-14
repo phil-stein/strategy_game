@@ -318,7 +318,7 @@ ui_map_tab :: proc()
   ui_display_any( data.tile_entity_id_arr, "data.tile_entity_id_arr" )
   im.SeparatorText( "" )
 
-  tile_strs   := [?]cstring{ "empty", "blocked", "tile" }
+  tile_strs   := [?]cstring{ "empty", "blocked", "tile", "ramp_forward", "ramp_backward", "ramp_left", "ramp_right" }
   id_strs     := [?]cstring{ " ",     "X",       "#", "^", "v", "<", ">" }
   id_strs_idx := 0
   selected    := false
@@ -755,7 +755,7 @@ ui_display_type_info :: proc( type: ^reflect.Type_Info, v: any, name: string, in
     { im.DragFloat4( fmt.ctprintf( "%s : %s", name, v.id ), (^[4]f32)(v.data), 0.05 ) }
     case reflect.is_array( type ) || reflect.is_dynamic_array( type ):
     {
-      if im.CollapsingHeader( fmt.ctprintf( "%s : %s", name, v.id ) )
+      if im.CollapsingHeader( fmt.ctprintf( "%s[%d] : %s", name, reflect.length(v), v.id ) )
       {
         for idx := 0; idx < reflect.length( v ); idx += 1
         { 
