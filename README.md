@@ -41,10 +41,10 @@ use combo moves to extend your playable chars abilities/moveset with the other p
       - [ ] stationary
       - [ ] ai
       - [ ] show their turn
-    - [.] combo-moves
+    - [ ] combo-moves
       - [X] basics
-      - [ ] jumping off other player chars
-        - [ ] curved line
+      - [X] jumping off other player chars
+        - [X] curved line
       - [ ] tackle/kick/etc. enemies
       - [ ] carry enemies/player chars ?
       - [ ] push enemies/player chars ?
