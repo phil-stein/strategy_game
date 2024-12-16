@@ -187,6 +187,7 @@ debug_draw_tiles :: proc()
             debug_draw_sphere( pos, linalg.vec3{ 0.25, 0.25, 0.25 },
                              linalg.vec3{ 0, 1, 0 } ) 
           }
+          case Tile_Nav_Type.BOX:    fallthrough 
           case Tile_Nav_Type.SPRING:
           {
             debug_draw_sphere( pos, linalg.vec3{ 0.25, 0.25, 0.25 },
@@ -213,11 +214,18 @@ debug_draw_combo_icon :: #force_inline proc( combo_type: Combo_Type, pos, color:
   switch combo_type
   { 
     case Combo_Type.NONE: {} 
+    case Combo_Type.PUSH: fallthrough
     case Combo_Type.JUMP:
     {
-      // debug_draw_aabb_wp( path[i], linalg.vec3{ 1, 1, 0 }, 20 ) 
-      // debug_draw_sphere( util_tile_to_pos( path[i] ), linalg.vec3{ 0.35, 0.35, 0.35 }, color )
       debug_draw_mesh( data.mesh_idxs.icon_jump, 
+                       pos + linalg.vec3{ 0, 1, 0 },  // pos 
+                       linalg.vec3{ 0, 0, 0 },        // rot
+                       linalg.vec3{ 0.5, 0.5, 0.5 },  // scl
+                       color )                        // color
+    }
+    case Combo_Type.ATTACK:
+    {
+      debug_draw_mesh( data.mesh_idxs.icon_attack, 
                        pos + linalg.vec3{ 0, 1, 0 },  // pos 
                        linalg.vec3{ 0, 0, 0 },        // rot
                        linalg.vec3{ 0.5, 0.5, 0.5 },  // scl

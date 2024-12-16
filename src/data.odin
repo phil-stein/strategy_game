@@ -52,6 +52,16 @@ mesh_t :: struct
   name         : string  // @TODO: only needed in debug mode
 }
 
+Interactable_Type :: enum
+{
+  BOX,
+}
+
+interactable_t :: struct
+{
+  wp   : waypoint_t,
+  type : Interactable_Type,
+}
 
 entity_t :: struct
 {
@@ -88,6 +98,7 @@ Tile_Nav_Type :: enum
   RAMP_LEFT,
   RAMP_RIGHT,
   SPRING,
+  BOX,
 }
 nav_type_level_arr :: [TILE_ARR_X_MAX][TILE_ARR_Z_MAX]Tile_Nav_Type
 
@@ -104,6 +115,8 @@ Combo_Type :: enum
 {
   NONE,
   JUMP, // also spring
+  ATTACK,
+  PUSH,
 }
 // intersections_t :: struct
 // {
@@ -228,6 +241,10 @@ data_t :: struct
     water_albedo        : int,
     water_normal        : int,  
     water_roughness     : int,
+    demon_albedo        : int,
+    demon_normal        : int,  
+    demon_roughness     : int,
+    demon_metallic      : int,  
   },
   material_idxs : struct
   {
@@ -239,6 +256,7 @@ data_t :: struct
     robot        : int,
     female       : int,
     water        : int,
+    demon        : int,
   },
   mesh_idxs : struct
   {
@@ -250,8 +268,12 @@ data_t :: struct
     dirt_ramp   : int,
     robot_char  : int,
     female_char : int,
-    icon_jump   : int,
     spring      : int,
+    demon_char  : int,
+    box         : int,
+
+    icon_jump   : int,
+    icon_attack : int,
   },
 
   tile_00_str : string,
@@ -265,6 +287,11 @@ data_t :: struct
 
   player_chars : [3]character_t,
   player_chars_current : int,
+
+  enemy_chars         : [3]character_t,
+  enemy_chars_current : int,
+
+  interactables_arr : [dynamic]interactable_t,
 
 }
 TILE_ARR_X_MAX  :: 10
@@ -341,7 +368,7 @@ data : data_t =
   "...X..XXXX"+
   "...^..XX<."+
   ".O....XX.."+
-  ".......X.."+
+  "....#..X.."+
   "XX.....X.."+
   "XXX<......",
 
@@ -378,6 +405,8 @@ data_init :: proc()
   data.player_chars[0].color = linalg.vec3{ 0, 1, 1 }
   data.player_chars[1].color = linalg.vec3{ 1, 0, 1 }
   data.player_chars[2].color = linalg.vec3{ 1, 1, 0 }
+  
+  data.enemy_chars[0].color = linalg.vec3{ 1, 0, 0 }
   
 
 
@@ -583,10 +612,12 @@ data_create_map :: proc()
         tile_str_idx := ( TILE_ARR_X_MAX * TILE_ARR_Z_MAX ) - ( x + (z*TILE_ARR_X_MAX) +1 ) // reversed idx so the str aligns with the created map
 
         if tile_str[tile_str_idx] == 'X' ||
-           tile_str[tile_str_idx] == 'O'
+           tile_str[tile_str_idx] == 'O' ||
+           tile_str[tile_str_idx] == '#'
         {
           mesh_idx := data.mesh_idxs.dirt_cube if tile_str[tile_str_idx] == 'X' else
                       data.mesh_idxs.spring    if tile_str[tile_str_idx] == 'O' else
+                      data.mesh_idxs.box       if tile_str[tile_str_idx] == '#' else
                       data.mesh_idxs.sphere
           data.tile_entity_id_arr[y][x][z] = len(data.entity_arr)
           data_entity_add( 
@@ -655,6 +686,10 @@ data_create_map :: proc()
           case 'O':
           {
             data.tile_type_arr[level_idx][x][z] = Tile_Nav_Type.SPRING
+          }
+          case '#':
+          {
+            data.tile_type_arr[level_idx][x][z] = Tile_Nav_Type.BOX
           }
           case '^': 
           { 

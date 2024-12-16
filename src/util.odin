@@ -10,7 +10,61 @@ util_model_set_pos :: #force_inline proc( model: ^linalg.mat4, pos: linalg.vec3 
   model[3][2] = pos.z 
 }
 
-util_make_model :: proc( pos, rot, scale: linalg.vec3 ) -> ( model: linalg.mat4 )
+util_screen_to_world :: #force_inline proc(view, proj: mat4, pos_normalized: vec2, depth: f32 ) -> ( out: vec3 ) 
+{  
+  // taken from: https://stackoverflow.com/questions/7692988/opengl-math-projecting-screen-space-to-world-space-coords
+  // 1. get mouse-pos, view & proj mat
+  // 2. multiply view & proj
+  // 3. inverse view_proj
+  // 4. get depth (dist ?)
+  // 5. vec4: 
+  //    x: mouse-pos.x range -1 - 1
+  //    y: mouse-pos.y range -1 - 1
+  //    z: depth       range -1 - 1
+  //    w: 1.0
+  // 6. multiply vec & inv_view_proj
+  // 7. divide pos.xyz by pos.w
+  //    pos.w /= 1; pos.xyz *= pos.w;
+
+  // mat4_mul(proj, view, inv_v_p);        // @UNSURE: about order
+  inv_v_p := proj * view
+  // inv_v_p := view * proj
+  // mat4_inverse(inv_v_p, inv_v_p);
+  inv_v_p = linalg.inverse_mat4( inv_v_p )
+
+
+  pos : vec4 = 
+  {
+    pos_normalized.x,
+    pos_normalized.y,
+    depth,
+    1.0
+  }
+
+  pos = util_mat4_mul_v( inv_v_p, pos )
+  
+  // vec3_copy(pos, out);
+  out =  pos.xyz
+  out /= pos.w
+
+  // debug_draw_line(   out, out + camera_get_front()*10, vec3{ 1, 0, 1 }, 25 )
+  // debug_draw_sphere( out + camera_get_front()*10,      vec3{ 0.3, 0.3, 0.3 }, vec3{ 1, 0, 1 } )
+  // debug_draw_sphere( out, vec3{ 0.03, 0.03, 0.03 },    vec3{ 0, 1, 0 } )
+  // debug_draw_sphere( out, vec3{ 0.03, 0.03, 0.03 }, vec3{ 0, 1, 0 } )
+
+  return out
+}
+
+util_mat4_mul_v :: #force_inline proc( m: mat4, v: vec4 ) -> ( out: vec4 )
+{
+  out[0] = m[0][0] * v[0] + m[1][0] * v[1] + m[2][0] * v[2] + m[3][0] * v[3]
+  out[1] = m[0][1] * v[0] + m[1][1] * v[1] + m[2][1] * v[2] + m[3][1] * v[3]
+  out[2] = m[0][2] * v[0] + m[1][2] * v[1] + m[2][2] * v[2] + m[3][2] * v[3]
+  out[3] = m[0][3] * v[0] + m[1][3] * v[1] + m[2][3] * v[2] + m[3][3] * v[3]
+  return out
+}
+
+util_make_model :: #force_inline proc( pos, rot, scale: linalg.vec3 ) -> ( model: linalg.mat4 )
 {
 	// mat4_make_identity(model);
 	// float x = rot[0];  m_deg_to_rad(&x);
@@ -36,11 +90,6 @@ util_make_model :: proc( pos, rot, scale: linalg.vec3 ) -> ( model: linalg.mat4 
 
 	// mat4_scale(model, scale, model);
   model *= linalg.mat4Scale( scale )
-
-  // fmt.println( "model[0]: ", model[0] )
-  // fmt.println( "model[1]: ", model[1] )
-  // fmt.println( "model[2]: ", model[2] )
-  // fmt.println( "model[3]: ", model[3] )
 
   return
 }
@@ -101,6 +150,14 @@ util_ray_intersect_aabb :: proc( ray: ray_t, min, max: linalg.vec3 ) -> ( hit: r
   // vec3 pos = { min[0] + max[0], min[1] + max[1], min[2] + max[2] };
   // vec3_sub(hit->hit_point, pos, hit->normal);
   // vec3_normalize(hit->normal, hit->normal);
+
+  // end := ( ray.dir * 10 ) + ray.pos
+  // // debug_draw_line( ray.pos, end, vec3{ 0, 1, 0 }, 25 )
+  // debug_draw_line(   ray.pos, hit.point, vec3{ 0, 1, 0 }, 25 )
+  // debug_draw_sphere( hit.point, vec3{ 0.3, 0.3, 0.3 }, vec3{ 1, 0, 1 } )
+  // debug_draw_sphere( ray.pos + ray.dir, vec3{ 0.03, 0.03, 0.03 }, vec3{ 0, 1, 0 } )
+  
+  // debug_draw_line( vec3{ 0, 0, 0 }, ray.dir * 10, vec3{ 1, 0, 1 }, 25 )
 
   hit.hit = true 
   return hit 

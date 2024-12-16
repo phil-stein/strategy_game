@@ -29,7 +29,7 @@ camera_get_front :: proc() -> ( front: linalg.vec3 )
 	front.x = math.cos_f32(data.cam.yaw_rad) * math.cos_f32(data.cam.pitch_rad)
 	front.y = math.sin_f32(data.cam.pitch_rad)
 	front.z = math.sin_f32(data.cam.yaw_rad) * math.cos_f32(data.cam.pitch_rad);
-  return
+  return linalg.normalize_vec3( front )
 }
 camera_get_right :: proc() -> ( right: linalg.vec3 )
 {

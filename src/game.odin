@@ -28,6 +28,8 @@ Dir :: enum
 
 game_update :: proc()
 {
+  cam_hit_tile     : waypoint_t
+  has_cam_hit_tile : bool = false
   if input.mouse_button_states[Mouse_Button.RIGHT].down
   {
     camera_rotate_by_mouse()
@@ -41,15 +43,12 @@ game_update :: proc()
     input_set_cursor_visibile( true )
     // input_center_cursor()
     
-    if !input.mouse_over_ui && input.mouse_button_states[Mouse_Button.LEFT].pressed
-    {
-      id := renderer_mouse_position_mouse_pick_id()
-      if id >= 0 && id < len(data.player_chars)
-      {
-        data.player_chars_current = id
-      }
-      // else { log.panic( "id invalid: ", id ) }
-    }
+    m_x := ( input.mouse_x / f32(data.window_width)  ) * 2 -1
+    m_y := ( 1- ( input.mouse_y / f32(data.window_height ) ) ) * 2 -1
+    // log.debug( "m_x:", m_x, ", m_y:", m_y )
+    debug_timer_start( "game_find_tile_hit_by_camera_space_pos" ) 
+    cam_hit_tile, has_cam_hit_tile = game_find_tile_hit_by_camera_space_pos( vec2{ m_x, m_y } )
+    debug_timer_stop() // "game_find_tile_hit_by_camera_space_pos"
   }
   if input.key_states[Key.UP].pressed
   { 
@@ -62,23 +61,44 @@ game_update :: proc()
     data.player_chars_current = data.player_chars_current < -1 ? len(data.player_chars) -1 : data.player_chars_current
   }
 
-  // @TMP:
-  if input.key_states[Key.SPACE].pressed
+  // @TODO: 
+  // mouse_pick_id := renderer_mouse_position_mouse_pick_id()
+  // if !input.mouse_over_ui && !input.mouse_button_states[Mouse_Button.RIGHT].down &&
+  //    input.mouse_button_states[Mouse_Button.LEFT].pressed
+  // {
+  //   if mouse_pick_id >= 0 && mouse_pick_id < len(data.player_chars) && 
+  //      mouse_pick_id != data.player_chars_current
+  //   {
+  //     data.player_chars_current = mouse_pick_id
+  //   }
+  //   else { data.player_chars_current = -1 }
+  //   // else { log.panic( "id invalid: ", id ) }
+  //   log.debug( "mouse_pick_id:", mouse_pick_id )
+  //   log.debug( "data.player_chars_current:", data.player_chars_current )
+  // }
+  mouse_pick_id := renderer_mouse_position_mouse_pick_id()
+  if !input.mouse_over_ui && !input.mouse_button_states[Mouse_Button.RIGHT].down &&
+     input.mouse_button_states[Mouse_Button.LEFT].pressed && 
+     mouse_pick_id >= 0 && mouse_pick_id < len(data.player_chars)
   {
-    start := data.player_chars[data.player_chars_current].tile
-    path, path_found_err, path_found := game_a_star_02_pathfind( start, waypoint_t{ 1, 9, 0, Combo_Type.NONE } )
-    // path, path_found_err, path_found := game_a_star_02_pathfind_old( start, waypoint_t{ 1, 9, 0, Combo_Type.NONE } )
-    log.debug( "len(path):", len(path), "path_found:", path_found, "path_found_err:", path_found_err )
+    if mouse_pick_id >= 0 && mouse_pick_id < len(data.player_chars) && 
+       mouse_pick_id != data.player_chars_current
+    {
+      data.player_chars_current = mouse_pick_id
+    }
+    else { data.player_chars_current = -1 }
+    // else { log.panic( "id invalid: ", id ) }
+    log.debug( "mouse_pick_id:", mouse_pick_id )
+    log.debug( "data.player_chars_current:", data.player_chars_current )
   }
 
+
   // @NOTE: @TMP: false && just temp
-  cam_hit_tile, has_cam_hit_tile := game_find_tile_hit_by_camera()
   if has_cam_hit_tile && data.player_chars_current >= 0 /* && false */
   {
     new_turn := true
     start := data.player_chars[data.player_chars_current].tile
-    // if !data.player_chars[data.player_chars_current].path_finished &&
-    //    len(data.player_chars[data.player_chars_current].paths_arr) > 0
+
     if data.player_chars[data.player_chars_current].left_turns > 0 &&
        len(data.player_chars[data.player_chars_current].paths_arr) > 0
     {
@@ -88,9 +108,6 @@ game_update :: proc()
       start = data.player_chars[data.player_chars_current].paths_arr[idx00][idx01]
     }
 
-    // start_pos := util_tile_to_pos(data.player_chars[data.player_chars_current].tile )
-    // start_pos.y += 1.0
-    // debug_draw_sphere( start_pos, linalg.vec3{ 0.35, 0.35, 0.35 }, linalg.vec3{ 0, 1, 0 } )
     
     path           : [dynamic]waypoint_t = nil
     path_found     := false
@@ -99,6 +116,8 @@ game_update :: proc()
 
     switch data.player_chars[data.player_chars_current].path_current_combo
     {
+      case Combo_Type.PUSH:   fallthrough 
+      case Combo_Type.ATTACK: fallthrough // { log.panic( "should never get triggerred" ) } // ignore
       case Combo_Type.NONE:
       {
         // path, path_found = game_a_star_pathfind_levels( start, cam_hit_tile )
@@ -131,7 +150,7 @@ game_update :: proc()
       }
     }
     
-    if path_found
+    if path_found // && mouse_pick_id < 0
     { 
       intersecting_path       := false
       intersecting_char_idx   := -1
@@ -166,21 +185,58 @@ game_update :: proc()
             }
           }
         }
-        // end of path intersects with spring
-        if path[len(path) -1].level_idx < TILE_LEVELS_MAX -1 &&
-           data.tile_type_arr[path[len(path) -1].level_idx +1][path[len(path) -1].x][path[len(path) -1].z] == Tile_Nav_Type.SPRING
+        // end of path intersects with interactables 
+        if path[len(path) -1].level_idx < TILE_LEVELS_MAX -1
         {
-          intersecting_path     = true 
-          intersecting_char_idx = data.player_chars_current
-          intersecting_combo_type = Combo_Type.JUMP
+          switch data.tile_type_arr[path[len(path) -1].level_idx +1][path[len(path) -1].x][path[len(path) -1].z]
+          {
+            // these arent part of this switch statement but not doing #partial_switch makes the compiler remiond me 
+            case Tile_Nav_Type.EMPTY: {}
+            case Tile_Nav_Type.BLOCKED: {}
+            case Tile_Nav_Type.TRAVERSABLE: {}
+            case Tile_Nav_Type.RAMP_FORWARD: {}
+            case Tile_Nav_Type.RAMP_BACKWARD: {}
+            case Tile_Nav_Type.RAMP_LEFT: {}
+            case Tile_Nav_Type.RAMP_RIGHT: {}
 
-          debug_draw_combo_icon( intersecting_combo_type, 
-                                 util_tile_to_pos( path[len(path) -1] ), 
-                                 data.player_chars[data.player_chars_current].color )
+            case Tile_Nav_Type.SPRING:
+            {
+              intersecting_path       = true 
+              intersecting_char_idx   = data.player_chars_current
+              intersecting_combo_type = Combo_Type.JUMP
+              debug_draw_combo_icon( intersecting_combo_type, 
+                                     util_tile_to_pos( path[len(path) -1] ), 
+                                     data.player_chars[data.player_chars_current].color )
+            }
+            case Tile_Nav_Type.BOX: 
+            {
+              intersecting_path       = true 
+              intersecting_char_idx   = data.player_chars_current
+              intersecting_combo_type = Combo_Type.PUSH
+              debug_draw_combo_icon( intersecting_combo_type, 
+                                     util_tile_to_pos( path[len(path) -1] ), 
+                                     data.player_chars[data.player_chars_current].color )
+            }
+          }
+        }
+        for enemy, i in data.enemy_chars
+        {
+          if enemy.tile.level_idx == path[len(path) -1].level_idx &&
+             enemy.tile.x         == path[len(path) -1].x &&
+             enemy.tile.z         == path[len(path) -1].z   
+          {
+            intersecting_path     = true 
+            intersecting_char_idx = i
+            // @TODO: add more types, like landing on enemy head and tackling them
+            intersecting_combo_type = Combo_Type.ATTACK
+            
+            debug_draw_combo_icon( intersecting_combo_type, util_tile_to_pos( enemy.tile ), enemy.color )
+          }
         }
       // }
 
-      if input.mouse_button_states[Mouse_Button.LEFT].pressed && input.mouse_button_states[Mouse_Button.RIGHT].down && path_found
+      // if input.mouse_button_states[Mouse_Button.LEFT].pressed && input.mouse_button_states[Mouse_Button.RIGHT].down && path_found
+      if input.mouse_button_states[Mouse_Button.LEFT].pressed && path_found // && mouse_pick_id < 0
       { 
         if intersecting_path && data.player_chars[data.player_chars_current].left_turns < 1 
         { 
@@ -203,7 +259,7 @@ game_update :: proc()
         // if last turn, resize to 1 path in char.paths_arr
         if data.player_chars[data.player_chars_current].left_turns <= 0  
         {
-          data.player_chars[data.player_chars_current].left_turns    = 0
+          data.player_chars[data.player_chars_current].left_turns = 0
 
           // free all paths
           if len(data.player_chars[data.player_chars_current].paths_arr) > 0
@@ -211,20 +267,11 @@ game_update :: proc()
             for p in data.player_chars[data.player_chars_current].paths_arr
             { delete( p ) }
             clear( &data.player_chars[data.player_chars_current].paths_arr )
-            // fmt.println( "paths_arr len:", len(data.player_chars[data.player_chars_current].paths_arr) )
           }
 
           resize( &data.player_chars[data.player_chars_current].paths_arr, 1 ) 
-          // fmt.println( "paths_arr len:", len(data.player_chars[data.player_chars_current].paths_arr) )
           data.player_chars[data.player_chars_current].paths_arr[0] = make( [dynamic]waypoint_t, len(path), cap(path) )
           copy( data.player_chars[data.player_chars_current].paths_arr[0][:], path[:] )
-
-          // // delete( data.player_chars[data.player_chars_current].paths_arr )
-          // // data.player_chars[data.player_chars_current].paths_arr = make( [dynamic][dynamic]waypoint_t, 1 )
-          // clear( &data.player_chars[data.player_chars_current].paths_arr )
-          // append( &data.player_chars[data.player_chars_current].paths_arr, path )
-
-          // fmt.println( "old path:", len(data.player_chars[data.player_chars_current].path), len(path) )
         }
         else // if still have more turns, append next turn
         {
@@ -232,8 +279,8 @@ game_update :: proc()
 
           if intersecting_path
           {
-            path[len(path) -1].combo_type = Combo_Type.JUMP 
-            data.player_chars[data.player_chars_current].path_current_combo = Combo_Type.JUMP
+            path[len(path) -1].combo_type = intersecting_combo_type // Combo_Type.JUMP 
+            data.player_chars[data.player_chars_current].path_current_combo = intersecting_combo_type // Combo_Type.JUMP
           }
           else { data.player_chars[data.player_chars_current].path_current_combo = Combo_Type.NONE } // set for next turn
 
@@ -241,6 +288,11 @@ game_update :: proc()
           idx := len(data.player_chars[data.player_chars_current].paths_arr) -1
           copy( data.player_chars[data.player_chars_current].paths_arr[idx][:], path[:] )
           // fmt.println( "paths_arr:", len(data.player_chars[data.player_chars_current].paths_arr) )
+        }
+
+        if intersecting_combo_type == Combo_Type.PUSH
+        { 
+          log.debug( "cock" ) 
         }
 
       }
@@ -260,6 +312,8 @@ game_update :: proc()
           assert( len( path ) == 2 )
           debug_draw_curve_path( path[0], path[1], 15, path_found ? data.player_chars[data.player_chars_current].color : linalg.vec3{ 1, 0, 0 } ) 
         }
+        case Combo_Type.PUSH:   fallthrough
+        case Combo_Type.ATTACK: { log.panic( "should never get triggerred" ) } // ignore
       }
       // fmt.println( "found path len:", len(path)
     }
@@ -293,13 +347,18 @@ game_update :: proc()
       { 
         switch p[0].combo_type
         {
+          case Combo_Type.PUSH:
+          {
+            debug_draw_path( p, vec3{ 1, 1, 1 }, vec3{ 0, 1, 1 } ) 
+            fallthrough
+          }
+          case Combo_Type.ATTACK: fallthrough // { log.panic( "should never get triggerred" ) } // ignore
           case Combo_Type.NONE:
           {
             debug_draw_path( p, char.color ) 
           }
           case Combo_Type.JUMP:
           {
-            // debug_draw_curve_path( p[0], p[len(p) -1], 20, linalg.vec3{ 1, 1, 1 } )
             debug_draw_curve_path( p[0], p[len(p) -1], 20, char.color )
           }
         }
@@ -327,6 +386,16 @@ game_update :: proc()
       // fmt.println( "data.entity_arr[char.entity_idx]: ", data.entity_arr[char.entity_idx] )
       // os.exit(1)
     }
+  }
+
+  for enemy, i in data.enemy_chars
+  {
+    // debug_draw_mesh( data.mesh_idxs.icon_attack, 
+    //                  util_tile_to_pos( enemy.tile ) + linalg.vec3{ 0, 1, 0 },  // pos 
+    //                  vec3{ 0, 0, 0 },        // rot
+    //                  vec3{ 1, 1, 1 },  // scl
+    //                  vec3{ 1, 0, 0 } )       // color
+    // // debug_draw_sphere( util_tile_to_pos( enemy.tile ) + vec3{ 0, 1, 0 }, vec3{ 0.35, 0.35, 0.35 }, vec3{ 1, 0, 0 } )
   }
 }
 
@@ -493,7 +562,8 @@ game_find_ramp_bottom :: proc( ramp: waypoint_t, ramp_type: Tile_Nav_Type ) -> (
   return ramp_bottom, ok
 }
 
-game_find_tile_hit_by_camera :: proc() -> ( hit_tile: waypoint_t, has_hit_tile: bool )
+// game_find_tile_hit_by_camera :: proc() -> ( hit_tile: waypoint_t, has_hit_tile: bool )
+game_find_tile_hit_by_camera_space_pos :: proc( _pos: vec2 ) -> ( hit_tile: waypoint_t, has_hit_tile: bool )
 {
   has_hit_tile = false
   hit_tile     = waypoint_t{ level_idx = 0, x = 0, z = 0, combo_type=Combo_Type.NONE }
@@ -521,8 +591,12 @@ game_find_tile_hit_by_camera :: proc() -> ( hit_tile: waypoint_t, has_hit_tile: 
           min := pos + linalg.vec3{ -1, -1, -1 }
           max := pos + linalg.vec3{  1,  1,  1 }
           ray : ray_t
-          ray.pos    = data.cam.pos
-          ray.dir = camera_get_front()
+          ray.pos  = util_screen_to_world( data.cam.view_mat, data.cam.pers_mat, _pos, 0.0 )
+          ray_end := util_screen_to_world( data.cam.view_mat, data.cam.pers_mat, _pos, 1.0 )
+          // ray.dir = camera_get_front()
+          // dir has to be skewed by cam fov
+          ray.dir = ray_end - ray.pos
+          // debug_draw_sphere( ray.pos + ray.dir, vec3{ 0.1, 0.1, 0.1 }, vec3{ 1, 0, 1 } )
           hit := util_ray_intersect_aabb( ray, min, max )
           if hit.hit
           {

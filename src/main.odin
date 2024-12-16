@@ -334,6 +334,9 @@ main :: proc()
   // input_center_cursor()
   // input_set_cursor_visibile( false )
 
+  // @TMP:
+  data.editor_ui.active = false
+
   // ---- setup ----
 
   debug_timer_static_start( "data_init" )
@@ -389,6 +392,19 @@ main :: proc()
                              mesh_idx = data.mesh_idxs.suzanne, 
                              mat_idx  = data.material_idxs.default
                            } )
+
+
+  // - enemies -
+
+  data.enemy_chars[0].tile = waypoint_t{ 0, 8, 6, Combo_Type.NONE }
+  data.enemy_chars[0].entity_idx = len(data.entity_arr)
+  data_entity_add( entity_t{ pos = util_tile_to_pos( data.enemy_chars[0].tile ) + vec3{ 0, 1, 0 }, 
+                             rot = { 0, 180, 0 }, scl = { 1, 1, 1 },
+                             mesh_idx = data.mesh_idxs.demon_char,  
+                             mat_idx  = data.material_idxs.demon
+                           } )
+
+  // - objs -
 
   // sphere_pos := util_tile_to_pos( waypoint_t{ level_idx=1, x=0, z=6 } )
   // data_entity_add( entity_t{ pos = sphere_pos + linalg.vec3{ 0, 2, 0 }, 

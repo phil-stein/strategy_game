@@ -285,6 +285,7 @@ ui_player_chars_tab :: proc()
 {
   im.SeparatorText( "reflected" )
   ui_display_any( data.player_chars, "data.player_chars" )
+  ui_display_any( data.player_chars, "data.enemy_chars" )
   im.SeparatorText( "" )
 
   im.Text( "data.player_chars_current: %d", data.player_chars_current )
@@ -325,8 +326,8 @@ ui_map_tab :: proc()
   ui_display_any( data.tile_entity_id_arr, "data.tile_entity_id_arr" )
   im.SeparatorText( "" )
 
-  tile_strs   := [?]cstring{ "empty", "blocked", "tile", "ramp_forward", "ramp_backward", "ramp_left", "ramp_right", "spring" }
-  id_strs     := [?]cstring{ " ",     "X",       "#", "^", "v", "<", ">", "O" }
+  tile_strs   := [?]cstring{ "empty", "blocked", "tile", "ramp_forward", "ramp_backward", "ramp_left", "ramp_right", "spring", "box" }
+  id_strs     := [?]cstring{ " ", "-", "X", "^", "v", "<", ">", "O", "#" }
   id_strs_idx := 0
   selected    := false
 
@@ -398,6 +399,11 @@ ui_map_tab :: proc()
         case Tile_Nav_Type.SPRING:
         {
           id_strs_idx = 7
+          selected = false
+        }
+        case Tile_Nav_Type.BOX:
+        {
+          id_strs_idx = 8
           selected = false
         }
       }

@@ -38,10 +38,10 @@ use combo moves to extend your playable chars abilities/moveset with the other p
       - [X] switch
       - [ ] ??? move to pathfinding result (actually play out result at end of turn)
     - [ ] enemies
-      - [ ] stationary
+      - [X] stationary
       - [ ] ai
       - [ ] show their turn
-    - [ ] combo-moves
+    - [.] combo-moves
       - [X] basics
       - [X] jumping off other player chars
         - [X] curved line
@@ -54,6 +54,7 @@ use combo moves to extend your playable chars abilities/moveset with the other p
         - [ ] push blocks / obstacles
       - [ ] ...
       - [ ] show moves
+        - [ ] better path drawing not using debug_draw
     - [ ] turns
     - [.] differrent tile types
       - [X] regular
@@ -62,9 +63,9 @@ use combo moves to extend your playable chars abilities/moveset with the other p
       - [ ] ice
         - when on ice go straight until not on ice anymore ?
       - [ ] breakable
-    - [.] mouse picking (id-buffer) 
+    - [X] mouse picking (id-buffer) 
       - [X] select between player_chars
-      - [ ] use mouse-picking when setting the path
+      - [X] use mouse-picking when setting the path
   * graphics
     - [ ] __make renderer forward not defferred__
       - [ ] transparency

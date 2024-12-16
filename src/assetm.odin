@@ -199,11 +199,33 @@ assetm_init :: proc()
            metallic_f  = 1.0,
          }
   data.material_idxs.female = assetm_add_material( female_char, "female_char" )
+
+  debug_timer_static_start( "demon-textures" )
+  data.texture_idxs.demon_albedo    = assetio_load_texture( "demon02/albedo.png", true )
+  data.texture_idxs.demon_normal    = assetio_load_texture( "demon02/normal.png", false )
+  data.texture_idxs.demon_metallic  = assetio_load_texture( "demon02/metallic.png", false )
+  data.texture_idxs.demon_roughness = assetio_load_texture( "demon02/roughness.png", false )
+  debug_timer_stop()
+  demon_char := material_t{ 
+           albedo_idx    = data.texture_idxs.demon_albedo, 
+           roughness_idx = data.texture_idxs.demon_roughness, 
+           metallic_idx  = data.texture_idxs.demon_metallic, 
+           normal_idx    = data.texture_idxs.demon_normal, 
+
+           uv_tile       = linalg.vec2{ 1, 1 },
+           uv_offs       = linalg.vec2{ 0, 0 },
+
+           tint        = linalg.vec3{ 1.0, 1.0, 1.0 },
+           roughness_f = 1.0,
+           metallic_f  = 1.0,
+         }
+  data.material_idxs.demon = assetm_add_material( demon_char, "demon_char" )
   
   // ---- mesh ----
 
   debug_timer_static_start( "loading meshes" )
   data.mesh_idxs.icon_jump   = assetio_load_mesh( "icon_jump.fbx" ) 
+  data.mesh_idxs.icon_attack = assetio_load_mesh( "icon_attack.fbx" ) 
   
   data.mesh_idxs.quad        = assetio_load_mesh( "quad.fbx" )
   data.mesh_idxs.cube        = assetio_load_mesh( "cube.fbx" )
@@ -214,6 +236,9 @@ assetm_init :: proc()
   data.mesh_idxs.robot_char  = assetio_load_mesh( "robot_character_06_01.fbx" )
   data.mesh_idxs.female_char = assetio_load_mesh( "female_char_01_01.fbx" )
   data.mesh_idxs.spring      = assetio_load_mesh( "spring_01.fbx" )
+  data.mesh_idxs.demon_char  = assetio_load_mesh( "demon02.fbx" )
+  // data.mesh_idxs.skeleton      = assetio_load_mesh( "demon02_chains.fbx" )
+  data.mesh_idxs.box         = assetio_load_mesh( "box_01.fbx" )
   debug_timer_stop()
 }
 assetm_cleanup :: proc()
