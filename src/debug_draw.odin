@@ -240,9 +240,69 @@ debug_draw_path_icons :: proc( path: [dynamic]waypoint_t, color: linalg.vec3 )
     debug_draw_combo_icon( path[i].combo_type, util_tile_to_pos( path[i] ), color )
   }
 }
+debug_draw_char_path :: proc( char: ^character_t )
+{
+  if len(char.paths_arr) > 0
+  {
+    for p in char.paths_arr 
+    { 
+      switch p[0].combo_type
+      {
+        case Combo_Type.PUSH:
+        {
+          debug_draw_path( p, vec3{ 1, 1, 1 }, char.path_offset + vec3{ 0, 1, 0 } ) 
+          // get next tile following the path
+          // p0-->p1
+          // p2 = p1 - p0 + p1
+          debug_box_tile := waypoint_t{ level_idx  = p[len(p) -1].level_idx - p[len(p) -2].level_idx + p[len(p) -1].level_idx,
+                                        x          = p[len(p) -1].x - p[len(p) -2].x + p[len(p) -1].x, 
+                                        z          = p[len(p) -1].z - p[len(p) -2].z + p[len(p) -1].z, 
+                                        combo_type = Combo_Type.NONE,
+                                      }
+          debug_box_pos  := util_tile_to_pos( debug_box_tile ) 
+          debug_draw_mesh( data.mesh_idxs.box,
+                           debug_box_pos + vec3{ 0, 1, 0 },                 // pos
+                           vec3{ 0, 0, 0 }, vec3{ 1, 1, 1 }, char.color )   // rot, scl, color
+          fallthrough
+        }
+        case Combo_Type.ATTACK: fallthrough // { log.panic( "should never get triggerred" ) } // ignore
+        case Combo_Type.NONE:
+        {
+          debug_draw_path( p, char.color, char.path_offset ) 
+        }
+        case Combo_Type.JUMP:
+        {
+          debug_draw_curve_path( p[0], p[len(p) -1], 20, char.color )
+        }
+      }
+      // debug_draw_path_icons( p, linalg.vec3{ 1, 1, 0 } )
+      debug_draw_path_icons( p, char.color )
+
+      // debug_draw_sphere( util_tile_to_pos( p[len(p) -1] ), linalg.vec3{ 1, 1, 1 }, linalg.vec3{ 0, 1, 1 } ) 
+    }
+    // debug_draw_sphere( linalg.vec3{ 0, 1, 0 } + util_tile_to_pos( char.paths_arr[0][0] ), linalg.vec3{ 0.35, 0.35, 0.35 }, linalg.vec3{ 0, 1, 1 } )
+    // debug_draw_sphere( linalg.vec3{ 0, 1, 0 } + util_tile_to_pos( char.paths_arr[len(char.paths_arr) -1][len(char.paths_arr[len(char.paths_arr) -1]) -1] ), linalg.vec3{ 0.35, 0.35, 0.35 }, linalg.vec3{ 0, 1, 1 } )
+    debug_draw_sphere( linalg.vec3{ 0, 1, 0 } + util_tile_to_pos( char.paths_arr[0][0] ), linalg.vec3{ 0.35, 0.35, 0.35 }, char.color )
+    debug_draw_sphere( linalg.vec3{ 0, 1, 0 } + util_tile_to_pos( char.paths_arr[len(char.paths_arr) -1][len(char.paths_arr[len(char.paths_arr) -1]) -1] ), linalg.vec3{ 0.35, 0.35, 0.35 }, char.color )
+
+    // pos := util_tile_to_pos( char.path[len(char.path) -1] )
+    idx := len(char.paths_arr) -1
+    pos := util_tile_to_pos( char.paths_arr[idx][ len(char.paths_arr[idx]) -1 ] )
+    pos += linalg.vec3{ 0, 2, 0 }
+    rot := data.entity_arr[char.entity_idx].rot
+    debug_draw_mesh( data.entity_arr[char.entity_idx].mesh_idx,
+                     pos, 
+                     rot,
+                     data.entity_arr[char.entity_idx].scl, 
+                     // linalg.vec3{ 0, 1, 1 } )
+                     char.color )
+    // fmt.println( "data.entity_arr[char.entity_idx]: ", data.entity_arr[char.entity_idx] )
+    // os.exit(1)
+  }
+  
+}
 debug_draw_path :: proc( path: [dynamic]waypoint_t, color: vec3, offset := vec3{ 0, 0, 0 }, loc := #caller_location )
 {
-
   // log.debug( loc )
 
   for i in 0 ..< len(path) -1

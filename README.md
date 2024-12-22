@@ -8,7 +8,7 @@ use combo moves to extend your playable chars abilities/moveset with the other p
 
 ## todo
   * ui
-    - editor ui
+    - [X] editor ui
       - [X] port imgui 
       - [X] entity explorer
       - [X] level editor
@@ -37,10 +37,12 @@ use combo moves to extend your playable chars abilities/moveset with the other p
       - [X] multiple player chars ( 3 probably )
       - [X] switch
       - [ ] ??? move to pathfinding result (actually play out result at end of turn)
-    - [ ] enemies
+    - [.] enemies
       - [X] stationary
       - [ ] ai
-      - [ ] show their turn
+        - [X] simple
+        - [ ] more advanced idk
+      - [X] show their turn
     - [.] combo-moves
       - [X] basics
       - [X] jumping off other player chars
@@ -54,7 +56,10 @@ use combo moves to extend your playable chars abilities/moveset with the other p
         - [ ] push blocks / obstacles
       - [ ] ...
       - [ ] show moves
-        - [ ] better path drawing not using debug_draw
+        - better path drawing not using debug_draw
+        - [ ] paths
+        - [ ] curves
+      - [X] limit the amount of moves chaned together in one turn
     - [ ] turns
     - [.] differrent tile types
       - [X] regular
@@ -67,6 +72,7 @@ use combo moves to extend your playable chars abilities/moveset with the other p
       - [X] select between player_chars
       - [X] use mouse-picking when setting the path
   * graphics
+    - [ ] vulkan or bgfx ?
     - [ ] __make renderer forward not defferred__
       - [ ] transparency
       - [ ] graphic effects
@@ -124,6 +130,7 @@ use combo moves to extend your playable chars abilities/moveset with the other p
       - [ ] util
   * optimization
     - [ ] pass data using context or as proc args to avoid cache misses
+    - [ ] make game_a_star_pathfind() use temp_allocator
 
 ## buggs
   - [X] debug_draw_mesh() rotates around center (0, 0, 0) not pos, see main.odin

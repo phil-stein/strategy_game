@@ -52,16 +52,16 @@ mesh_t :: struct
   name         : string  // @TODO: only needed in debug mode
 }
 
-Interactable_Type :: enum
-{
-  BOX,
-}
-
-interactable_t :: struct
-{
-  wp   : waypoint_t,
-  type : Interactable_Type,
-}
+// Interactable_Type :: enum
+// {
+//   BOX,
+// }
+// 
+// interactable_t :: struct
+// {
+//   wp   : waypoint_t,
+//   type : Combo_Type,
+// }
 
 entity_t :: struct
 {
@@ -100,7 +100,6 @@ Tile_Nav_Type :: enum
   SPRING,
   BOX,
 }
-nav_type_level_arr :: [TILE_ARR_X_MAX][TILE_ARR_Z_MAX]Tile_Nav_Type
 
 waypoint_t :: struct
 {
@@ -125,14 +124,17 @@ Combo_Type :: enum
 // }
 character_t :: struct
 {
-  tile            : waypoint_t,
+  wp              : waypoint_t,
   entity_idx      : int,
   halo_entity_idx : int,
-  color           : linalg.vec3,
+  color           : vec3,
+  path_offset     : vec3,
 
   // -- gameplay --
   max_walk_dist   : int,
   max_jump_dist   : int,
+  max_turns       : int,
+  current_turns   : int,
 
   // -- paths --
   paths_arr              : [dynamic][dynamic]waypoint_t,
@@ -212,6 +214,21 @@ data_t :: struct
   editor_ui : struct
   {
     active : bool,
+  },  
+
+  text : struct
+  {
+    atlas_tex_handle  : u32,
+    glyph_size        : i32,
+    last_draw_calls   : i32,
+    draw_calls        : i32,
+    font_name         : string,
+    draw_solid        : bool,
+
+    shader            : u32,
+    baked_shader      : u32,
+
+    mesh              : mesh_t,
   },
   
   entity_arr          : [dynamic]entity_t,
@@ -281,7 +298,7 @@ data_t :: struct
   tile_02_str : string,
 
   tile_str_arr       : [TILE_LEVELS_MAX]string,
-  tile_type_arr      : [TILE_LEVELS_MAX]nav_type_level_arr,
+  tile_type_arr      : [TILE_LEVELS_MAX][TILE_ARR_X_MAX][TILE_ARR_Z_MAX]Tile_Nav_Type,
   tile_entity_id_arr : [TILE_LEVELS_MAX][TILE_ARR_X_MAX][TILE_ARR_Z_MAX]int,
   tile_ramp_wp_arr   : [TILE_LEVELS_MAX][dynamic]waypoint_t,
 
@@ -291,7 +308,8 @@ data_t :: struct
   enemy_chars         : [3]character_t,
   enemy_chars_current : int,
 
-  interactables_arr : [dynamic]interactable_t,
+  // @TODO: pretty sure not being used
+  // interactables_arr : [dynamic]interactable_t,
 
 }
 TILE_ARR_X_MAX  :: 10
@@ -391,22 +409,48 @@ data_init :: proc()
 {
 
 // init .player_chars
-  for &char in data.player_chars
+  for &char, i in data.player_chars
   {
     // char.has_path = false
-    char.tile     = waypoint_t{ level_idx=0, x=0, z=0 }
+    char.wp         = waypoint_t{ level_idx=0, x=0, z=0 }
     char.entity_idx = -1
-    char.left_turns    = 0
+    char.left_turns = 0
     // char.path_finished = false
 
     char.max_walk_dist = 20 // 14
     char.max_jump_dist = 4
+    char.max_turns     = 3
+    char.current_turns = 0
+
+    char.path_offset = vec3{ 0, f32(i) * 0.1, 0 }
+
+    // // @NOTE: @UNSURE: doing this to have chars with no path 
+    // //                 be abled to intersect with other chars paths
+    // //                 also setting wp again in main.odin after 
+    // //                 adding entities
+    // path := make( [dynamic]waypoint_t, 1 )
+    // path[0] = char.wp
+    // append( &char.paths_arr, path )
   }
-  data.player_chars[0].color = linalg.vec3{ 0, 1, 1 }
-  data.player_chars[1].color = linalg.vec3{ 1, 0, 1 }
-  data.player_chars[2].color = linalg.vec3{ 1, 1, 0 }
+  data.player_chars[0].color = vec3{ 0, 1, 1 }
+  data.player_chars[1].color = vec3{ 1, 0, 1 }
+  data.player_chars[2].color = vec3{ 1, 1, 0 }
   
-  data.enemy_chars[0].color = linalg.vec3{ 1, 0, 0 }
+  for &enemy, i in data.enemy_chars
+  {
+    enemy.color  = vec3{ 1, 0, 0 }
+
+    enemy.wp         = waypoint_t{ level_idx=0, x=0, z=0 }
+    enemy.entity_idx = -1
+    enemy.left_turns = 0
+
+    enemy.max_walk_dist = 20 // 14
+    enemy.max_jump_dist = 4
+    enemy.max_turns     = 3
+    enemy.current_turns = 0
+
+    enemy.path_offset = vec3{ 0, f32(len(data.player_chars) + i) * 0.1, 0 }
+  }
   
 
 
@@ -543,17 +587,26 @@ data_pre_updated :: proc()
       fmt.tprint( "amazing title | fps: ", data.cur_fps, ", vsync: ", data.vsync_enabled ), 
       context.temp_allocator ) 
   )
+  
+  data.text.last_draw_calls = data.text.draw_calls
+  data.text.draw_calls = 0
 }
 
 data_cleanup :: proc()
 {
   for &char in data.player_chars
   {
-    // if char.has_path
     for p in char.paths_arr
     { delete( p ) }
     clear( &char.paths_arr )
     delete( char.paths_arr )
+  }
+  for &enemy in data.enemy_chars
+  {
+    for p in enemy.paths_arr
+    { delete( p ) }
+    clear( &enemy.paths_arr )
+    delete( enemy.paths_arr )
   }
 
   delete( data.entity_arr )
@@ -626,6 +679,17 @@ data_create_map :: proc()
                             mesh_idx = mesh_idx, 
                             mat_idx  = y == 1 ? data.material_idxs.dirt_cube_02 : data.material_idxs.dirt_cube_01
                           } )
+          
+          // if tile_str[tile_str_idx] == 'O'
+          // {
+          //   append( &data.interactables_arr, interactable_t{ wp=waypoint_t{ level_idx=y, x=x, z=z }, type=Combo_Type.JUMP } )
+          // }
+          // else if tile_str[tile_str_idx] == '#'
+          // {
+          //   append( &data.interactables_arr, interactable_t{ wp=waypoint_t{ level_idx=y, x=x, z=z }, type=Combo_Type.BOX } )
+          // }
+          
+
           // fmt.println( "idx: ", idx, "pos: ", data.entity_arr[idx].pos, 
           //              " \t| x, z: ", x, z, "MAX: ", TILE_ARR_X_MAX, TILE_ARR_Z_MAX ,
           //              ", ", f32(x) * 2 - f32(TILE_ARR_X_MAX) , f32(z) * 2 - f32(TILE_ARR_Z_MAX))

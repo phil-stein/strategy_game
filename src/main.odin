@@ -302,16 +302,6 @@ main :: proc()
   { defer destroy_console_logger( context.logger ) }
   // { defer free( context.logger.data ) }
 
-  // @TMP:
-  var := 123
-  log.log( log.Level.Debug, "log" )
-  log.debug( "debug", "debug", var )
-  log.info( "info" )
-  log.warn( "warn" )
-  log.error( "error" )
-  log.fatal( "fatal" )
-  // if 0 == 0 { log.panic( "panic" ) }
-  
   
   // ---- init ----
 
@@ -360,8 +350,9 @@ main :: proc()
   // @TODO: less hacky solution
   append( &data.entity_arr, entity_t{} ) 
 
-  data.player_chars[0].tile = waypoint_t{ level_idx=0, x=5, z=5 }
-  player_char_00_pos := util_tile_to_pos( data.player_chars[0].tile )
+  data.player_chars[0].wp = waypoint_t{ level_idx=0, x=5, z=5 }
+  // data.player_chars[0].paths_arr[0][0] = data.player_chars[0].wp // doing this to have chars with no path be abled to intersect with other chars paths
+  player_char_00_pos := util_tile_to_pos( data.player_chars[0].wp )
   data.player_chars[0].entity_idx = len(data.entity_arr)
   data_entity_add( entity_t{ pos = player_char_00_pos + linalg.vec3{ 0, 1, 0 }, 
                              rot = { 0, 180, 0 }, scl = { 1, 1, 1 },
@@ -369,14 +360,15 @@ main :: proc()
                              mat_idx  = data.material_idxs.robot
                            } )
   // fmt.println( "player[0].pos: ", data.entity_arr[data.player_chars[0].entity_idx].pos )
-  // fmt.println( "player.tile: ", data.player_chars[0].tile )
-  // fmt.println( "player.tile -> pos: ", player_char_00_pos )
+  // fmt.println( "player.wp: ", data.player_chars[0].wp )
+  // fmt.println( "player.wp -> pos: ", player_char_00_pos )
   // fmt.println( "data.player_chars[0].entity_idx: ", data.player_chars[0].entity_idx )
 
-  data.player_chars[1].tile = waypoint_t{ level_idx=0, x=4, z=3 }
-  data.player_chars[1].tile = waypoint_t{ level_idx=2, x=6, z=9 }
-  data.player_chars[1].tile = waypoint_t{ level_idx=1, x=5, z=9 }
-  player_char_01_pos := util_tile_to_pos( data.player_chars[1].tile )
+  data.player_chars[1].wp = waypoint_t{ level_idx=0, x=4, z=3 }
+  data.player_chars[1].wp = waypoint_t{ level_idx=2, x=6, z=9 }
+  data.player_chars[1].wp = waypoint_t{ level_idx=1, x=5, z=9 }
+  // data.player_chars[1].paths_arr[0][0] = data.player_chars[1].wp // doing this to have chars with no path be abled to intersect with other chars paths
+  player_char_01_pos := util_tile_to_pos( data.player_chars[1].wp )
   data.player_chars[1].entity_idx = len(data.entity_arr)
   data_entity_add( entity_t{ pos = player_char_01_pos + linalg.vec3{ 0, 1, 0 }, 
                              rot = { 0, 180, 0 }, scl = { 1, 1, 1 },
@@ -384,8 +376,9 @@ main :: proc()
                              mat_idx  = data.material_idxs.female
                            } )
 
-  data.player_chars[2].tile = waypoint_t{ level_idx=2, x=0, z=5 }
-  player_char_02_pos := util_tile_to_pos( data.player_chars[2].tile )
+  data.player_chars[2].wp = waypoint_t{ level_idx=2, x=0, z=5 }
+  // data.player_chars[2].paths_arr[0][0] = data.player_chars[2].wp // doing this to have chars with no path be abled to intersect with other chars paths
+  player_char_02_pos := util_tile_to_pos( data.player_chars[2].wp )
   data.player_chars[2].entity_idx = len(data.entity_arr)
   data_entity_add( entity_t{ pos = player_char_02_pos + linalg.vec3{ 0, 2, 0 }, 
                              rot = { 0, 180, 0 }, scl = { 1, 1, 1 },
@@ -396,9 +389,9 @@ main :: proc()
 
   // - enemies -
 
-  data.enemy_chars[0].tile = waypoint_t{ 0, 8, 6, Combo_Type.NONE }
+  data.enemy_chars[0].wp = waypoint_t{ 0, 8, 6, Combo_Type.NONE }
   data.enemy_chars[0].entity_idx = len(data.entity_arr)
-  data_entity_add( entity_t{ pos = util_tile_to_pos( data.enemy_chars[0].tile ) + vec3{ 0, 1, 0 }, 
+  data_entity_add( entity_t{ pos = util_tile_to_pos( data.enemy_chars[0].wp ) + vec3{ 0, 1, 0 }, 
                              rot = { 0, 180, 0 }, scl = { 1, 1, 1 },
                              mesh_idx = data.mesh_idxs.demon_char,  
                              mat_idx  = data.material_idxs.demon
@@ -441,6 +434,11 @@ main :: proc()
 	
   debug_timer_stop() // init
 
+  // opengl state
+  // Texture blending options.
+  gl.Enable(gl.BLEND)
+  gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+
   // ---- main loop ----
   for !window_should_close()
   {
@@ -477,6 +475,7 @@ main :: proc()
     debug_timer_stop() // renderer_update()
     // debug_draw_tiles()
 
+
     game_update()
 
     // move the water
@@ -505,6 +504,8 @@ main :: proc()
       if data.editor_ui.active { ui_update() }
       debug_timer_stop() // ui_update()
     }
+    
+    text_draw_string( "cock", vec2{ 0, 0 } )
 
     glfw.SwapBuffers( data.window )
     

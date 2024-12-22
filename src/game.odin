@@ -88,8 +88,8 @@ game_update :: proc()
     }
     else { data.player_chars_current = -1 }
     // else { log.panic( "id invalid: ", id ) }
-    log.debug( "mouse_pick_id:", mouse_pick_id )
-    log.debug( "data.player_chars_current:", data.player_chars_current )
+    // log.debug( "mouse_pick_id:", mouse_pick_id )
+    // log.debug( "data.player_chars_current:", data.player_chars_current )
   }
 
 
@@ -97,15 +97,20 @@ game_update :: proc()
   if has_cam_hit_tile && data.player_chars_current >= 0 /* && false */
   {
     new_turn := true
-    start := data.player_chars[data.player_chars_current].tile
+    start := data.player_chars[data.player_chars_current].wp
 
     if data.player_chars[data.player_chars_current].left_turns > 0 &&
-       len(data.player_chars[data.player_chars_current].paths_arr) > 0
+       len(data.player_chars[data.player_chars_current].paths_arr) > 0 &&
+       data.player_chars[data.player_chars_current].current_turns < data.player_chars[data.player_chars_current].max_turns
     {
       new_turn = false
       idx00 := len(data.player_chars[data.player_chars_current].paths_arr) -1
       idx01 := len(data.player_chars[data.player_chars_current].paths_arr[idx00]) -1
       start = data.player_chars[data.player_chars_current].paths_arr[idx00][idx01]
+    }
+    else if data.player_chars[data.player_chars_current].current_turns >= data.player_chars[data.player_chars_current].max_turns
+    {
+      data.player_chars[data.player_chars_current].path_current_combo = Combo_Type.NONE
     }
 
     
@@ -152,6 +157,7 @@ game_update :: proc()
     
     if path_found // && mouse_pick_id < 0
     { 
+      // :intersecting
       intersecting_path       := false
       intersecting_char_idx   := -1
       intersecting_combo_type := Combo_Type.NONE
@@ -185,7 +191,7 @@ game_update :: proc()
             }
           }
         }
-        // end of path intersects with interactables 
+        // end of path :intersects with :interactables 
         if path[len(path) -1].level_idx < TILE_LEVELS_MAX -1
         {
           switch data.tile_type_arr[path[len(path) -1].level_idx +1][path[len(path) -1].x][path[len(path) -1].z]
@@ -219,24 +225,23 @@ game_update :: proc()
             }
           }
         }
+        // :intersects with :enemies
         for enemy, i in data.enemy_chars
         {
-          if enemy.tile.level_idx == path[len(path) -1].level_idx &&
-             enemy.tile.x         == path[len(path) -1].x &&
-             enemy.tile.z         == path[len(path) -1].z   
+          if enemy.wp.level_idx == path[len(path) -1].level_idx &&
+             enemy.wp.x         == path[len(path) -1].x &&
+             enemy.wp.z         == path[len(path) -1].z   
           {
             intersecting_path     = true 
             intersecting_char_idx = i
             // @TODO: add more types, like landing on enemy head and tackling them
             intersecting_combo_type = Combo_Type.ATTACK
             
-            debug_draw_combo_icon( intersecting_combo_type, util_tile_to_pos( enemy.tile ), enemy.color )
+            debug_draw_combo_icon( intersecting_combo_type, util_tile_to_pos( enemy.wp ), enemy.color )
           }
         }
-      // }
-
-      // if input.mouse_button_states[Mouse_Button.LEFT].pressed && input.mouse_button_states[Mouse_Button.RIGHT].down && path_found
-      if input.mouse_button_states[Mouse_Button.LEFT].pressed && path_found // && mouse_pick_id < 0
+      // :set new :path
+      if input.mouse_button_states[Mouse_Button.LEFT].pressed && path_found
       { 
         if intersecting_path && data.player_chars[data.player_chars_current].left_turns < 1 
         { 
@@ -254,6 +259,8 @@ game_update :: proc()
             clear( &data.player_chars[data.player_chars_current].paths_arr )
             // fmt.println( "paths_arr len:", len(data.player_chars[data.player_chars_current].paths_arr) )
           }
+
+          data.player_chars[data.player_chars_current].current_turns = 0
         }
 
         // if last turn, resize to 1 path in char.paths_arr
@@ -272,8 +279,10 @@ game_update :: proc()
           resize( &data.player_chars[data.player_chars_current].paths_arr, 1 ) 
           data.player_chars[data.player_chars_current].paths_arr[0] = make( [dynamic]waypoint_t, len(path), cap(path) )
           copy( data.player_chars[data.player_chars_current].paths_arr[0][:], path[:] )
+
+          data.player_chars[data.player_chars_current].current_turns = 1
         }
-        else // if still have more turns, append next turn
+        else // if data.player_chars[data.player_chars_current].current_turns < data.player_chars[data.player_chars_current].max_turns // if still have more turns, append next turn
         {
           data.player_chars[data.player_chars_current].left_turns -= 0 if intersecting_path else 1
 
@@ -288,13 +297,15 @@ game_update :: proc()
           idx := len(data.player_chars[data.player_chars_current].paths_arr) -1
           copy( data.player_chars[data.player_chars_current].paths_arr[idx][:], path[:] )
           // fmt.println( "paths_arr:", len(data.player_chars[data.player_chars_current].paths_arr) )
+
+          data.player_chars[data.player_chars_current].current_turns += 1
         }
 
-        if intersecting_combo_type == Combo_Type.PUSH
-        { 
-          log.debug( "cock" ) 
-        }
-
+        // @TODO: check if pushing box into wall or off map or some
+        // if intersecting_combo_type == Combo_Type.PUSH
+        // { 
+        //   log.debug( "cock" ) 
+        // }
       }
     }
     // draw the path we pathfound(?), in character_t.color or red if failed 
@@ -305,7 +316,7 @@ game_update :: proc()
         case Combo_Type.NONE:
         { 
           assert( len( path ) >= 1 )
-          debug_draw_path( path, path_found ? data.player_chars[data.player_chars_current].color : linalg.vec3{ 1, 0, 0 } ) 
+          debug_draw_path( path, path_found ? data.player_chars[data.player_chars_current].color : linalg.vec3{ 1, 0, 0 }, data.player_chars[data.player_chars_current].path_offset ) 
         }
         case Combo_Type.JUMP:
         { 
@@ -328,78 +339,37 @@ game_update :: proc()
   // @TMP: 
   // debug_draw_sphere( util_tile_to_pos( waypoint_t{ 1, 2, 2, Combo_Type.NONE } ), linalg.vec3{ 0.3, 0.3, 0.3 }, linalg.vec3{ 0, 1, 1 } )
   // debug_draw_sphere( util_tile_to_pos( waypoint_t{ 0, 2, 2, Combo_Type.NONE } ), linalg.vec3{ 0.3, 0.3, 0.3 }, linalg.vec3{ 1, 0, 0 } )
-  // debug_draw_curve_path( data.player_chars[0].tile, waypoint_t{ 1, 2, 2, Combo_Type.NONE }, 20, linalg.vec3{ 1, 1, 1 } )
+  // debug_draw_curve_path( data.player_chars[0].wp, waypoint_t{ 1, 2, 2, Combo_Type.NONE }, 20, linalg.vec3{ 1, 1, 1 } )
 
+  // :draw :player_char :path
   for char, i in data.player_chars
   {
     data.entity_arr[char.entity_idx].rot.y += 15 * data.delta_t
     if i == data.player_chars_current
     {
-      // debug_draw_sphere( util_tile_to_pos( char.tile ), linalg.vec3{ 0.5, 0.5, 0.5 }, linalg.vec3{ 0, 1, 1 } ) 
-      // debug_draw_sphere( util_tile_to_pos( char.tile ) + linalg.vec3{ 0, 1, 0 }, linalg.vec3{ 0.35, 0.35, 0.35 }, linalg.vec3{ 0, 1, 0 } ) 
-      debug_draw_sphere( util_tile_to_pos( char.tile ) + linalg.vec3{ 0, 1, 0 }, linalg.vec3{ 0.35, 0.35, 0.35 }, char.color ) 
+      // debug_draw_sphere( util_tile_to_pos( char.wp ), linalg.vec3{ 0.5, 0.5, 0.5 }, linalg.vec3{ 0, 1, 1 } ) 
+      // debug_draw_sphere( util_tile_to_pos( char.wp ) + linalg.vec3{ 0, 1, 0 }, linalg.vec3{ 0.35, 0.35, 0.35 }, linalg.vec3{ 0, 1, 0 } ) 
+      debug_draw_sphere( util_tile_to_pos( char.wp ) + linalg.vec3{ 0, 1, 0 }, linalg.vec3{ 0.35, 0.35, 0.35 }, char.color ) 
     }
-    // if char.has_path
-    if len(char.paths_arr) > 0
-    {
-      // debug_draw_path( char.path, linalg.vec3{ 0, 1, 1 } )
-      for p in char.paths_arr 
-      { 
-        switch p[0].combo_type
-        {
-          case Combo_Type.PUSH:
-          {
-            debug_draw_path( p, vec3{ 1, 1, 1 }, vec3{ 0, 1, 1 } ) 
-            fallthrough
-          }
-          case Combo_Type.ATTACK: fallthrough // { log.panic( "should never get triggerred" ) } // ignore
-          case Combo_Type.NONE:
-          {
-            debug_draw_path( p, char.color ) 
-          }
-          case Combo_Type.JUMP:
-          {
-            debug_draw_curve_path( p[0], p[len(p) -1], 20, char.color )
-          }
-        }
-        // debug_draw_path_icons( p, linalg.vec3{ 1, 1, 0 } )
-        debug_draw_path_icons( p, char.color )
 
-        // debug_draw_sphere( util_tile_to_pos( p[len(p) -1] ), linalg.vec3{ 1, 1, 1 }, linalg.vec3{ 0, 1, 1 } ) 
-      }
-      // debug_draw_sphere( linalg.vec3{ 0, 1, 0 } + util_tile_to_pos( char.paths_arr[0][0] ), linalg.vec3{ 0.35, 0.35, 0.35 }, linalg.vec3{ 0, 1, 1 } )
-      // debug_draw_sphere( linalg.vec3{ 0, 1, 0 } + util_tile_to_pos( char.paths_arr[len(char.paths_arr) -1][len(char.paths_arr[len(char.paths_arr) -1]) -1] ), linalg.vec3{ 0.35, 0.35, 0.35 }, linalg.vec3{ 0, 1, 1 } )
-      debug_draw_sphere( linalg.vec3{ 0, 1, 0 } + util_tile_to_pos( char.paths_arr[0][0] ), linalg.vec3{ 0.35, 0.35, 0.35 }, char.color )
-      debug_draw_sphere( linalg.vec3{ 0, 1, 0 } + util_tile_to_pos( char.paths_arr[len(char.paths_arr) -1][len(char.paths_arr[len(char.paths_arr) -1]) -1] ), linalg.vec3{ 0.35, 0.35, 0.35 }, char.color )
-
-      // pos := util_tile_to_pos( char.path[len(char.path) -1] )
-      idx := len(char.paths_arr) -1
-      pos := util_tile_to_pos( char.paths_arr[idx][ len(char.paths_arr[idx]) -1 ] )
-      pos += linalg.vec3{ 0, 2, 0 }
-      rot := data.entity_arr[char.entity_idx].rot
-      debug_draw_mesh( data.entity_arr[char.entity_idx].mesh_idx,
-                       pos, 
-                       rot,
-                       data.entity_arr[char.entity_idx].scl, 
-                       // linalg.vec3{ 0, 1, 1 } )
-                       char.color )
-      // fmt.println( "data.entity_arr[char.entity_idx]: ", data.entity_arr[char.entity_idx] )
-      // os.exit(1)
-    }
+    debug_draw_char_path( &data.player_chars[i] )
   }
-
+  // :draw :enemy :path
   for enemy, i in data.enemy_chars
   {
-    // debug_draw_mesh( data.mesh_idxs.icon_attack, 
-    //                  util_tile_to_pos( enemy.tile ) + linalg.vec3{ 0, 1, 0 },  // pos 
-    //                  vec3{ 0, 0, 0 },        // rot
-    //                  vec3{ 1, 1, 1 },  // scl
-    //                  vec3{ 1, 0, 0 } )       // color
-    // // debug_draw_sphere( util_tile_to_pos( enemy.tile ) + vec3{ 0, 1, 0 }, vec3{ 0.35, 0.35, 0.35 }, vec3{ 1, 0, 0 } )
+    if len(enemy.paths_arr) > 0
+    {
+      debug_draw_char_path( &data.enemy_chars[i] )
+    }
+    else
+    {
+      // @TMP:
+      if i == 0
+      { enemy_gen_move( &data.enemy_chars[i] ) }
+    }
   }
 }
 
-// game_check_jump_valid :: proc( char: character_t, start, end: waypoint_t ) -> ( path_arr: [dynamic]waypoint_t, ok: bool )
 game_check_jump_valid :: proc( char: character_t, start, end: waypoint_t ) -> ( path_arr: [dynamic]waypoint_t, err: Pathfind_Error )
 {
   ok := int(linalg.distance_vec2( linalg.vec2{ f32(start.x), f32(start.z) }, linalg.vec2{ f32(end.x), f32(end.z) } )) <= char.max_jump_dist

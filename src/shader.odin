@@ -98,9 +98,10 @@ shader_act_reset_tex_idx :: #force_inline proc( )
 
 // shader set ---------------------------------------------------------------------------------
 
-shader_set_bool :: #force_inline proc( handle: u32, name: cstring, value: i32 )
+// shader_set_bool :: #force_inline proc( handle: u32, name: cstring, value: i32 )
+shader_set_bool :: #force_inline proc( handle: u32, name: cstring, value: bool )
 {
-	gl.Uniform1i( gl.GetUniformLocation( handle, name ), value )
+	gl.Uniform1i( gl.GetUniformLocation( handle, name ), i32(value) )
 }
 // set an integer in the shader
 shader_set_i32:: #force_inline proc( handle: u32, name: cstring, value: i32 )
@@ -140,6 +141,13 @@ shader_set_mat4 :: #force_inline proc( handle: u32, name: cstring, value: [^]f32
 	// gl.UniformMatrix4fv( transformLoc, 1, GL_FALSE, value[0] ) 
   gl.UniformMatrix4fv(gl.GetUniformLocation( handle, name ), 1, gl.FALSE, value )
 }
+shader_set_mat2_transpose :: #force_inline proc( handle: u32, name : cstring, value : [^] f32) 
+{
+    gl.UniformMatrix2fv(gl.GetUniformLocation( handle, name ), 1, gl.TRUE, value )
+}
+shader_set_mat4_transpose :: #force_inline proc( handle: u32, name : cstring, value : [^] f32) {
+    gl.UniformMatrix4fv(gl.GetUniformLocation( handle, name ), 1, gl.TRUE, value )
+}
 
 shader_bind_texture :: #force_inline proc( handle: u32, name: cstring, tex_handle: u32, tex_idx: u32 )
 {
@@ -156,9 +164,10 @@ shader_bind_cube_map :: #force_inline proc( handle: u32, name: cstring, tex_hand
 
 // shader act ---------------------------------------------------------------------------------
 
-shader_act_set_bool :: #force_inline proc( name: cstring, value: i32 )
+// shader_act_set_bool :: #force_inline proc( name: cstring, value: i32 )
+shader_act_set_bool :: #force_inline proc( name: cstring, value: bool )
 {
-	gl.Uniform1i( gl.GetUniformLocation( handle_act, name ), value )
+	gl.Uniform1i( gl.GetUniformLocation( handle_act, name ), i32(value) )
 }
 // set an integer in the shader
 shader_act_set_i32:: #force_inline proc( name: cstring, value: i32 )
@@ -197,6 +206,13 @@ shader_act_set_mat4 :: #force_inline proc( name: cstring, value: [^]f32 )
 	// GLint transformLoc = gl.GetUniformLocation( handle_act, name )
 	// gl.UniformMatrix4fv( transformLoc, 1, GL_FALSE, value[0] ) 
   gl.UniformMatrix4fv(gl.GetUniformLocation( handle_act, name ), 1, gl.FALSE, value )
+}
+shader_act_set_mat2_transpose :: #force_inline proc( name : cstring, value : [^] f32) 
+{
+    gl.UniformMatrix2fv(gl.GetUniformLocation( handle_act, name ), 1, gl.TRUE, value )
+}
+shader_act_set_mat4_transpose :: #force_inline proc( name : cstring, value : [^] f32) {
+    gl.UniformMatrix4fv(gl.GetUniformLocation( handle_act, name ), 1, gl.TRUE, value )
 }
 
 shader_act_bind_cube_map :: #force_inline proc( name: cstring, tex_handle: u32 )

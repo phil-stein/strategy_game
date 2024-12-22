@@ -41,12 +41,21 @@ assetm_init :: proc()
 
   data.mouse_pick_shader     = shader_make( #load( "../assets/shaders/basic.vert",         string ), 
                                             #load( "../assets/shaders/mouse_picking.frag", string ))
+
+
+  data.text.shader       = shader_make( #load( "../assets/shaders/text.vert", string ),
+                                        #load( "../assets/shaders/text.frag", string ), "text_shader" )
+
+  data.text.baked_shader = shader_make( #load( "../assets/shaders/text_baked.vert", string ),
+                                        #load( "../assets/shaders/text.frag",       string ), "text_baked_shader" )
+  
    
   data.fb_deferred   = framebuffer_create_gbuffer( 1 ) 
   data.fb_lighting   = framebuffer_create_hdr()
   data.fb_outline    = framebuffer_create_single_channel_f( 1 )
   data.fb_mouse_pick = framebuffer_create_single_channel_f( 4 ) // @TODO: use size_divisor
 
+  atlas_handle, atlas_w, atlas_h := text_make_atlas( "assets/fonts/JetBrainsMonoNL-Regular.ttf", 30 )
 
   // // blank_tex_srgb  := make_texture( "assets/blank.png", true )
   // blank_tex       := make_texture( "assets/blank.png", false )
