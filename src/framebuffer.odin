@@ -1,6 +1,7 @@
 package core
 
 import    "core:fmt"
+import    "core:log"
 import gl "vendor:OpenGL"
 
 Framebuffer_Type :: enum
@@ -243,7 +244,7 @@ framebuffer_create_gbuffer :: proc( size_divisor: int ) -> ( fb: framebuffer_t )
 
 	if (gl.CheckFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE)
 	{
-    panic("-!!!-> ERROR_CREATING_FRAMEBUFFER\n");
+    log.panic("-!!!-> ERROR_CREATING_FRAMEBUFFER\n");
 	}
 
 	// unbind the framebuffer, opengl now renders to the default buffer again

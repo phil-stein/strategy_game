@@ -236,6 +236,8 @@ input_update :: proc()
 
 input_key_callback :: proc( window: glfw.WindowHandle, keycode: int, scancode: int, state: int, mods: int)
 {
+  assert( keycode >= 0 )
+  assert( keycode <  len(input.key_states) )
   input.key_states[Key(keycode)].pressed = input.key_states[Key(keycode)].down_last ? false : true 
   input.key_states[Key(keycode)].down    = state == glfw.PRESS || state == glfw.REPEAT 
   input.key_states[Key(keycode)].mods    = Keymod(mods)

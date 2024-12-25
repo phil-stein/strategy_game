@@ -103,6 +103,7 @@ echo --- building debug ---
 :: -vet-unused
 :: -vet-unused-variables
 :: -vet-unused-imports
-odin run src -out:bin\game.exe  -vet-cast -vet-shadowing -vet-using-stmt -vet-using-param -debug -sanitize:address -define:EDITOR=true
+:: -sanitize:address
+odin run src -out:bin\game.exe  -vet-cast -vet-shadowing -vet-using-stmt -vet-using-param -debug  -define:EDITOR=true
 
 :eof

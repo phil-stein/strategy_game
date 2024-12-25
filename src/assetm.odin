@@ -54,8 +54,10 @@ assetm_init :: proc()
   data.fb_lighting   = framebuffer_create_hdr()
   data.fb_outline    = framebuffer_create_single_channel_f( 1 )
   data.fb_mouse_pick = framebuffer_create_single_channel_f( 4 ) // @TODO: use size_divisor
-
-  atlas_handle, atlas_w, atlas_h := text_make_atlas( "assets/fonts/JetBrainsMonoNL-Regular.ttf", 30 )
+  // log.debug( data.fb_deferred )
+  // log.debug( data.fb_lighting )
+  // log.debug( data.fb_outline )
+  // log.debug( data.fb_mouse_pick )
 
   // // blank_tex_srgb  := make_texture( "assets/blank.png", true )
   // blank_tex       := make_texture( "assets/blank.png", false )

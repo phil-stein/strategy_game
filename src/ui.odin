@@ -709,16 +709,19 @@ ui_data_tab :: proc()
   }
   im.EndTabBar()
 } 
-ui_display_timer :: #force_inline proc( t: ^timer_t)
+ui_display_timer :: #force_inline proc( t: ^timer_t )
 {
   indent_w : f32 = 15.0 * f32(t.parent_idx)
   if t.parent_idx != 0
   {
     im.Indent( indent_w ) 
   }
-  if im.TreeNode( fmt.ctprintf( "%s -> %s():%d", t.name, t.loc_start.procedure, t.loc_start.line ) )
+  header_str := fmt.ctprintf( "%s -> %.2fms %s():%d", 
+                t.name, f32(t.stopwatch._accumulation) / 1000000.0, 
+                t.loc_start.procedure, t.loc_start.line )
+  im.PushID( header_str )
+  if im.TreeNode( header_str )
   {
-    // im.Text( str.clone_to_cstring( fmt.tprint( "time:", f32( t.stopwatch._accumulation) / ( 1000000.0 ), "ms |", t.stopwatch._accumulation ), context.temp_allocator ) )
     im.Text( fmt.ctprintf( "time: %.2fms | %d", f32( t.stopwatch._accumulation) / ( 1000000.0 ), t.stopwatch._accumulation ) ) 
     im.Text( fmt.ctprintf( "idx: %d, parent_idx: %d", t.idx, t.parent_idx ) ) 
 
@@ -733,6 +736,7 @@ ui_display_timer :: #force_inline proc( t: ^timer_t)
 
     im.TreePop()
   }
+  im.PopID()
   if t.parent_idx != 0
   {
     im.Unindent( indent_w )

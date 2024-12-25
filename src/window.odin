@@ -9,7 +9,7 @@ import gl "vendor:OpenGL"
 
 // intis glfw & glad, also creates the window
 // returns: <stddef.h> return_code
-window_create :: proc( width, height: int, title: cstring, type: Window_Type, vsync: bool ) -> bool
+window_create :: proc( width_perc, height_perc: f32, pos_x_perc, pos_y_perc: f32, title: cstring, type: Window_Type, vsync: bool ) -> bool
 {
 	// enable error logging for glfw
   glfw.SetErrorCallback( cast(glfw.ErrorProc)error_callback )
@@ -40,6 +40,9 @@ window_create :: proc( width, height: int, title: cstring, type: Window_Type, vs
   glfw.WindowHint_int( glfw.BLUE_BITS,    mode.blue_bits )
   glfw.WindowHint_int( glfw.REFRESH_RATE, mode.refresh_rate )
 
+  width  := int( f32(data.monitor_width)  * width_perc )
+  height := int( f32(data.monitor_height) * height_perc )
+
   // open a window and create its opengl context
 	if type == Window_Type.FULLSCREEN
   {
@@ -52,6 +55,10 @@ window_create :: proc( width, height: int, title: cstring, type: Window_Type, vs
     data.window = glfw.CreateWindow( cast(c.int)width, cast(c.int)height, title, nil, nil )
     data.window_width  = width
     data.window_height = height
+    
+    pos_x := c.int( f32(data.monitor_width)  * pos_x_perc )
+    pos_y := c.int( f32(data.monitor_height) * pos_y_perc )
+    glfw.SetWindowPos( data.window, pos_x, pos_y )
   }
 
 	if data.window == nil
@@ -95,7 +102,7 @@ window_create :: proc( width, height: int, title: cstring, type: Window_Type, vs
   gl.Enable( gl.DEBUG_OUTPUT )
   gl.DebugMessageCallback( gl.debug_proc_t(opengl_debug_callback), nil )
   gl.Enable( gl.DEBUG_OUTPUT_SYNCHRONOUS )
-  
+ 
   camera_set_pers_mat( f32(data.window_width), f32(data.window_height) )
 
 	return true
@@ -237,3 +244,24 @@ window_set_type :: proc( type: Window_Type )
   data.window_type = type
 }
 
+window_get_monitor_size_cm :: proc() -> ( w, h: f32 )
+{
+  // millimeter
+  w_mm, h_mm := glfw.GetMonitorPhysicalSize( data.monitor )
+  w = f32(w_mm) * 0.1
+  h = f32(h_mm) * 0.1
+
+  return w, h
+}
+window_get_monitor_dpi :: proc() -> ( w, h: f32 )
+{
+  w, h = window_get_monitor_size_cm()
+  w *= 0.39370079 // cm to inch
+  h *= 0.39370079 // cm to inch
+  // int w_px, h_px;
+	// glfwGetWindowSize(window, &w_px, &h_px);
+  w = f32(data.monitor_width)  / w // pixels per inch
+  h = f32(data.monitor_height) / h // pixels per inch
+
+  return w, h
+}

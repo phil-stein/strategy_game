@@ -309,13 +309,13 @@ main :: proc()
 
   when EDITOR
   { 
-    if ( !window_create( 1500, 1075, "title", Window_Type.MINIMIZED, vsync=true ) ) 
-    { fmt.print( "ERROR: failed to create window\n" ); return }
+    if ( !window_create( 0.75, 0.75, 0.05, 0.05, "title", Window_Type.MINIMIZED, vsync=true ) ) 
+    { log.panic( "ERROR: failed to create window\n" ) }
   } 
   else 
   { 
-    if ( !window_create( 1, 1, "title", Window_Type.FULLSCREEN, vsync=true ) ) 
-    { fmt.print( "ERROR: failed to create window\n" ); return }
+    if ( !window_create( 1, 1, 0, 0, "title", Window_Type.FULLSCREEN, vsync=true ) ) 
+    { log.panic( "ERROR: failed to create window\n" ) }
   }
   debug_timer_static_start( "input_init()" )
   input_init()
@@ -332,6 +332,10 @@ main :: proc()
   debug_timer_static_start( "data_init" )
   data_init()
   debug_timer_stop() // data_init()
+
+  debug_timer_static_start( "text_init()" ) 
+  text_init( "assets/fonts/JetBrainsMonoNL-Regular.ttf" )
+  debug_timer_stop()  // text_init()
 
   debug_timer_static_start( "assetm_init()" )
   assetm_init()
@@ -434,10 +438,6 @@ main :: proc()
 	
   debug_timer_stop() // init
 
-  // opengl state
-  // Texture blending options.
-  gl.Enable(gl.BLEND)
-  gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
   // ---- main loop ----
   for !window_should_close()
@@ -495,6 +495,12 @@ main :: proc()
     // renderer_draw_quad( linalg.vec2{ -0.75, -0.75 }, quad_size, data.fb_deferred.buffer04 )
     // renderer_draw_quad( linalg.vec2{ -0.25,  0.75 }, quad_size, data.fb_lighting.buffer01 )
 
+    // @TODO:
+    debug_timer_start( "text_draw_string" )
+    text_draw_string( fmt.tprintf( "fps: %.2f", data.cur_fps ), vec2{ 0.75, 0.75 } )
+    debug_timer_stop() // "text_draw_string" 
+
+
     when EDITOR
     {
       // --- editor ui ---
@@ -505,7 +511,6 @@ main :: proc()
       debug_timer_stop() // ui_update()
     }
     
-    text_draw_string( "cock", vec2{ 0, 0 } )
 
     glfw.SwapBuffers( data.window )
     

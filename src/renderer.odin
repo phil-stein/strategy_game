@@ -9,18 +9,24 @@ import gl     "vendor:OpenGL"
 exposure  :: 1.25
 
 
-renderer_init :: proc()
+renderer_init :: proc( loc := #caller_location )
 {
+  // log.debug( loc )
   gl.BindFramebuffer( gl.FRAMEBUFFER, 0 )
   gl.Viewport( 0, 0, i32(data.window_width), i32(data.window_height) )
   gl.Enable( gl.DEPTH_TEST )
-  gl.Disable( gl.BLEND ) // enable blending of transparent texture
   // gl.FrontFace( gl.CCW )
   gl.Enable( gl.CULL_FACE )
   gl.CullFace( gl.FRONT )
 
   gl.Enable( gl.TEXTURE_CUBE_MAP_SEAMLESS )
+
   
+  // opengl state
+  // Texture blending options.
+  // gl.Disable( gl.BLEND ) // enable blending of transparent texture
+  gl.Enable( gl.BLEND )
+  gl.BlendFunc( gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA )
 
   gl.ClearColor( 0.0, 0.0, 0.0, 1.0 )
 
@@ -28,6 +34,9 @@ renderer_init :: proc()
 
 renderer_update :: proc()
 {
+  // // @TODO: @OPTIMIZATION: scuffed should not be called each frame
+  // renderer_init()
+
   // -- draw meshes --
   camera_set_view_mat() 
 
@@ -36,7 +45,7 @@ renderer_update :: proc()
     gl.Clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT )
     gl.Enable( gl.DEPTH_TEST )
     gl.Enable( gl.TEXTURE_CUBE_MAP_SEAMLESS )
-    gl.Disable( gl.BLEND ) // enable blending of transparent texture
+    // gl.Disable( gl.BLEND ) // enable blending of transparent texture
 
     gl.Enable( gl.CULL_FACE )
     gl.CullFace( gl.BACK )
@@ -268,6 +277,8 @@ renderer_draw_scene_outline :: proc( entity_idx: int )
 	{ gl.PolygonMode( gl.FRONT_AND_BACK, gl.LINE ) }
 	
 	framebuffer_unbind()
+
+  gl.Enable( gl.BLEND )
 }
 
 renderer_draw_scene_mouse_pick :: proc()

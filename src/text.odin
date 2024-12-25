@@ -33,8 +33,24 @@ glyph_t :: struct
 }
 glyph_info : [len(ATLAS_CHARS)]glyph_t
 
-text_make_atlas :: proc( font_name: string, glyph_size: i32 ) -> ( handle: u32, atlas_w, atlas_h: i32 )
+text_init :: proc( path: string )
 {
+  // dpi_w, dpi_h := window_get_monitor_dpi()
+  // dpi := ( dpi_w + dpi_h ) * 0.5
+  // font_size := i32( dpi / 4.0 )
+
+  // scale based on physical size of monitor being used
+  cm_w, cm_h := window_get_monitor_size_cm()
+  // cm := ( cm_w + cm_h ) * 0.5
+  cm := cm_h 
+  font_size := i32( 700 / cm )  // 700 is abitrary could be higher or lower
+  log.debug( "monitor cm_width:", cm, ", font_size:", font_size )
+  atlas_handle, atlas_w, atlas_h := text_make_atlas( path, font_size )
+}
+text_make_atlas :: proc( font_name: string, glyph_size: i32, loc := #caller_location ) -> ( handle: u32, atlas_w, atlas_h: i32 )
+{
+  log.debug( loc )
+
   data.text.glyph_size = glyph_size
   data.text.font_name = font_name 
 
@@ -53,7 +69,7 @@ text_make_atlas :: proc( font_name: string, glyph_size: i32 ) -> ( handle: u32, 
   h, w : f32
   h    = f32(glyph_size * 2) 
   w    = f32(glyph_size * 2)
-
+  
   rect_verts : [6 * 4]f32 
   rect_verts = { // rect coords : vec2, texture coords : vec2
     0, h,    0, 0,
@@ -97,11 +113,12 @@ text_make_atlas :: proc( font_name: string, glyph_size: i32 ) -> ( handle: u32, 
   pixel_data := make( []byte, atlas_w * atlas_h )
   defer delete( pixel_data )
   for &b in pixel_data { b = 128 }
-  fmt.println( "atlas sizeof: ", len(pixel_data), "b, ", f32(len(pixel_data)) / 1000, "kb, ", f32(len(pixel_data)) / 1000000, "mb" )
+  log.debug( "atlas sizeof: ", len(pixel_data), "b, ", f32(len(pixel_data)) / 1000, "kb, ", f32(len(pixel_data)) / 1000000, "mb" )
 
   // Load .ttf file into buffer.
   ttf_buffer :: [1<<23] u8 // Assumes a .ttf file of under 8MB.
-  fontdata, succ := os.read_entire_file( font_name )
+  fontdata, succ := os.read_entire_file( font_name ) // @TODO: @OPTIMIZATION: use context.temp_allocator, kept crashing on laptop, figure out why, also use this in all funtions where capable
+  defer delete( fontdata )
   if !succ 
   {
     log.error("ERROR: Couldn't load font at: ", font_name )
@@ -236,8 +253,7 @@ text_load_glyph :: proc( font_name: string, char: rune, scale: f32 )
   fontdata, succ := os.read_entire_file(font_name)
   if !succ 
   {
-    fmt.println("ERROR: Couldn't load font at: ", font_name )
-    os.exit(1)
+    log.panic("ERROR: Couldn't load font at: ", font_name )
   }
   font_ptr : [^] u8 = &fontdata[0]
 
@@ -331,6 +347,9 @@ text_draw_glyph :: proc( pos: linalg.vec2, char: i32 )
 
   trans_mat_ptr : [^] f32 = &translation_mat[0]
 
+  gl.Disable( gl.DEPTH_TEST )
+
+
   shader_use( data.text.shader )
   
   // Send matrices to the shader.
@@ -345,12 +364,15 @@ text_draw_glyph :: proc( pos: linalg.vec2, char: i32 )
   shader_act_set_vec3_f( "color", 1, 1, 1 )
   // fmt.println( "ratio: ", f32(1) / f32(len(ATLAS_CHARS)) )
   shader_act_set_bool( "solid", data.text.draw_solid )
+  // log.debug( "data.text.draw_solid:", data.text.draw_solid )
 
   shader_act_bind_texture( "glyph_texture", data.text.atlas_tex_handle )
   
   gl.BindVertexArray( data.text.mesh.vao )
   // defer gl.BindVertexArray(0)
   gl.DrawArrays(gl.TRIANGLES, 0, 6)
+
+  gl.Enable( gl.DEPTH_TEST )
 
   data.text.draw_calls += 1
 }
