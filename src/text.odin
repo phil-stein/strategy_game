@@ -36,20 +36,17 @@ glyph_info : [len(ATLAS_CHARS)]glyph_t
 text_init :: proc( path: string )
 {
   // dpi_w, dpi_h := window_get_monitor_dpi()
-  // dpi := ( dpi_w + dpi_h ) * 0.5
-  // font_size := i32( dpi / 4.0 )
+  // font_size := i32( dpi_h / 4.0 )
 
   // scale based on physical size of monitor being used
   cm_w, cm_h := window_get_monitor_size_cm()
-  // cm := ( cm_w + cm_h ) * 0.5
-  cm := cm_h 
-  font_size := i32( 700 / cm )  // 700 is abitrary could be higher or lower
-  log.debug( "monitor cm_width:", cm, ", font_size:", font_size )
+  font_size := i32( 700 / cm_h )  // 700 is abitrary could be higher or lower
+  log.debug( "monitor cm_width:", cm_h, ", font_size:", font_size )
   atlas_handle, atlas_w, atlas_h := text_make_atlas( path, font_size )
 }
 text_make_atlas :: proc( font_name: string, glyph_size: i32, loc := #caller_location ) -> ( handle: u32, atlas_w, atlas_h: i32 )
 {
-  log.debug( loc )
+  // log.debug( loc )
 
   data.text.glyph_size = glyph_size
   data.text.font_name = font_name 

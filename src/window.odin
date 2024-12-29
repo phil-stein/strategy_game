@@ -105,6 +105,10 @@ window_create :: proc( width_perc, height_perc: f32, pos_x_perc, pos_y_perc: f32
  
   camera_set_pers_mat( f32(data.window_width), f32(data.window_height) )
 
+  data.monitor_size_cm_width, data.monitor_size_cm_height = window_get_monitor_size_cm()
+  data.monitor_dpi_width, data.monitor_dpi_height = window_get_monitor_dpi()
+  data.monitor_ppi_width, data.monitor_ppi_height = window_get_monitor_ppi()
+
 	return true
 }
 
@@ -244,7 +248,7 @@ window_set_type :: proc( type: Window_Type )
   data.window_type = type
 }
 
-window_get_monitor_size_cm :: proc() -> ( w, h: f32 )
+window_get_monitor_size_cm :: #force_inline proc() -> ( w, h: f32 )
 {
   // millimeter
   w_mm, h_mm := glfw.GetMonitorPhysicalSize( data.monitor )
@@ -253,15 +257,21 @@ window_get_monitor_size_cm :: proc() -> ( w, h: f32 )
 
   return w, h
 }
-window_get_monitor_dpi :: proc() -> ( w, h: f32 )
+window_get_monitor_dpi :: #force_inline proc() -> ( w, h: f32 )
 {
   w, h = window_get_monitor_size_cm()
   w *= 0.39370079 // cm to inch
   h *= 0.39370079 // cm to inch
-  // int w_px, h_px;
-	// glfwGetWindowSize(window, &w_px, &h_px);
   w = f32(data.monitor_width)  / w // pixels per inch
   h = f32(data.monitor_height) / h // pixels per inch
+
+  return w, h
+}
+window_get_monitor_ppi :: #force_inline proc() -> ( w, h: f32 )
+{
+  w, h = window_get_monitor_size_cm()
+  w = f32(data.monitor_width)  / w // pixels per cm 
+  h = f32(data.monitor_height) / h // pixels per cm 
 
   return w, h
 }

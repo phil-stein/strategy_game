@@ -432,6 +432,10 @@ main :: proc()
   renderer_init()
   debug_timer_stop()  // renderer_init()
 
+  debug_timer_static_start( "debug_draw_init()" ) 
+  debug_draw_init()
+  debug_timer_stop()  // debug_draw_init()
+
   debug_timer_static_start( "ui_init()" ) 
   ui_init()
   debug_timer_stop()  // ui_init()
@@ -476,7 +480,14 @@ main :: proc()
     // debug_draw_tiles()
 
 
+    debug_timer_start( "game_update()" )
     game_update()
+    debug_timer_stop() // game_update()
+
+
+    debug_timer_start( "debug_draw_update()" )
+    debug_draw_update()
+    debug_timer_stop() // debug_draw_update()
 
     // move the water
     @static offs : f32 = 0.0
@@ -528,6 +539,7 @@ main :: proc()
   when ODIN_DEBUG
   {
     debug_timer_cleanup()
+    // debug_draw_cleanup()
     ui_cleanup()
     assetm_cleanup()
 

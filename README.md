@@ -96,6 +96,8 @@ use combo moves to extend your playable chars abilities/moveset with the other p
       - [ ] chars position
       - [ ] enemy layout
     - [ ] different hdri for reflections and bg
+    - [X] proper debug_draw_update() proc drawing all registered debug-draws
+    - [ ] make debug_draw_path/curve() also be abled to use gl.LINE_STRIP
   * game art
     - [ ] decide theme
       - fantasy

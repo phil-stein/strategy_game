@@ -321,7 +321,7 @@ game_update :: proc()
         case Combo_Type.JUMP:
         { 
           assert( len( path ) == 2 )
-          debug_draw_curve_path( path[0], path[1], 15, path_found ? data.player_chars[data.player_chars_current].color : linalg.vec3{ 1, 0, 0 } ) 
+          debug_draw_curve_path_wp( path[0], path[1], 15, path_found ? data.player_chars[data.player_chars_current].color : linalg.vec3{ 1, 0, 0 } ) 
         }
         case Combo_Type.PUSH:   fallthrough
         case Combo_Type.ATTACK: { log.panic( "should never get triggerred" ) } // ignore
