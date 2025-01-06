@@ -569,77 +569,70 @@ debug_render_path :: proc( path: [dynamic]waypoint_t, color: vec3, offset := vec
 {
   // log.debug( loc )
 
-  {
-    model := util_make_model( linalg.vec3{ 0, 0, 0 }, linalg.vec3{ 0, 0, 0 }, linalg.vec3{ 1, 1, 1 } )
 
-    gl.Disable( gl.DEPTH_TEST )
-    gl.Disable( gl.CULL_FACE )
-	  
-	  w, h := window_get_size()
-
-    gl.LineWidth( 550 / data.monitor_ppi_width )
-
-    // ---- vbo sub data ----
-
-    pos_arr := make( []f32, len(path) * 3, context.temp_allocator )
-    pos_arr_pos := 0
-    for i in 0 ..< len(path) -1
-    {
-      p := util_tile_to_pos( path[i] )
-      pos_arr[pos_arr_pos +0] = p.x
-      pos_arr[pos_arr_pos +1] = p.y
-      pos_arr[pos_arr_pos +2] = p.z
-      pos_arr_pos += 3
-    }
-
-    gl.BindBuffer(gl.ARRAY_BUFFER, data.line_mesh.vbo);
-    // gl.BufferSubData(gl.ARRAY_BUFFER, 0            * size_of(f32), 3 * size_of(f32), &_pos0[0] )
-    // gl.BufferSubData(gl.ARRAY_BUFFER, F32_PER_VERT * size_of(f32), 3 * size_of(f32), &_pos1[0] )
-    gl.BufferSubData(gl.ARRAY_BUFFER, 0, len(pos_arr) * 3 * size_of(f32), &pos_arr[0] )
-
-	  // ---- shader & draw call -----	
-
-	  shader_use( data.basic_shader )
-	  gl.ActiveTexture( gl.TEXTURE0 )
-	  gl.BindTexture(gl.TEXTURE_2D, assetm_get_texture( data.texture_idxs.blank ).handle )
-	  shader_set_i32( data.basic_shader,  "tex", 0 )
-	  shader_set_vec3( data.basic_shader, "tint", color )
-	  
-	  shader_set_mat4(data.basic_shader, "model", &model[0][0] )
-	  shader_set_mat4(data.basic_shader, "view",  &data.cam.view_mat[0][0] )
-	  shader_set_mat4(data.basic_shader, "proj",  &data.cam.pers_mat[0][0] )
-
-	  gl.BindVertexArray( data.line_mesh.vao )
-    gl.DrawArrays( gl.LINE_STRIP, 0, i32(len(path)) )
-    // gl.DrawElements(gl.LINES, 2, gl.UNSIGNED_INT, rawptr(uintptr(0)) );
-
-    gl.Enable( gl.DEPTH_TEST )
-    gl.Enable( gl.CULL_FACE )
-  }
-
-  // for i in 0 ..< len(path) -1
+  // @NOTE: using gl.LINE_STRIP 
   // {
-  //   c : f32 = f32(i +1) / f32( len( path ) )
-  //   // debug_draw_aabb_wp( w, linalg.vec3{ 1, 1, 1 }, 10 )
-  //   col := linalg.vec3{ c, c, c } * color
-
-  //   p00 := linalg.vec3{ 
-  //           f32(path[i].x)         * 2 - f32(TILE_ARR_X_MAX) +1,
-  //           f32(path[i].level_idx) * 2 + 1.0, 
-  //           f32(path[i].z)         * 2 - f32(TILE_ARR_Z_MAX) +1
-  //          }
-  //   p01 := linalg.vec3{ 
-  //           f32(path[i +1].x)         * 2 - f32(TILE_ARR_X_MAX) +1,
-  //           f32(path[i +1].level_idx) * 2 + 1.0, 
-  //           f32(path[i +1].z)         * 2 - f32(TILE_ARR_Z_MAX) +1
-  //          }
-  //   p00 += offset
-  //   p01 += offset
-  //   debug_draw_line( p00, p01, col, 550 / data.monitor_ppi_width )  
-  //   
-  //   // // @TMP:
-  //   // debug_draw_sphere( p00, linalg.vec3{ 0.15, 0.15, 0.15 }, color )
+  //   model := util_make_model( linalg.vec3{ 0, 0, 0 }, linalg.vec3{ 0, 0, 0 }, linalg.vec3{ 1, 1, 1 } )
+  //   gl.Disable( gl.DEPTH_TEST )
+  //   gl.Disable( gl.CULL_FACE )
+	//   
+	//   w, h := window_get_size()
+  //   gl.LineWidth( 550 / data.monitor_ppi_width )
+  //   // ---- vbo sub data ----
+  //   pos_arr := make( []f32, len(path) * 3, context.temp_allocator )
+  //   pos_arr_pos := 0
+  //   for i in 0 ..< len(path) -1
+  //   {
+  //     p := util_tile_to_pos( path[i] )
+  //     pos_arr[pos_arr_pos +0] = p.x
+  //     pos_arr[pos_arr_pos +1] = p.y
+  //     pos_arr[pos_arr_pos +2] = p.z
+  //     pos_arr_pos += 3
+  //   }
+  //   gl.BindBuffer(gl.ARRAY_BUFFER, data.line_mesh.vbo);
+  //   // gl.BufferSubData(gl.ARRAY_BUFFER, 0            * size_of(f32), 3 * size_of(f32), &_pos0[0] )
+  //   // gl.BufferSubData(gl.ARRAY_BUFFER, F32_PER_VERT * size_of(f32), 3 * size_of(f32), &_pos1[0] )
+  //   gl.BufferSubData(gl.ARRAY_BUFFER, 0, len(pos_arr) * 3 * size_of(f32), &pos_arr[0] )
+	//   // ---- shader & draw call -----	
+	//   shader_use( data.basic_shader )
+	//   gl.ActiveTexture( gl.TEXTURE0 )
+	//   gl.BindTexture(gl.TEXTURE_2D, assetm_get_texture( data.texture_idxs.blank ).handle )
+	//   shader_set_i32( data.basic_shader,  "tex", 0 )
+	//   shader_set_vec3( data.basic_shader, "tint", color )
+	//   
+	//   shader_set_mat4(data.basic_shader, "model", &model[0][0] )
+	//   shader_set_mat4(data.basic_shader, "view",  &data.cam.view_mat[0][0] )
+	//   shader_set_mat4(data.basic_shader, "proj",  &data.cam.pers_mat[0][0] )
+	//   gl.BindVertexArray( data.line_mesh.vao )
+  //   gl.DrawArrays( gl.LINE_STRIP, 0, i32(len(path)) )
+  //   // gl.DrawElements(gl.LINES, 2, gl.UNSIGNED_INT, rawptr(uintptr(0)) );
+  //   gl.Enable( gl.DEPTH_TEST )
+  //   gl.Enable( gl.CULL_FACE )
   // }
+
+  for i in 0 ..< len(path) -1
+  {
+    c : f32 = f32(i +1) / f32( len( path ) )
+    // debug_draw_aabb_wp( w, linalg.vec3{ 1, 1, 1 }, 10 )
+    col := linalg.vec3{ c, c, c } * color
+
+    p00 := linalg.vec3{ 
+            f32(path[i].x)         * 2 - f32(TILE_ARR_X_MAX) +1,
+            f32(path[i].level_idx) * 2 + 1.0, 
+            f32(path[i].z)         * 2 - f32(TILE_ARR_Z_MAX) +1
+           }
+    p01 := linalg.vec3{ 
+            f32(path[i +1].x)         * 2 - f32(TILE_ARR_X_MAX) +1,
+            f32(path[i +1].level_idx) * 2 + 1.0, 
+            f32(path[i +1].z)         * 2 - f32(TILE_ARR_Z_MAX) +1
+           }
+    p00 += offset
+    p01 += offset
+    debug_draw_line( p00, p01, col, 550 / data.monitor_ppi_width )  
+    
+    // // @TMP:
+    // debug_draw_sphere( p00, linalg.vec3{ 0.15, 0.15, 0.15 }, color )
+  }
   p_sphere := linalg.vec3{ 
           f32(path[len(path) -1].x)         * 2 - f32(TILE_ARR_X_MAX) +1,
           f32(path[len(path) -1].level_idx) * 2 + 1.0, 

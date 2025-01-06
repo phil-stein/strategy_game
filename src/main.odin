@@ -442,7 +442,6 @@ main :: proc()
 	
   debug_timer_stop() // init
 
-
   // ---- main loop ----
   for !window_should_close()
   {

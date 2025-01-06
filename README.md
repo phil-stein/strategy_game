@@ -37,7 +37,7 @@ use combo moves to extend your playable chars abilities/moveset with the other p
       - [X] multiple player chars ( 3 probably )
       - [X] switch
       - [ ] ??? move to pathfinding result (actually play out result at end of turn)
-    - [.] enemies
+    - [ ] enemies
       - [X] stationary
       - [ ] ai
         - [X] simple
@@ -134,6 +134,7 @@ use combo moves to extend your playable chars abilities/moveset with the other p
     - [ ] pass data using context or as proc args to avoid cache misses
     - [ ] make game_a_star_pathfind() use temp_allocator
     - [ ] find all allocations and check if context.temp_allocator could be used instead
+    - [ ] bindless textures ones i have vulkan renderer
 
 ## buggs
   - [X] debug_draw_mesh() rotates around center (0, 0, 0) not pos, see main.odin
