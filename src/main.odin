@@ -324,8 +324,6 @@ main :: proc()
   // input_center_cursor()
   // input_set_cursor_visibile( false )
 
-  // @TMP:
-  data.editor_ui.active = false
 
   // ---- setup ----
 
@@ -516,7 +514,8 @@ main :: proc()
       // --- editor ui ---
       debug_timer_start( "ui_update()" )
       if input.key_states[Key.BACKSPACE].pressed && input.key_states[Key.LEFT_CONTROL].down
-      { data.editor_ui.active = !data.editor_ui.active }
+      { data.editor_ui.show_main = !data.editor_ui.show_main }
+      // { data.editor_ui.active = !data.editor_ui.active }
       if data.editor_ui.active { ui_update() }
       debug_timer_stop() // ui_update()
     }

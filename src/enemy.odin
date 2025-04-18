@@ -8,8 +8,10 @@ import linalg "core:math/linalg/glsl"
 import        "core:slice"
 
 
-enemy_gen_move :: proc( enemy: ^character_t )
+enemy_gen_move :: proc( enemy: ^character_t, loc:= #caller_location )
 {
+  log.info( "enemy_gen_move():", loc )
+
   // if len(data.interactables_arr) > 0
   // {
   //   nearest_interactable      : interactable_t 

@@ -219,7 +219,10 @@ data_t :: struct
 
   editor_ui : struct
   {
-    active : bool,
+    active    : bool,
+    show_demo : bool,
+    show_main : bool,
+    style     : enum { DARK_DEFAULT, DARK_LIGHT },
   },  
 
   text : struct
@@ -345,7 +348,9 @@ data : data_t =
 
   editor_ui = 
   {
-    active = true,
+    active    = true,
+    show_main = false,
+    show_demo = false,
   },
 
   // tile_00_str = 

@@ -20,6 +20,8 @@ import        "core:reflect"
 font     : ^im.Font
 font_big : ^im.Font
 
+
+
 ui_init :: proc()
 {
 	im.CHECKVERSION()
@@ -31,54 +33,10 @@ ui_init :: proc()
 		io.ConfigFlags += {.DockingEnable}
 		io.ConfigFlags += {.ViewportsEnable}
 	}
+
+
 	im.StyleColorsDark()
-	style := im.GetStyle()
-	style.WindowRounding    = 10.0
-  style.TabRounding       = 10.0
-  style.GrabRounding      = 10.0
-  style.PopupRounding     = 10.0
-  style.FrameRounding     = 10.0
-  style.ScrollbarRounding = 10.0
-
-	// style.Colors[im.Col.WindowBg].w = 1
-  style.Colors[im.Col.WindowBg]            = im.Vec4{ 0.2,  0.2,  0.2,  1.0 }
-
-  style.Colors[im.Col.Header]              = im.Vec4{ 0.15, 0.15, 0.15, 1.0 }
-  style.Colors[im.Col.HeaderHovered]       = im.Vec4{ 0.1,  0.1,  0.1,  1.0 }
-  style.Colors[im.Col.HeaderActive]        = im.Vec4{ 0.1,  0.1,  0.1,  1.0 }
-
-  style.Colors[im.Col.Tab]                 = im.Vec4{ 0.2,  0.2,  0.2,  1.0 }
-  style.Colors[im.Col.TabHovered]          = im.Vec4{ 0.35, 0.35, 0.35,  1.0 }
-  style.Colors[im.Col.TabSelected]         = im.Vec4{ 0.30, 0.30, 0.30, 1.0 }
-  style.Colors[im.Col.TabDimmed]           = im.Vec4{ 0.20, 0.20, 0.20, 1.0 }
-  style.Colors[im.Col.TabDimmedSelected]   = im.Vec4{ 0.25, 0.25, 0.25, 1.0 }
-  style.Colors[im.Col.TabSelectedOverline] = im.Vec4{ 0.9,  0.9,  0.9,  1.0 }
-
-  style.Colors[im.Col.Button]              = im.Vec4{ 0.15, 0.15, 0.15, 1.0 }
-  style.Colors[im.Col.ButtonActive]        = im.Vec4{ 0.05, 0.05, 0.05, 1.0 }
-  style.Colors[im.Col.ButtonHovered]       = im.Vec4{ 0.1,  0.1,  0.1,  1.0 }
-
-  style.Colors[im.Col.TitleBg]             = im.Vec4{ 0.15, 0.15, 0.15, 1.0 }
-  style.Colors[im.Col.TitleBgActive]       = im.Vec4{ 0.1,  0.1,  0.1,  1.0 }
-  style.Colors[im.Col.TitleBgCollapsed]    = im.Vec4{ 0.1,  0.1,  0.1,  1.0 }
-
-  style.Colors[im.Col.FrameBg]             = im.Vec4{ 0.15, 0.15, 0.15, 1.0 }
-  style.Colors[im.Col.FrameBgActive]       = im.Vec4{ 0.15, 0.15, 0.15, 1.0 }
-  style.Colors[im.Col.FrameBgHovered]      = im.Vec4{ 0.15, 0.15, 0.15, 1.0 }
-
-  style.Colors[im.Col.CheckMark]           = im.Vec4{ 0.9,  0.9,  0.9,  1.0 }
-  style.Colors[im.Col.SliderGrab]          = im.Vec4{ 0.9,  0.9,  0.9,  1.0 }
-  style.Colors[im.Col.SliderGrabActive]    = im.Vec4{ 1.0,  1.0,  1.0,  1.0 }
-
-  style.Colors[im.Col.Separator]           = im.Vec4{ 0.1,  0.1,  0.1,  1.0 }
-  style.Colors[im.Col.SeparatorActive]     = im.Vec4{ 0.1,  0.1,  0.1,  1.0 }
-  style.Colors[im.Col.SeparatorHovered]    = im.Vec4{ 0.1,  0.1,  0.1,  1.0 }
-
-  style.Colors[im.Col.ResizeGrip]          = im.Vec4{ 0.5,  0.5,  0.5,  1.0 }
-  style.Colors[im.Col.ResizeGripHovered]   = im.Vec4{ 0.6,  0.6,  0.6,  1.0 }
-  style.Colors[im.Col.ResizeGripActive]    = im.Vec4{ 0.7,  0.7,  0.7,  1.0 }
-  
-  style.Colors[im.Col.DockingPreview]      = im.Vec4{ 0.9,  0.9,  0.9,  1.0 }
+  ui_set_style_dark_default()
 
 	imgui_impl_glfw.InitForOpenGL(data.window, true)
 	imgui_impl_opengl3.Init("#version 150")
@@ -99,7 +57,7 @@ ui_update :: proc()
 	imgui_impl_glfw.NewFrame()
 	im.NewFrame()
 
-	im.ShowDemoWindow()
+	if data.editor_ui.show_demo { im.ShowDemoWindow() }
 
   im.DockSpaceOverViewport( 0, im.GetMainViewport(), { im.DockNodeFlag.PassthruCentralNode } )
 
@@ -107,10 +65,115 @@ ui_update :: proc()
   // log.debug( im.IsMouse() )
   // im.IsMouseHoveringAnyWindow()
 
-  
-  if /* p_open && */ im.Begin( "window", nil /* &p_open */,  win_flags ) 
+  if data.editor_ui.show_main { ui_main_win() }
+
+  ui_tool_win()
+
+	im.Render()
+	display_w, display_h := glfw.GetFramebufferSize(data.window)
+	// gl.Viewport(0, 0, display_w, display_h)
+	// gl.ClearColor(0, 0, 0, 1)
+	// gl.Clear(gl.COLOR_BUFFER_BIT)
+	imgui_impl_opengl3.RenderDrawData(im.GetDrawData())
+
+	when !DISABLE_DOCKING {
+		backup_current_window := glfw.GetCurrentContext()
+		im.UpdatePlatformWindows()
+		im.RenderPlatformWindowsDefault()
+		glfw.MakeContextCurrent(backup_current_window)
+	}
+}
+
+ui_cleanup :: proc()
+{
+	imgui_impl_glfw.Shutdown()
+	imgui_impl_opengl3.Shutdown()
+	im.DestroyContext()
+}
+
+ui_display_texture :: proc( name: cstring, w, h, hover_w, hover_h: f32, handle: u32, no_name := false )
+{
+  if !no_name { im.Text( name ) }
+  im.Image( im.TextureID(uintptr(handle)), im.Vec2{ w, h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
+  if im.BeginItemTooltip( )
+  {
+    im.Image( im.TextureID(uintptr(handle)), im.Vec2{ hover_w, hover_h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
+    im.EndTooltip()
+  }
+}
+ui_display_2_texture :: proc( name_00: cstring, w_00, h_00, hover_w_00, hover_h_00: f32, handle_00: u32,
+                              name_01: cstring, w_01, h_01, hover_w_01, hover_h_01: f32, handle_01: u32, no_name := false )
+{
+  if !no_name 
+  { 
+    im.Text( name_00 ) 
+    im.SameLine()
+    im.Text( name_01 ) 
+  }
+  im.Image( im.TextureID(uintptr(handle_00)), im.Vec2{ w_00, h_00 }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
+  if im.BeginItemTooltip( )
+  {
+    im.Image( im.TextureID(uintptr(handle_00)), im.Vec2{ hover_w_00, hover_h_00 }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
+    im.EndTooltip()
+  }
+  im.SameLine()
+
+  im.Image( im.TextureID(uintptr(handle_01)), im.Vec2{ w_01, h_01 }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
+  if im.BeginItemTooltip( )
+  {
+    im.Image( im.TextureID(uintptr(handle_01)), im.Vec2{ hover_w_01, hover_h_01 }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
+    im.EndTooltip()
+  }
+}
+
+ui_tool_win :: #force_inline proc()
+{
+  if im.Begin( "tools" )
   {
     input.mouse_over_ui = im.IsWindowHovered()  
+
+    im.Text( "cock" )
+    
+    if im.Button( "reset" )
+    {
+      data.player_chars_current = -1
+
+      for &char in data.player_chars
+      {
+        for &p in char.paths_arr
+        { clear( &p ) }
+        // { delete( p ) }
+        clear( &char.paths_arr )
+        // delete( char.paths_arr )
+      }
+    }
+
+    if im.BeginCombo( "style", fmt.ctprint( "style: ", data.editor_ui.style ) )
+    {
+      // @UNSURE: ayo these enums are unnanmed wtf do i call them when i cant implicitly use them ???
+      if im.Selectable( fmt.ctprint( "dark default" ), data.editor_ui.style != .DARK_DEFAULT )
+      {
+        data.editor_ui.style = .DARK_DEFAULT
+        ui_set_style_dark_default()
+      }
+      if im.Selectable( fmt.ctprint( "dark light" ), data.editor_ui.style != .DARK_LIGHT )
+      {
+        data.editor_ui.style = .DARK_LIGHT
+        ui_set_style_dark_light()
+      }
+
+      im.EndCombo()
+    }
+
+    im.End()
+  }
+}
+
+ui_main_win :: #force_inline proc()
+{
+  if im.Begin( "window", nil,  win_flags ) 
+  {
+    input.mouse_over_ui = im.IsWindowHovered() // @UNSURE: flag should prob. be in data ???  
 
     map_tab, entities_tab, player_chars_tab, framebuffers_tab, assetm_tab, data_tab : bool
     if im.BeginTabBar( "tabs" )
@@ -175,62 +238,6 @@ ui_update :: proc()
     // else if framebuffers_tab { ui_framebuffer_tab()  }
 	}
 	im.End()
-
-	im.Render()
-	display_w, display_h := glfw.GetFramebufferSize(data.window)
-	// gl.Viewport(0, 0, display_w, display_h)
-	// gl.ClearColor(0, 0, 0, 1)
-	// gl.Clear(gl.COLOR_BUFFER_BIT)
-	imgui_impl_opengl3.RenderDrawData(im.GetDrawData())
-
-	when !DISABLE_DOCKING {
-		backup_current_window := glfw.GetCurrentContext()
-		im.UpdatePlatformWindows()
-		im.RenderPlatformWindowsDefault()
-		glfw.MakeContextCurrent(backup_current_window)
-	}
-}
-
-ui_cleanup :: proc()
-{
-	imgui_impl_glfw.Shutdown()
-	imgui_impl_opengl3.Shutdown()
-	im.DestroyContext()
-}
-
-ui_display_texture :: proc( name: cstring, w, h, hover_w, hover_h: f32, handle: u32, no_name := false )
-{
-  if !no_name { im.Text( name ) }
-  im.Image( im.TextureID(uintptr(handle)), im.Vec2{ w, h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
-  if im.BeginItemTooltip( )
-  {
-    im.Image( im.TextureID(uintptr(handle)), im.Vec2{ hover_w, hover_h }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
-    im.EndTooltip()
-  }
-}
-ui_display_2_texture :: proc( name_00: cstring, w_00, h_00, hover_w_00, hover_h_00: f32, handle_00: u32,
-                              name_01: cstring, w_01, h_01, hover_w_01, hover_h_01: f32, handle_01: u32, no_name := false )
-{
-  if !no_name 
-  { 
-    im.Text( name_00 ) 
-    im.SameLine()
-    im.Text( name_01 ) 
-  }
-  im.Image( im.TextureID(uintptr(handle_00)), im.Vec2{ w_00, h_00 }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
-  if im.BeginItemTooltip( )
-  {
-    im.Image( im.TextureID(uintptr(handle_00)), im.Vec2{ hover_w_00, hover_h_00 }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
-    im.EndTooltip()
-  }
-  im.SameLine()
-
-  im.Image( im.TextureID(uintptr(handle_01)), im.Vec2{ w_01, h_01 }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
-  if im.BeginItemTooltip( )
-  {
-    im.Image( im.TextureID(uintptr(handle_01)), im.Vec2{ hover_w_01, hover_h_01 }, im.Vec2{ 1, 1 }, im.Vec2{ 0, 0 } )
-    im.EndTooltip()
-  }
 }
 
 ui_entity_tab :: proc()
@@ -333,13 +340,13 @@ ui_map_tab :: proc()
 
   level := level_combo_selected_idx
 
-  if im.BeginCombo( "level", str.clone_to_cstring( fmt.tprint( "level: ", level ), context.temp_allocator ) )
+  if im.BeginCombo( "level", fmt.ctprint( "level: ", level ))
   {
     for idx in 0 ..< TILE_LEVELS_MAX
     {
       is_selected := level == idx
 
-      if im.Selectable( str.clone_to_cstring( fmt.tprint(idx), context.temp_allocator ), is_selected )
+      if im.Selectable( fmt.ctprint(idx), is_selected )
       { 
         level_combo_selected_idx = idx
         level = idx 
@@ -819,4 +826,150 @@ ui_display_struct_members :: proc( value: any, name: string, indent_idx := 1 )
       ui_display_type_info( type, v, names_arr[i], indent_idx )
     }
   }
+}
+
+ui_set_style_dark_default :: proc()
+{
+	im.StyleColorsDark()
+	style := im.GetStyle()
+	style.WindowRounding    = 10.0
+  style.TabRounding       = 10.0
+  style.GrabRounding      = 10.0
+  style.PopupRounding     = 10.0
+  style.FrameRounding     = 10.0
+  style.ScrollbarRounding = 10.0
+  style.AntiAliasedLines  = true  // Enable anti-aliased lines
+  style.AntiAliasedFill   = true  // Enable anti-aliased fill
+
+	// style.Colors[im.Col.WindowBg].w = 1
+  style.Colors[im.Col.WindowBg]            = im.Vec4{ 0.2,  0.2,  0.2,  1.0 }
+
+  style.Colors[im.Col.Header]              = im.Vec4{ 0.15, 0.15, 0.15, 1.0 }
+  style.Colors[im.Col.HeaderHovered]       = im.Vec4{ 0.1,  0.1,  0.1,  1.0 }
+  style.Colors[im.Col.HeaderActive]        = im.Vec4{ 0.1,  0.1,  0.1,  1.0 }
+
+  style.Colors[im.Col.Tab]                 = im.Vec4{ 0.2,  0.2,  0.2,  1.0 }
+  style.Colors[im.Col.TabHovered]          = im.Vec4{ 0.35, 0.35, 0.35,  1.0 }
+  style.Colors[im.Col.TabSelected]         = im.Vec4{ 0.30, 0.30, 0.30, 1.0 }
+  style.Colors[im.Col.TabDimmed]           = im.Vec4{ 0.20, 0.20, 0.20, 1.0 }
+  style.Colors[im.Col.TabDimmedSelected]   = im.Vec4{ 0.25, 0.25, 0.25, 1.0 }
+  style.Colors[im.Col.TabSelectedOverline] = im.Vec4{ 0.9,  0.9,  0.9,  1.0 }
+
+  style.Colors[im.Col.Button]              = im.Vec4{ 0.15, 0.15, 0.15, 1.0 }
+  style.Colors[im.Col.ButtonActive]        = im.Vec4{ 0.05, 0.05, 0.05, 1.0 }
+  style.Colors[im.Col.ButtonHovered]       = im.Vec4{ 0.1,  0.1,  0.1,  1.0 }
+
+  style.Colors[im.Col.TitleBg]             = im.Vec4{ 0.15, 0.15, 0.15, 1.0 }
+  style.Colors[im.Col.TitleBgActive]       = im.Vec4{ 0.1,  0.1,  0.1,  1.0 }
+  style.Colors[im.Col.TitleBgCollapsed]    = im.Vec4{ 0.1,  0.1,  0.1,  1.0 }
+
+  style.Colors[im.Col.FrameBg]             = im.Vec4{ 0.15, 0.15, 0.15, 1.0 }
+  style.Colors[im.Col.FrameBgActive]       = im.Vec4{ 0.15, 0.15, 0.15, 1.0 }
+  style.Colors[im.Col.FrameBgHovered]      = im.Vec4{ 0.15, 0.15, 0.15, 1.0 }
+
+  style.Colors[im.Col.CheckMark]           = im.Vec4{ 0.9,  0.9,  0.9,  1.0 }
+  style.Colors[im.Col.SliderGrab]          = im.Vec4{ 0.9,  0.9,  0.9,  1.0 }
+  style.Colors[im.Col.SliderGrabActive]    = im.Vec4{ 1.0,  1.0,  1.0,  1.0 }
+
+  style.Colors[im.Col.Separator]           = im.Vec4{ 0.1,  0.1,  0.1,  1.0 }
+  style.Colors[im.Col.SeparatorActive]     = im.Vec4{ 0.1,  0.1,  0.1,  1.0 }
+  style.Colors[im.Col.SeparatorHovered]    = im.Vec4{ 0.1,  0.1,  0.1,  1.0 }
+
+  style.Colors[im.Col.ResizeGrip]          = im.Vec4{ 0.5,  0.5,  0.5,  1.0 }
+  style.Colors[im.Col.ResizeGripHovered]   = im.Vec4{ 0.6,  0.6,  0.6,  1.0 }
+  style.Colors[im.Col.ResizeGripActive]    = im.Vec4{ 0.7,  0.7,  0.7,  1.0 }
+  
+  style.Colors[im.Col.DockingPreview]      = im.Vec4{ 0.9,  0.9,  0.9,  1.0 }
+
+  data.editor_ui.style = .DARK_DEFAULT
+}
+ui_set_style_dark_light :: proc()
+{
+  style := im.GetStyle()
+
+  // Base colors for a pleasant and modern dark theme with dark accents
+  style.Colors[im.Col.Text]                  = {0.92, 0.93, 0.94, 1.00}  // Light grey text for readability
+  style.Colors[im.Col.TextDisabled]         = {0.50, 0.52, 0.54, 1.00}  // Subtle grey for disabled text
+  style.Colors[im.Col.WindowBg]             = {0.14, 0.14, 0.16, 1.00}  // Dark background with a hint of blue
+  style.Colors[im.Col.ChildBg]              = {0.16, 0.16, 0.18, 1.00}  // Slightly lighter for child elements
+  style.Colors[im.Col.PopupBg]              = {0.18, 0.18, 0.20, 1.00}  // Popup background
+  style.Colors[im.Col.Border]                = {0.28, 0.29, 0.30, 0.60}  // Soft border color
+  style.Colors[im.Col.BorderShadow]         = {0.00, 0.00, 0.00, 0.00}  // No border shadow
+  style.Colors[im.Col.FrameBg]              = {0.20, 0.22, 0.24, 1.00}  // Frame background
+  style.Colors[im.Col.FrameBgHovered]      = {0.22, 0.24, 0.26, 1.00}  // Frame hover effect
+  style.Colors[im.Col.FrameBgActive]       = {0.24, 0.26, 0.28, 1.00}  // Active frame background
+  style.Colors[im.Col.TitleBg]              = {0.14, 0.14, 0.16, 1.00}  // Title background
+  style.Colors[im.Col.TitleBgActive]       = {0.16, 0.16, 0.18, 1.00}  // Active title background
+  style.Colors[im.Col.TitleBgCollapsed]    = {0.14, 0.14, 0.16, 1.00}  // Collapsed title background
+  style.Colors[im.Col.MenuBarBg]           = {0.20, 0.20, 0.22, 1.00}  // Menu bar background
+  style.Colors[im.Col.ScrollbarBg]          = {0.16, 0.16, 0.18, 1.00}  // Scrollbar background
+  style.Colors[im.Col.ScrollbarGrab]        = {0.24, 0.26, 0.28, 1.00}  // Dark accent for scrollbar grab
+  style.Colors[im.Col.ScrollbarGrabHovered]= {0.28, 0.30, 0.32, 1.00}  // Scrollbar grab hover
+  style.Colors[im.Col.ScrollbarGrabActive] = {0.32, 0.34, 0.36, 1.00}  // Scrollbar grab active
+  style.Colors[im.Col.CheckMark]            = {0.46, 0.56, 0.66, 1.00}  // Dark blue checkmark
+  style.Colors[im.Col.SliderGrab]           = {0.36, 0.46, 0.56, 1.00}  // Dark blue slider grab
+  style.Colors[im.Col.SliderGrabActive]    = {0.40, 0.50, 0.60, 1.00}  // Active slider grab
+  style.Colors[im.Col.Button]                = {0.24, 0.34, 0.44, 1.00}  // Dark blue button
+  style.Colors[im.Col.ButtonHovered]        = {0.28, 0.38, 0.48, 1.00}  // Button hover effect
+  style.Colors[im.Col.ButtonActive]         = {0.32, 0.42, 0.52, 1.00}  // Active button
+  style.Colors[im.Col.Header]                = {0.24, 0.34, 0.44, 1.00}  // Header color similar to button
+  style.Colors[im.Col.HeaderHovered]        = {0.28, 0.38, 0.48, 1.00}  // Header hover effect
+  style.Colors[im.Col.HeaderActive]         = {0.32, 0.42, 0.52, 1.00}  // Active header
+  style.Colors[im.Col.Separator]             = {0.28, 0.29, 0.30, 1.00}  // Separator color
+  style.Colors[im.Col.SeparatorHovered]     = {0.46, 0.56, 0.66, 1.00}  // Hover effect for separator
+  style.Colors[im.Col.SeparatorActive]      = {0.46, 0.56, 0.66, 1.00}  // Active separator
+  style.Colors[im.Col.ResizeGrip]           = {0.36, 0.46, 0.56, 1.00}  // Resize grip
+  style.Colors[im.Col.ResizeGripHovered]   = {0.40, 0.50, 0.60, 1.00}  // Hover effect for resize grip
+  style.Colors[im.Col.ResizeGripActive]    = {0.44, 0.54, 0.64, 1.00}  // Active resize grip
+  style.Colors[im.Col.Tab]                   = {0.20, 0.22, 0.24, 1.00}  // Inactive tab
+  style.Colors[im.Col.TabHovered]           = {0.28, 0.38, 0.48, 1.00}  // Hover effect for tab
+  style.Colors[im.Col.TabSelected]          = {0.24, 0.34, 0.44, 1.00}  // Active tab color (TabActive)
+  style.Colors[im.Col.TabDimmed]            = {0.20, 0.22, 0.24, 1.00}  // Unfocused tab (TabUnfocused)
+  style.Colors[im.Col.TabDimmedSelected]   = {0.24, 0.34, 0.44, 1.00}  // Active but unfocused tab (TabUnfocusedActive)
+  style.Colors[im.Col.DockingPreview]       = {0.24, 0.34, 0.44, 0.70}  // Docking preview
+  style.Colors[im.Col.DockingEmptyBg]      = {0.14, 0.14, 0.16, 1.00}  // Empty docking background
+  style.Colors[im.Col.PlotLines]            = {0.46, 0.56, 0.66, 1.00}  // Plot lines
+  style.Colors[im.Col.PlotLinesHovered]    = {0.46, 0.56, 0.66, 1.00}  // Hover effect for plot lines
+  style.Colors[im.Col.PlotHistogram]        = {0.36, 0.46, 0.56, 1.00}  // Histogram color
+  style.Colors[im.Col.PlotHistogramHovered]= {0.40, 0.50, 0.60, 1.00}  // Hover effect for histogram
+  style.Colors[im.Col.TableHeaderBg]       = {0.20, 0.22, 0.24, 1.00}  // Table header background
+  style.Colors[im.Col.TableBorderStrong]   = {0.28, 0.29, 0.30, 1.00}  // Strong border for tables
+  style.Colors[im.Col.TableBorderLight]    = {0.24, 0.25, 0.26, 1.00}  // Light border for tables
+  style.Colors[im.Col.TableRowBg]          = {0.20, 0.22, 0.24, 1.00}  // Table row background
+  style.Colors[im.Col.TableRowBgAlt]      = {0.22, 0.24, 0.26, 1.00}  // Alternate row background
+  style.Colors[im.Col.TextSelectedBg]      = {0.24, 0.34, 0.44, 0.35}  // Selected text background
+  style.Colors[im.Col.DragDropTarget]      = {0.46, 0.56, 0.66, 0.90}  // Drag and drop target
+  style.Colors[im.Col.NavHighlight]            = {0.46, 0.56, 0.66, 1.00}  // Navigation highlight (NavHighlight)
+  style.Colors[im.Col.NavWindowingHighlight]= {1.00, 1.00, 1.00, 0.70}  // Windowing highlight
+  style.Colors[im.Col.NavWindowingDimBg]  = {0.80, 0.80, 0.80, 0.20}  // Dim background for windowing
+  style.Colors[im.Col.ModalWindowDimBg]   = {0.80, 0.80, 0.80, 0.35}  // Dim background for modal windows
+
+	style.WindowRounding    = 10.0
+  style.TabRounding       = 10.0
+  style.GrabRounding      = 10.0
+  style.PopupRounding     = 10.0
+  style.FrameRounding     = 10.0
+  style.ScrollbarRounding = 10.0
+
+  // Style adjustments
+  style.WindowRounding     = 8.0  // Softer rounded corners for windows
+  style.FrameRounding     = 4.0  // Rounded corners for frames
+  style.ScrollbarRounding = 6.0  // Rounded corners for scrollbars
+  style.GrabRounding      = 4.0  // Rounded corners for grab elements
+  style.ChildRounding     = 4.0  // Rounded corners for child windows
+
+  style.WindowTitleAlign = {0.50, 0.50}  // Centered window title
+  style.WindowPadding     = {10.0, 10.0}  // Comfortable padding
+  style.FramePadding      = {6.0, 4.0}    // Frame padding
+  style.ItemSpacing       = {8.0, 8.0}    // Item spacing
+  style.ItemInnerSpacing = {8.0, 6.0}    // Inner item spacing
+  style.IndentSpacing     = 22.0          // Indentation spacing
+
+  style.ScrollbarSize = 16.0  // Scrollbar size
+  style.GrabMinSize  = 10.0  // Minimum grab size
+
+  style.AntiAliasedLines = true  // Enable anti-aliased lines
+  style.AntiAliasedFill  = true  // Enable anti-aliased fill
+
+  data.editor_ui.style = .DARK_LIGHT
 }

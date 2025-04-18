@@ -10,11 +10,6 @@ import gl     "vendor:OpenGL"
 import tt     "vendor:stb/truetype"
 
 
-// FONT        :: `C:\Windows\Fonts\arialbd.ttf`
-// FONT        :: "assets/fonts/JetBrainsMonoNL-Regular.ttf"
-
-// ATLAS_CHARS := [?]rune{ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z' }
-
 // // ascii chars from 32 to 126
 // ATLAS_CHARS := [126 - 32]rune
 // ascii chars from 0 to 126
@@ -40,7 +35,8 @@ text_init :: proc( path: string )
 
   // scale based on physical size of monitor being used
   cm_w, cm_h := window_get_monitor_size_cm()
-  font_size := i32( 700 / cm_h )  // 700 is abitrary could be higher or lower
+  // font_size := i32( 700 / cm_h )  // 700 is abitrary could be higher or lower
+  font_size := i32( 900 / cm_h )  // 700 is abitrary could be higher or lower
   log.debug( "monitor cm_width:", cm_h, ", font_size:", font_size )
   atlas_handle, atlas_w, atlas_h := text_make_atlas( path, font_size )
 }
@@ -114,14 +110,14 @@ text_make_atlas :: proc( font_name: string, glyph_size: i32, loc := #caller_loca
 
   // Load .ttf file into buffer.
   ttf_buffer :: [1<<23] u8 // Assumes a .ttf file of under 8MB.
-  fontdata, succ := os.read_entire_file( font_name ) // @TODO: @OPTIMIZATION: use context.temp_allocator, kept crashing on laptop, figure out why, also use this in all funtions where capable
+  fontdata, succ := os.read_entire_file( font_name, context.temp_allocator ) // @TODO: @OPTIMIZATION: use context.temp_allocator, kept crashing on laptop, figure out why, also use this in all funtions where capable
   defer delete( fontdata )
   if !succ 
   {
     log.error("ERROR: Couldn't load font at: ", font_name )
     os.exit(1)
   }
-  font_ptr : [^] u8 = &fontdata[0]
+  font_ptr : [^]u8 = &fontdata[0]
 
   // Initialize font.
   font : tt.fontinfo
@@ -346,7 +342,6 @@ text_draw_glyph :: proc( pos: linalg.vec2, char: i32 )
 
   gl.Disable( gl.DEPTH_TEST )
 
-
   shader_use( data.text.shader )
   
   // Send matrices to the shader.
@@ -367,7 +362,7 @@ text_draw_glyph :: proc( pos: linalg.vec2, char: i32 )
   
   gl.BindVertexArray( data.text.mesh.vao )
   // defer gl.BindVertexArray(0)
-  gl.DrawArrays(gl.TRIANGLES, 0, 6)
+  gl.DrawArrays( gl.TRIANGLES, 0, 6 )
 
   gl.Enable( gl.DEPTH_TEST )
 
