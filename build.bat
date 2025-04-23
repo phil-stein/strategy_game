@@ -19,7 +19,8 @@ IF "%~1"=="game" (
 IF "%~1"=="nodebug" ( 
   echo --- building no-debug ---
   :: -o:speed
-  odin run src -out:bin\game.exe -vet-shadowing -vet-using-stmt -define:EDITOR=true
+  :: odin run src -out:bin\game.exe -vet-shadowing -vet-using-stmt -define:EDITOR=true
+  odin run src -out:bin\game.exe  -vet-cast -vet-shadowing -vet-using-stmt -vet-using-param -define:EDITOR=true
   GOTO eof 
 )
 
