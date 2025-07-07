@@ -14,7 +14,7 @@ import        "core:log"
 import        "core:mem"
 import        "core:time"
 import        "core:debug/trace"
-import        "core:encoding/ansi"
+import        "core:terminal/ansi"
 
 EDITOR :: #config(EDITOR, false)
 
