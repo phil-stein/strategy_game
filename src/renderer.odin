@@ -102,8 +102,8 @@ renderer_update :: proc()
       shader_act_reset_tex_idx()
     }
 
-    if ( data.wireframe_mode_enabled == true )
-	  { gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL) }
+    // wireframe mode
+	  gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)  // skybox and screenquad dont make sense to draw using wireframe
 
     // skybox -----------------------------------------------------------------
     gl.DepthFunc(gl.LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content

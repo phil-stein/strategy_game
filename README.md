@@ -43,17 +43,18 @@ use combo moves to extend your playable chars abilities/moveset with the other p
         - [X] simple
         - [ ] more advanced idk
       - [X] show their turn
-    - [.] combo-moves
+    - [o] combo-moves
       - [X] basics
       - [X] jumping off other player chars
         - [X] curved line
       - [ ] tackle/kick/etc. enemies
       - [ ] carry enemies/player chars ?
       - [ ] push enemies/player chars ?
-      - [ ] interact with environment
+      - [.] interact with environment
         - [ ] push buttons / pull levers / etc.
         - [X] bounce pads / trampolines
         - [ ] push blocks / obstacles
+        - [ ] mines / bombs that trigger upon walking on them or f.e. attacking near them
       - [ ] ...
       - [ ] show moves
         - better path drawing not using debug_draw

@@ -35,8 +35,9 @@ ui_init :: proc()
 	}
 
 
-	im.StyleColorsDark()
-  ui_set_style_dark_default()
+	// im.StyleColorsDark()
+  // ui_set_style_dark_default()
+  ui_set_style_dark_light()
 
 	imgui_impl_glfw.InitForOpenGL(data.window, true)
 	imgui_impl_opengl3.Init("#version 150")
@@ -883,66 +884,67 @@ ui_set_style_dark_default :: proc()
 
   data.editor_ui.style = .DARK_DEFAULT
 }
+
 ui_set_style_dark_light :: proc()
 {
   style := im.GetStyle()
 
   // Base colors for a pleasant and modern dark theme with dark accents
-  style.Colors[im.Col.Text]                  = {0.92, 0.93, 0.94, 1.00}  // Light grey text for readability
-  style.Colors[im.Col.TextDisabled]         = {0.50, 0.52, 0.54, 1.00}  // Subtle grey for disabled text
-  style.Colors[im.Col.WindowBg]             = {0.14, 0.14, 0.16, 1.00}  // Dark background with a hint of blue
-  style.Colors[im.Col.ChildBg]              = {0.16, 0.16, 0.18, 1.00}  // Slightly lighter for child elements
-  style.Colors[im.Col.PopupBg]              = {0.18, 0.18, 0.20, 1.00}  // Popup background
-  style.Colors[im.Col.Border]                = {0.28, 0.29, 0.30, 0.60}  // Soft border color
-  style.Colors[im.Col.BorderShadow]         = {0.00, 0.00, 0.00, 0.00}  // No border shadow
-  style.Colors[im.Col.FrameBg]              = {0.20, 0.22, 0.24, 1.00}  // Frame background
-  style.Colors[im.Col.FrameBgHovered]      = {0.22, 0.24, 0.26, 1.00}  // Frame hover effect
-  style.Colors[im.Col.FrameBgActive]       = {0.24, 0.26, 0.28, 1.00}  // Active frame background
-  style.Colors[im.Col.TitleBg]              = {0.14, 0.14, 0.16, 1.00}  // Title background
-  style.Colors[im.Col.TitleBgActive]       = {0.16, 0.16, 0.18, 1.00}  // Active title background
-  style.Colors[im.Col.TitleBgCollapsed]    = {0.14, 0.14, 0.16, 1.00}  // Collapsed title background
-  style.Colors[im.Col.MenuBarBg]           = {0.20, 0.20, 0.22, 1.00}  // Menu bar background
-  style.Colors[im.Col.ScrollbarBg]          = {0.16, 0.16, 0.18, 1.00}  // Scrollbar background
-  style.Colors[im.Col.ScrollbarGrab]        = {0.24, 0.26, 0.28, 1.00}  // Dark accent for scrollbar grab
-  style.Colors[im.Col.ScrollbarGrabHovered]= {0.28, 0.30, 0.32, 1.00}  // Scrollbar grab hover
-  style.Colors[im.Col.ScrollbarGrabActive] = {0.32, 0.34, 0.36, 1.00}  // Scrollbar grab active
-  style.Colors[im.Col.CheckMark]            = {0.46, 0.56, 0.66, 1.00}  // Dark blue checkmark
-  style.Colors[im.Col.SliderGrab]           = {0.36, 0.46, 0.56, 1.00}  // Dark blue slider grab
-  style.Colors[im.Col.SliderGrabActive]    = {0.40, 0.50, 0.60, 1.00}  // Active slider grab
-  style.Colors[im.Col.Button]                = {0.24, 0.34, 0.44, 1.00}  // Dark blue button
-  style.Colors[im.Col.ButtonHovered]        = {0.28, 0.38, 0.48, 1.00}  // Button hover effect
-  style.Colors[im.Col.ButtonActive]         = {0.32, 0.42, 0.52, 1.00}  // Active button
-  style.Colors[im.Col.Header]                = {0.24, 0.34, 0.44, 1.00}  // Header color similar to button
-  style.Colors[im.Col.HeaderHovered]        = {0.28, 0.38, 0.48, 1.00}  // Header hover effect
-  style.Colors[im.Col.HeaderActive]         = {0.32, 0.42, 0.52, 1.00}  // Active header
-  style.Colors[im.Col.Separator]             = {0.28, 0.29, 0.30, 1.00}  // Separator color
-  style.Colors[im.Col.SeparatorHovered]     = {0.46, 0.56, 0.66, 1.00}  // Hover effect for separator
-  style.Colors[im.Col.SeparatorActive]      = {0.46, 0.56, 0.66, 1.00}  // Active separator
-  style.Colors[im.Col.ResizeGrip]           = {0.36, 0.46, 0.56, 1.00}  // Resize grip
-  style.Colors[im.Col.ResizeGripHovered]   = {0.40, 0.50, 0.60, 1.00}  // Hover effect for resize grip
-  style.Colors[im.Col.ResizeGripActive]    = {0.44, 0.54, 0.64, 1.00}  // Active resize grip
-  style.Colors[im.Col.Tab]                   = {0.20, 0.22, 0.24, 1.00}  // Inactive tab
-  style.Colors[im.Col.TabHovered]           = {0.28, 0.38, 0.48, 1.00}  // Hover effect for tab
-  style.Colors[im.Col.TabSelected]          = {0.24, 0.34, 0.44, 1.00}  // Active tab color (TabActive)
-  style.Colors[im.Col.TabDimmed]            = {0.20, 0.22, 0.24, 1.00}  // Unfocused tab (TabUnfocused)
-  style.Colors[im.Col.TabDimmedSelected]   = {0.24, 0.34, 0.44, 1.00}  // Active but unfocused tab (TabUnfocusedActive)
-  style.Colors[im.Col.DockingPreview]       = {0.24, 0.34, 0.44, 0.70}  // Docking preview
-  style.Colors[im.Col.DockingEmptyBg]      = {0.14, 0.14, 0.16, 1.00}  // Empty docking background
-  style.Colors[im.Col.PlotLines]            = {0.46, 0.56, 0.66, 1.00}  // Plot lines
-  style.Colors[im.Col.PlotLinesHovered]    = {0.46, 0.56, 0.66, 1.00}  // Hover effect for plot lines
-  style.Colors[im.Col.PlotHistogram]        = {0.36, 0.46, 0.56, 1.00}  // Histogram color
-  style.Colors[im.Col.PlotHistogramHovered]= {0.40, 0.50, 0.60, 1.00}  // Hover effect for histogram
-  style.Colors[im.Col.TableHeaderBg]       = {0.20, 0.22, 0.24, 1.00}  // Table header background
-  style.Colors[im.Col.TableBorderStrong]   = {0.28, 0.29, 0.30, 1.00}  // Strong border for tables
-  style.Colors[im.Col.TableBorderLight]    = {0.24, 0.25, 0.26, 1.00}  // Light border for tables
-  style.Colors[im.Col.TableRowBg]          = {0.20, 0.22, 0.24, 1.00}  // Table row background
-  style.Colors[im.Col.TableRowBgAlt]      = {0.22, 0.24, 0.26, 1.00}  // Alternate row background
-  style.Colors[im.Col.TextSelectedBg]      = {0.24, 0.34, 0.44, 0.35}  // Selected text background
-  style.Colors[im.Col.DragDropTarget]      = {0.46, 0.56, 0.66, 0.90}  // Drag and drop target
-  style.Colors[im.Col.NavHighlight]            = {0.46, 0.56, 0.66, 1.00}  // Navigation highlight (NavHighlight)
-  style.Colors[im.Col.NavWindowingHighlight]= {1.00, 1.00, 1.00, 0.70}  // Windowing highlight
-  style.Colors[im.Col.NavWindowingDimBg]  = {0.80, 0.80, 0.80, 0.20}  // Dim background for windowing
-  style.Colors[im.Col.ModalWindowDimBg]   = {0.80, 0.80, 0.80, 0.35}  // Dim background for modal windows
+  style.Colors[im.Col.Text]                   = { 0.92, 0.93, 0.94, 1.00 }  // Light grey text for readability
+  style.Colors[im.Col.TextDisabled]           = { 0.50, 0.52, 0.54, 1.00 }  // Subtle grey for disabled text
+  style.Colors[im.Col.WindowBg]               = { 0.14, 0.14, 0.16, 1.00 }  // Dark background with a hint of blue
+  style.Colors[im.Col.ChildBg]                = { 0.16, 0.16, 0.18, 1.00 }  // Slightly lighter for child elements
+  style.Colors[im.Col.PopupBg]                = { 0.18, 0.18, 0.20, 1.00 }  // Popup background
+  style.Colors[im.Col.Border]                 = { 0.28, 0.29, 0.30, 0.60 }  // Soft border color
+  style.Colors[im.Col.BorderShadow]           = { 0.00, 0.00, 0.00, 0.00 }  // No border shadow
+  style.Colors[im.Col.FrameBg]                = { 0.20, 0.22, 0.24, 1.00 }  // Frame background
+  style.Colors[im.Col.FrameBgHovered]         = { 0.22, 0.24, 0.26, 1.00 }  // Frame hover effect
+  style.Colors[im.Col.FrameBgActive]          = { 0.24, 0.26, 0.28, 1.00 }  // Active frame background
+  style.Colors[im.Col.TitleBg]                = { 0.14, 0.14, 0.16, 1.00 }  // Title background
+  style.Colors[im.Col.TitleBgActive]          = { 0.16, 0.16, 0.18, 1.00 }  // Active title background
+  style.Colors[im.Col.TitleBgCollapsed]       = { 0.14, 0.14, 0.16, 1.00 }  // Collapsed title background
+  style.Colors[im.Col.MenuBarBg]              = { 0.20, 0.20, 0.22, 1.00 }  // Menu bar background
+  style.Colors[im.Col.ScrollbarBg]            = { 0.16, 0.16, 0.18, 1.00 }  // Scrollbar background
+  style.Colors[im.Col.ScrollbarGrab]          = { 0.24, 0.26, 0.28, 1.00 }  // Dark accent for scrollbar grab
+  style.Colors[im.Col.ScrollbarGrabHovered]   = { 0.28, 0.30, 0.32, 1.00 }  // Scrollbar grab hover
+  style.Colors[im.Col.ScrollbarGrabActive]    = { 0.32, 0.34, 0.36, 1.00 }  // Scrollbar grab active
+  style.Colors[im.Col.CheckMark]              = { 0.46, 0.56, 0.66, 1.00 }  // Dark blue checkmark
+  style.Colors[im.Col.SliderGrab]             = { 0.36, 0.46, 0.56, 1.00 }  // Dark blue slider grab
+  style.Colors[im.Col.SliderGrabActive]       = { 0.40, 0.50, 0.60, 1.00 }  // Active slider grab
+  style.Colors[im.Col.Button]                 = { 0.24, 0.34, 0.44, 1.00 }  // Dark blue button
+  style.Colors[im.Col.ButtonHovered]          = { 0.28, 0.38, 0.48, 1.00 }  // Button hover effect
+  style.Colors[im.Col.ButtonActive]           = { 0.32, 0.42, 0.52, 1.00 }  // Active button
+  style.Colors[im.Col.Header]                 = { 0.24, 0.34, 0.44, 1.00 }  // Header color similar to button
+  style.Colors[im.Col.HeaderHovered]          = { 0.28, 0.38, 0.48, 1.00 }  // Header hover effect
+  style.Colors[im.Col.HeaderActive]           = { 0.32, 0.42, 0.52, 1.00 }  // Active header
+  style.Colors[im.Col.Separator]              = { 0.28, 0.29, 0.30, 1.00 }  // Separator color
+  style.Colors[im.Col.SeparatorHovered]       = { 0.46, 0.56, 0.66, 1.00 }  // Hover effect for separator
+  style.Colors[im.Col.SeparatorActive]        = { 0.46, 0.56, 0.66, 1.00 }  // Active separator
+  style.Colors[im.Col.ResizeGrip]             = { 0.36, 0.46, 0.56, 1.00 }  // Resize grip
+  style.Colors[im.Col.ResizeGripHovered]      = { 0.40, 0.50, 0.60, 1.00 }  // Hover effect for resize grip
+  style.Colors[im.Col.ResizeGripActive]       = { 0.44, 0.54, 0.64, 1.00 }  // Active resize grip
+  style.Colors[im.Col.Tab]                    = { 0.20, 0.22, 0.24, 1.00 }  // Inactive tab
+  style.Colors[im.Col.TabHovered]             = { 0.28, 0.38, 0.48, 1.00 }  // Hover effect for tab
+  style.Colors[im.Col.TabSelected]            = { 0.24, 0.34, 0.44, 1.00 }  // Active tab color (TabActive)
+  style.Colors[im.Col.TabDimmed]              = { 0.20, 0.22, 0.24, 1.00 }  // Unfocused tab (TabUnfocused)
+  style.Colors[im.Col.TabDimmedSelected]      = { 0.24, 0.34, 0.44, 1.00 }  // Active but unfocused tab (TabUnfocusedActive)
+  style.Colors[im.Col.DockingPreview]         = { 0.24, 0.34, 0.44, 0.70 }  // Docking preview
+  style.Colors[im.Col.DockingEmptyBg]         = { 0.14, 0.14, 0.16, 1.00 }  // Empty docking background
+  style.Colors[im.Col.PlotLines]              = { 0.46, 0.56, 0.66, 1.00 }  // Plot lines
+  style.Colors[im.Col.PlotLinesHovered]       = { 0.46, 0.56, 0.66, 1.00 }  // Hover effect for plot lines
+  style.Colors[im.Col.PlotHistogram]          = { 0.36, 0.46, 0.56, 1.00 }  // Histogram color
+  style.Colors[im.Col.PlotHistogramHovered]   = { 0.40, 0.50, 0.60, 1.00 }  // Hover effect for histogram
+  style.Colors[im.Col.TableHeaderBg]          = { 0.20, 0.22, 0.24, 1.00 }  // Table header background
+  style.Colors[im.Col.TableBorderStrong]      = { 0.28, 0.29, 0.30, 1.00 }  // Strong border for tables
+  style.Colors[im.Col.TableBorderLight]       = { 0.24, 0.25, 0.26, 1.00 }  // Light border for tables
+  style.Colors[im.Col.TableRowBg]             = { 0.20, 0.22, 0.24, 1.00 }  // Table row background
+  style.Colors[im.Col.TableRowBgAlt]          = { 0.22, 0.24, 0.26, 1.00 }  // Alternate row background
+  style.Colors[im.Col.TextSelectedBg]         = { 0.24, 0.34, 0.44, 0.35 }  // Selected text background
+  style.Colors[im.Col.DragDropTarget]         = { 0.46, 0.56, 0.66, 0.90 }  // Drag and drop target
+  style.Colors[im.Col.NavHighlight]           = { 0.46, 0.56, 0.66, 1.00 }  // Navigation highlight (NavHighlight)
+  style.Colors[im.Col.NavWindowingHighlight]  = { 1.00, 1.00, 1.00, 0.70 }  // Windowing highlight
+  style.Colors[im.Col.NavWindowingDimBg]      = { 0.80, 0.80, 0.80, 0.20 }  // Dim background for windowing
+  style.Colors[im.Col.ModalWindowDimBg]       = { 0.80, 0.80, 0.80, 0.35 }  // Dim background for modal windows
 
 	style.WindowRounding    = 10.0
   style.TabRounding       = 10.0

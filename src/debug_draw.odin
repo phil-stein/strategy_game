@@ -576,12 +576,12 @@ debug_render_path :: proc( path: [dynamic]waypoint_t, color: vec3, offset := vec
     p00 := linalg.vec3{ 
             f32(path[i].x)         * 2 - f32(TILE_ARR_X_MAX) +1,
             f32(path[i].level_idx) * 2 + 1.0, 
-            f32(path[i].z)         * 2 - f32(TILE_ARR_Z_MAX) +1
+            f32(path[i].z)         * 2 - f32(TILE_ARR_Z_MAX) +1,
            }
     p01 := linalg.vec3{ 
             f32(path[i +1].x)         * 2 - f32(TILE_ARR_X_MAX) +1,
             f32(path[i +1].level_idx) * 2 + 1.0, 
-            f32(path[i +1].z)         * 2 - f32(TILE_ARR_Z_MAX) +1
+            f32(path[i +1].z)         * 2 - f32(TILE_ARR_Z_MAX) +1,
            }
     p00 += offset
     p01 += offset
@@ -593,7 +593,7 @@ debug_render_path :: proc( path: [dynamic]waypoint_t, color: vec3, offset := vec
   p_sphere := linalg.vec3{ 
           f32(path[len(path) -1].x)         * 2 - f32(TILE_ARR_X_MAX) +1,
           f32(path[len(path) -1].level_idx) * 2 + 1.0, 
-          f32(path[len(path) -1].z)         * 2 - f32(TILE_ARR_Z_MAX) +1
+          f32(path[len(path) -1].z)         * 2 - f32(TILE_ARR_Z_MAX) +1,
          }
   debug_draw_sphere( p_sphere, linalg.vec3{ 0.35, 0.35, 0.35 }, color )
 }

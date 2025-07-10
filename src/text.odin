@@ -110,13 +110,13 @@ text_make_atlas :: proc( font_name: string, glyph_size: i32, loc := #caller_loca
 
   // Load .ttf file into buffer.
   ttf_buffer :: [1<<23] u8 // Assumes a .ttf file of under 8MB.
-  fontdata, succ := os.read_entire_file( font_name, context.temp_allocator ) // @TODO: @OPTIMIZATION: use context.temp_allocator, kept crashing on laptop, figure out why, also use this in all funtions where capable
-  defer delete( fontdata )
+  fontdata, succ := os.read_entire_file_from_filename( font_name, context.temp_allocator ) // @TODO: @OPTIMIZATION: use context.temp_allocator, kept crashing on laptop, figure out why, also use this in all funtions where capable
   if !succ 
   {
     log.error("ERROR: Couldn't load font at: ", font_name )
     os.exit(1)
   }
+  // defer delete( fontdata ) // allocated in temp_alloc
   font_ptr : [^]u8 = &fontdata[0]
 
   // Initialize font.
