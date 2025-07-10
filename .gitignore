@@ -1,8 +1,13 @@
 # executables
 *.exe
+*.pdb
+
 
 # c object files
 *.o
+*.obj
+
+gmon.out
 
 # vim-files
 *~
