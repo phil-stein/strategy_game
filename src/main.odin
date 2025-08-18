@@ -14,10 +14,23 @@ import        "core:log"
 import        "core:mem"
 import        "core:time"
 import        "core:debug/trace"
-import        "core:terminal/ansi"
+import        "core:encoding/ansi"
+// import        "core:terminal/ansi"
 
-EDITOR :: #config(EDITOR, false)
+// import        "core:sync"
+// import        "core:prof/spall"
+import tracy "../external/odin-tracy"
 
+
+// :config | :defines
+EDITOR       :: #config(EDITOR, false)
+TRACY_ENABLE :: #config(TRACY_ENABLE, false)
+
+// when ODIN_DEBUG {
+//   // :spall global vars
+//   spall_ctx: spall.Context
+//   @(thread_local) spall_buffer: spall.Buffer
+// }
 
 // setup debug/trace
 global_trace_ctx: trace.Context
@@ -259,9 +272,48 @@ do_location_header :: proc(opts: log.Options, buf: ^str.Builder, location := #ca
 	}
 }
 
+// // :spall automatic profiling of every procedure:
+// @(instrumentation_enter)
+// spall_enter :: proc "contextless" (proc_address, call_site_return_address: rawptr, loc: runtime.Source_Code_Location) {
+// 	spall._buffer_begin(&spall_ctx, &spall_buffer, "", "", loc)
+// }
+// @(instrumentation_exit)
+// spall_exit :: proc "contextless" (proc_address, call_site_return_address: rawptr, loc: runtime.Source_Code_Location) {
+// 	spall._buffer_end(&spall_ctx, &spall_buffer)
+// }
+
+// @TODO: 
+// // :tracy automatic profiling of every procedure:
+// tracy_ctx_arr : [dynamic]tracy.ZoneCtx
+// @(instrumentation_enter)
+// __tracy_instrumentation_enter :: #force_inline proc "contextless" (proc_address, call_site_return_address: rawptr, loc: runtime.Source_Code_Location) {
+//   {
+//   context = runtime.default_context()
+//   append( &tracy_ctx_arr, tracy.ZoneBegin( active=true, depth=tracy.TRACY_CALLSTACK, loc=loc ) )
+//   }
+//   // libc.printf( "cock enter\n" )
+// }
+// @(instrumentation_exit)
+// __tracy_instrumentation_exit :: #force_inline proc "contextless" (proc_address, call_site_return_address: rawptr, loc: runtime.Source_Code_Location) {
+// 	// spall._buffer_end(&spall_ctx, &spall_buffer)
+//   // {
+//   //   context = runtime.default_context()
+//   //   ctx := pop( &tracy_ctx_arr, loc=loc )
+//   //   tracy.ZoneEnd( ctx )
+//   // }
+//   // libc.printf( "cock exit\n" )
+// }
+
+// :main | :entry_point | :start
+@(BUG="cock")
 main :: proc() 
 {
+  // @(TMP="aka. temp")
   // ---- init odin stuff ----
+
+  // cwd := os.get_current_directory( context.allocator )
+  // defer delete( cwd )
+  // fmt.println( "CWD: ", cwd )
 
   when ODIN_DEBUG 
   {
@@ -294,13 +346,35 @@ main :: proc()
 	  trace.init(&global_trace_ctx)
 	  defer trace.destroy(&global_trace_ctx)
 	  context.assertion_failure_proc = debug_trace_assertion_failure_proc
+
+    // // setup :spall
+	  // spall_ctx = spall.context_create("trace.spall")
+	  // defer spall.context_destroy(&spall_ctx)
+
+	  // buffer_backing := make([]u8, spall.BUFFER_DEFAULT_SIZE)
+	  // defer delete(buffer_backing)
+
+	  // spall_buffer = spall.buffer_create(buffer_backing, u32(sync.current_thread_id()))
+	  // defer spall.buffer_destroy(&spall_ctx, &spall_buffer)
 	}
+  when TRACY_ENABLE {
+	  tracy.SetThreadName("main");
+	  // Profile heap allocations with Tracy for this context.
+	  context.allocator = tracy.MakeProfiledAllocator(
+	  	self              = &tracy.ProfiledAllocatorData{},
+	  	callstack_size    = 5,
+	  	backing_allocator = context.allocator,
+	  	secure            = true
+	  )
+  }
   // setup log
   // context.logger = log.create_console_logger()
   context.logger = create_console_logger()
   when ODIN_DEBUG // no need to as windows does it automatically
   { defer destroy_console_logger( context.logger ) }
   // { defer free( context.logger.data ) }
+
+  // spall.SCOPED_EVENT( &spall_ctx, &spall_buffer, #procedure )
 
   
   // ---- init ----
@@ -309,7 +383,7 @@ main :: proc()
 
   when EDITOR
   { 
-    if ( !window_create( 0.75, 0.75, 0.05, 0.05, "title", Window_Type.MINIMIZED, vsync=true ) ) 
+    if ( !window_create( 0.75, 0.75, 0.05, 0.05, "title", Window_Type.MINIMIZED, vsync=false ) ) 
     { log.panic( "ERROR: failed to create window\n" ) }
   } 
   else 
@@ -441,12 +515,17 @@ main :: proc()
   debug_timer_stop() // init
 
   // ---- main loop ----
-  for !window_should_close()
+  for main_loop_idx := 0; !window_should_close(); main_loop_idx += 1
   {
+		// Marks the end of the frame. This is optional. Useful for
+		// applications which has a concept of a frame.
+		when TRACY_ENABLE { tracy.Zone(); defer tracy.FrameMark(); }
+    // spall.SCOPED_EVENT( &spall_ctx, &spall_buffer, fmt.tprint( #procedure, " | ", main_loop_idx ) )
+
     debug_timer_start( "update()" )
 
     glfw.PollEvents();
-      
+
     debug_timer_start( "data_pre_updated()" )
     data_pre_updated()
     debug_timer_stop() // data_pre_updated()

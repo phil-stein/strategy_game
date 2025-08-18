@@ -9,7 +9,7 @@ handle_act  : u32
 tex_idx_act : u32 = 0
 
 
-shader_make :: proc( vertex_src, fragment_src: string, name := "unnamed") -> ( handle: u32 )
+shader_make :: proc( vertex_src, fragment_src: string, name := "unnamed", loc := #caller_location ) -> ( handle: u32 )
 {
   // Compile vertex shader and fragment shader.
   // Note how much easier this is in Odin than in C++!
@@ -23,6 +23,8 @@ shader_make :: proc( vertex_src, fragment_src: string, name := "unnamed") -> ( h
   //   fmt.println( "ERROR: Failed to load and compile shaders: ", name )
   //   panic( "shader comp failed" ) 
   // }
+
+  // fmt.println( "shader loc:", loc )
 
   vertex_src_cstr := str.clone_to_cstring( vertex_src, context.temp_allocator )
   vert_shader := gl.CreateShader( gl.VERTEX_SHADER )

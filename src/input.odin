@@ -2,6 +2,8 @@ package core
 
 import "core:fmt"
 import "vendor:glfw"
+// import "core:prof/spall"
+import tracy  "../external/odin-tracy"
 
 Key :: enum
 {
@@ -168,8 +170,14 @@ key_state_t :: struct
 
 Mouse_Button :: enum
 {
-  LEFT  = glfw.MOUSE_BUTTON_1,
-  RIGHT = glfw.MOUSE_BUTTON_2,
+  LEFT   = glfw.MOUSE_BUTTON_1,
+  RIGHT  = glfw.MOUSE_BUTTON_2,
+  MIDDLE = glfw.MOUSE_BUTTON_3,
+  BUTTON_4 = glfw.MOUSE_BUTTON_4,
+  BUTTON_5 = glfw.MOUSE_BUTTON_5,
+  BUTTON_6 = glfw.MOUSE_BUTTON_6,
+  BUTTON_7 = glfw.MOUSE_BUTTON_7,
+  BUTTON_8 = glfw.MOUSE_BUTTON_8,
 }
 mouse_button_state_t :: struct
 {
@@ -209,6 +217,9 @@ input : input_t =
 
 input_init :: proc()
 {
+  // spall.SCOPED_EVENT( &spall_ctx, &spall_buffer, #procedure )
+  when TRACY_ENABLE { tracy.Zone() }
+
   glfw.SetKeyCallback( data.window, glfw.KeyProc(input_key_callback) )
   
   glfw.SetMouseButtonCallback( data.window, glfw.MouseButtonProc(input_mouse_button_callback) )
@@ -217,6 +228,9 @@ input_init :: proc()
 
 input_update :: proc()
 {
+  // spall.SCOPED_EVENT( &spall_ctx, &spall_buffer, #procedure )
+  when TRACY_ENABLE { tracy.Zone() }
+
   for &key in input.key_states 
   {
     key.down_last = key.down

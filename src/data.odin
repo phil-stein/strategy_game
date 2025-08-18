@@ -5,6 +5,8 @@ import str    "core:strings"
 import        "core:fmt"
 import        "vendor:glfw"
 import gl     "vendor:OpenGL"
+// import        "core:prof/spall"
+import tracy  "../external/odin-tracy"
 
 // "typedefs" for linalg/glsl package
 vec2 :: linalg.vec2
@@ -31,6 +33,7 @@ material_t :: struct
   roughness_idx    : int,
   metallic_idx     : int,
   normal_idx       : int,
+  emissive_idx     : int,
 
   uv_tile          : linalg.vec2,
   uv_offs          : linalg.vec2,
@@ -38,6 +41,7 @@ material_t :: struct
   tint             : linalg.vec3,
   roughness_f      : f32,
   metallic_f       : f32,
+  emissive_f       : f32,
 
   name             : string,  // @TODO: only needed in debug mode
 }
@@ -187,6 +191,7 @@ data_t :: struct
   basic_shader          : u32,
   deferred_shader       : u32,
   lighting_shader       : u32,
+  forward_shader        : u32,
   post_fx_shader        : u32,
   skybox_shader         : u32,
   quad_shader           : u32,
@@ -418,8 +423,10 @@ data : data_t =
 
 data_init :: proc()
 {
+  // spall.SCOPED_EVENT( &spall_ctx, &spall_buffer, #procedure )
+  when TRACY_ENABLE { tracy.Zone() }
 
-// init .player_chars
+  // init .player_chars
   for &char, i in data.player_chars
   {
     // char.has_path = false
@@ -603,6 +610,7 @@ data_pre_updated :: proc()
   data.text.draw_calls = 0
 }
 
+// @NOTE: only gets called in debug mode bc. of the tracking alloc
 data_cleanup :: proc()
 {
   for &char in data.player_chars
@@ -663,6 +671,9 @@ data_entity_add :: proc( e: entity_t ) -> ( idx: int )
 
 data_create_map :: proc()
 {
+  // spall.SCOPED_EVENT( &spall_ctx, &spall_buffer, #procedure )
+  when TRACY_ENABLE { tracy.Zone() }
+
   // for z in 0 ..< TILE_ARR_Z_MAX
   for y := 0; y < len(data.tile_str_arr); y += 1
   {
@@ -798,5 +809,6 @@ data_create_map :: proc()
   }
 // }
 
+  map_export_current( "big_honkin_level.obj" )
 }
 

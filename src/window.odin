@@ -1,19 +1,23 @@
 package core 
 
-import "core:fmt"
-import "core:c"
+import    "core:fmt"
+import    "core:c"
 // import "core:c/libc"
-import "vendor:glfw"
+import    "vendor:glfw"
 import gl "vendor:OpenGL"
+// import    "core:prof/spall"
+import tracy  "../external/odin-tracy"
 
 
 // intis glfw & glad, also creates the window
 // returns: <stddef.h> return_code
-window_create :: proc( width_perc, height_perc: f32, pos_x_perc, pos_y_perc: f32, title: cstring, type: Window_Type, vsync: bool ) -> bool
+window_create :: proc( width_perc, height_perc: f32, pos_x_perc, pos_y_perc: f32, title: cstring, type: Window_Type, vsync: bool ) -> ( ok: bool )
 {
+  // spall.SCOPED_EVENT( &spall_ctx, &spall_buffer, #procedure )
+  when TRACY_ENABLE { tracy.Zone() }
+
 	// enable error logging for glfw
   glfw.SetErrorCallback( cast(glfw.ErrorProc)error_callback )
-  
 
   // Initialise GLFW
 	if (glfw.Init() == glfw.FALSE)

@@ -9,6 +9,7 @@ import        "../external/odin-imgui/imgui_impl_opengl3"
 import        "vendor:glfw"
 import gl     "vendor:OpenGL"
 
+import        "core:c"
 import        "core:os"
 import        "core:log"
 import        "core:fmt"
@@ -16,14 +17,20 @@ import        "core:strconv"
 import str    "core:strings"
 import linalg "core:math/linalg/glsl"
 import        "core:reflect"
+// import        "core:prof/spall"
+import tracy  "../external/odin-tracy"
 
 font     : ^im.Font
 font_big : ^im.Font
 
 
+log_arr : [dynamic]string
+
 
 ui_init :: proc()
 {
+  tracy.Zone()
+
 	im.CHECKVERSION()
 	im.CreateContext()
 	io := im.GetIO()
@@ -54,6 +61,9 @@ win_flags : im.WindowFlags = { im.WindowFlag.NoTitleBar }
 // p_open := true
 ui_update :: proc()
 {
+  // spall.SCOPED_EVENT( &spall_ctx, &spall_buffer, #procedure )
+  when TRACY_ENABLE { tracy.Zone() }
+
 	imgui_impl_opengl3.NewFrame()
 	imgui_impl_glfw.NewFrame()
 	im.NewFrame()
@@ -69,6 +79,9 @@ ui_update :: proc()
   if data.editor_ui.show_main { ui_main_win() }
 
   ui_tool_win()
+
+  ui_cmd_log_win()
+  ui_cmd_win()
 
 	im.Render()
 	display_w, display_h := glfw.GetFramebufferSize(data.window)
@@ -127,14 +140,32 @@ ui_display_2_texture :: proc( name_00: cstring, w_00, h_00, hover_w_00, hover_h_
   }
 }
 
+@(TODO="hello, world! :)")
+ui_cmd_log_win :: #force_inline proc()
+{
+  if im.Begin( "log" )
+  {
+    for entry in log_arr
+    {
+      c_str, err := str.clone_to_cstring( entry, context.temp_allocator )
+      im.Text( c_str )
+    }
+    im.End()
+  }
+}
+ui_cmd_win :: #force_inline proc()
+{
+  // quad_size :: linalg.vec2{ 0.25, -0.25 }
+  // renderer_draw_quad( linalg.vec2{ -0.00, -0.15 }, linalg.vec2{ 0.50, 0.20 }, data.texture_arr[data.texture_idxs.blank].handle, linalg.vec3{ 0, 0, 0 } )
+  // text_draw_string( fmt.tprintf( "cock cock" ), vec2{ -0.00, -0.15 } )
+}
+
 ui_tool_win :: #force_inline proc()
 {
   if im.Begin( "tools" )
   {
     input.mouse_over_ui = im.IsWindowHovered()  
 
-    im.Text( "cock" )
-    
     if im.Button( "reset" )
     {
       data.player_chars_current = -1
@@ -166,8 +197,19 @@ ui_tool_win :: #force_inline proc()
       im.EndCombo()
     }
 
+    // EXPORT_NAME_LEN :: 32
+    // @(static) export_name : [EXPORT_NAME_LEN]u8
+    // export_name_ptr : [^]u8 = raw_data(export_name[:])
+    // im.InputText( "export name:", cstring(export_name_ptr), EXPORT_NAME_LEN )
+    if im.Button( "export level to big_honkin_level.obj file" )
+    {
+      // map_export_current( transmute(string)export_name )
+      map_export_current( "big_honkin_level.obj" )
+    }
+
     im.End()
   }
+
 }
 
 ui_main_win :: #force_inline proc()

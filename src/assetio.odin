@@ -11,6 +11,8 @@ import        "core:image"
 import        "core:image/png"
 import        "core:mem"
 import gl     "vendor:OpenGL"
+// import        "core:prof/spall"
+import tracy  "../external/odin-tracy"
 
 TEXTURES_PATH_START :: "assets/textures/"
 TEXTURES_EXTENSIONS :: "tex"
@@ -21,6 +23,9 @@ MESH_EXTENSIONS     :: "mesh"
 TEXTURE_HEADER_BYTE_SIZE :: /* len */ 4 /* width */ +4 /* height */ +4 /* channels */ +4
 assetio_convert_texture :: proc( path: string )
 {
+  // spall.SCOPED_EVENT( &spall_ctx, &spall_buffer, #procedure )
+  when TRACY_ENABLE { tracy.Zone() }
+
   image_file_bytes, ok := os.read_entire_file( str.concatenate( []string{ TEXTURES_PATH_START, path}, context.temp_allocator ) ) 
   if !ok 
   {
@@ -108,6 +113,9 @@ assetio_convert_texture :: proc( path: string )
 }
 assetio_load_texture :: proc( path: string, srgb: bool, tint:= [3]f32{ 1, 1, 1 } ) -> ( assetm_idx: int )
 {
+  // spall.SCOPED_EVENT( &spall_ctx, &spall_buffer, #procedure )
+  when TRACY_ENABLE { tracy.Zone() }
+
   // replace .png with .tex
   path_conv := str.clone( path, context.temp_allocator )
   path_conv  = str.cut( path_conv, 0, len(path_conv) - 3/* , context.temp_allocator */ )
@@ -256,6 +264,9 @@ assetio_load_png :: #force_inline proc( name: string, srgb: bool, tint := [3]f32
 MESH_HEADER_BYTE_SIZE :: /* len-indices */ 4 /* len-vertices */ +4
 assetio_convert_mesh :: proc( path: string )
 {
+  // spall.SCOPED_EVENT( &spall_ctx, &spall_buffer, #procedure )
+  when TRACY_ENABLE { tracy.Zone() }
+
   indices, vertices := mesh_load_fbx_data( str.clone_to_cstring( str.concatenate( []string{ MESH_PATH_START, path}, context.temp_allocator ), context.temp_allocator) )
 
   conv_data := make( []byte, ( len(indices) * 4) + ( len(vertices) * 4 ) + MESH_HEADER_BYTE_SIZE )
@@ -303,6 +314,9 @@ assetio_convert_mesh :: proc( path: string )
 
 assetio_load_mesh :: proc( path: string ) -> ( assetm_idx: int )
 {
+  // spall.SCOPED_EVENT( &spall_ctx, &spall_buffer, #procedure )
+  when TRACY_ENABLE { tracy.Zone() }
+
   // replace .png with .tex
   path_conv := str.clone( path, context.temp_allocator )
   path_conv  = str.cut( path_conv, 0, len(path_conv) - 3/* , context.temp_allocator */ )

@@ -1,5 +1,9 @@
 @echo off
 
+
+SET CUSTOM_ATTRIBUTES=-custom-attribute:NOTE -custom-attribute:TODO -custom-attribute:TMP -custom-attribute:BUG -custom-attribute:UNKNOWN
+
+
 del bin\game.exe
 
 :: check if no arg was given
@@ -105,6 +109,15 @@ echo --- building debug ---
 :: -vet-unused-variables
 :: -vet-unused-imports
 :: -sanitize:address
-odin run src -out:bin\game.exe  -vet-cast -vet-shadowing -vet-using-stmt -vet-using-param -debug  -define:EDITOR=true
+odin run src -out:bin\game.exe  -vet-cast -vet-shadowing -vet-using-stmt -vet-using-param -debug  -define:EDITOR=true -define:TRACY_ENABLE=true %CUSTOM_ATTRIBUTES%
+
+:: odin build src -out:bin\game.exe  -vet-cast -vet-shadowing -vet-using-stmt -vet-using-param -debug  -define:EDITOR=true %CUSTOM_ATTRIBUTES%
+::
+:: raddbg 
+:: raddbg --project:"bin/remedydb.rdbg" --user:"bin/game.rdi"
+:: raddbg bin\game.exe --auto_run
+:: raddbg --auto_run --quit_after_success
+:: raddbg --project:"bin/game.rdi"  --auto_run --quit_after_success
+:: bin\game.exe --user:"bin/remedydb.rdbg"
 
 :eof

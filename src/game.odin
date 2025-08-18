@@ -6,6 +6,8 @@ import        "core:time"
 import        "core:math"
 import linalg "core:math/linalg/glsl"
 import        "core:slice"
+// import        "core:prof/spall"
+import tracy  "../external/odin-tracy"
 
 
 node_t :: struct
@@ -28,6 +30,9 @@ Dir :: enum
 
 game_update :: proc()
 {
+  // spall.SCOPED_EVENT( &spall_ctx, &spall_buffer, #procedure )
+  when TRACY_ENABLE { tracy.Zone() }
+
   cam_hit_tile     : waypoint_t
   has_cam_hit_tile : bool = false
   if input.mouse_button_states[Mouse_Button.RIGHT].down
@@ -604,6 +609,8 @@ game_find_tile_hit_by_camera_space_pos :: proc( _pos: vec2 ) -> ( hit_tile: wayp
 // game_a_star_02_check_for_ramp :: #force_inline proc( current: waypoint_t, type: Dir ) -> ( next_point: waypoint_t, ok: bool )
 game_a_star_02_check_for_ramp :: #force_inline proc( current: waypoint_t, type: Dir ) -> ( next_point: waypoint_t, ok: bool )
 {
+  // spall.SCOPED_EVENT( &spall_ctx, &spall_buffer, #procedure )
+  when TRACY_ENABLE { tracy.Zone() }
 
   up_type, down_type : Tile_Nav_Type
   x_offs, z_offs : int

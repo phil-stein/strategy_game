@@ -5,9 +5,13 @@ import str    "core:strings"
 import linalg "core:math/linalg/glsl"
 import        "core:time"
 import        "core:log"
+// import        "core:prof/spall"
+import tracy  "../external/odin-tracy"
 
 assetm_init :: proc()
 {
+  // spall.SCOPED_EVENT( &spall_ctx, &spall_buffer, #procedure )
+  when TRACY_ENABLE { tracy.Zone() }
 
   data.basic_shader          = shader_make( #load( "../assets/shaders/basic.vert", string ), 
                                             #load( "../assets/shaders/basic.frag", string ), "basic_shader" )
@@ -20,6 +24,9 @@ assetm_init :: proc()
   
   data.lighting_shader       = shader_make( #load( "../assets/shaders/screen.vert", string ), 
                                             #load( "../assets/shaders/pbr.frag",    string ), "lighting_shader" )
+
+  data.forward_shader        = shader_make( #load( "../assets/shaders/basic.vert",       string ), 
+                                            #load( "../assets/shaders/pbr_forward.frag", string ), "forward_shader" )
 
   data.post_fx_shader        = shader_make( #load( "../assets/shaders/screen.vert",  string ), 
                                             #load( "../assets/shaders/post_fx.frag", string ), "post_fx_shader" )
@@ -71,6 +78,7 @@ assetm_init :: proc()
                  roughness_idx = data.texture_idxs.blank, 
                  metallic_idx  = data.texture_idxs.blank, 
                  normal_idx    = data.texture_idxs.blank, 
+                 emissive_idx  = data.texture_idxs.blank, 
 
                  uv_tile       = linalg.vec2{ 1, 1 },
                  uv_offs       = linalg.vec2{ 0, 0 },
@@ -79,6 +87,7 @@ assetm_init :: proc()
                  // tint        = linalg.vec3{ 0.4, 1.0, 0.2 },
                  roughness_f = 0.75,
                  metallic_f  = 0.0,
+                 emissive_f  = 0.0,
                }
   data.material_idxs.default = assetm_add_material( cube_mat, "default" )
 
@@ -87,6 +96,7 @@ assetm_init :: proc()
            roughness_idx = data.texture_idxs.blank, 
            metallic_idx  = data.texture_idxs.blank, 
            normal_idx    = data.texture_idxs.blank, 
+           emissive_idx  = data.texture_idxs.blank, 
 
            uv_tile       = linalg.vec2{ 1, 1 },
            uv_offs       = linalg.vec2{ 0, 0 },
@@ -94,6 +104,7 @@ assetm_init :: proc()
            tint        = linalg.vec3{ 1.0, 1.0, 1.0 },
            roughness_f = 0.25,
            metallic_f  = 1.0,
+           emissive_f  = 0.0,
          }
   data.material_idxs.metal_01 = assetm_add_material( suzanne_mat, "metal_mat" )
 
@@ -109,6 +120,7 @@ assetm_init :: proc()
            roughness_idx = data.texture_idxs.water_roughness, 
            metallic_idx  = data.texture_idxs.blank, 
            normal_idx    = data.texture_idxs.water_normal, 
+           emissive_idx  = data.texture_idxs.blank, 
 
            uv_tile       = linalg.vec2{ 15, 15 },
            uv_offs       = linalg.vec2{ 0,   0 },
@@ -116,6 +128,7 @@ assetm_init :: proc()
            tint        = linalg.vec3{ 0.17, 1.0, 0.625 },
            roughness_f = 1.0,
            metallic_f  = 0.0,
+           emissive_f  = 0.0,
   }
   data.material_idxs.water = assetm_add_material( water_mat, "water_mat" )
 
@@ -131,6 +144,7 @@ assetm_init :: proc()
            roughness_idx = data.texture_idxs.brick_roughness, 
            metallic_idx  = data.texture_idxs.blank, 
            normal_idx    = data.texture_idxs.brick_normal, 
+           emissive_idx  = data.texture_idxs.blank, 
 
            uv_tile       = linalg.vec2{ 1, 1 },
            uv_offs       = linalg.vec2{ 0, 0 },
@@ -138,6 +152,7 @@ assetm_init :: proc()
            tint        = linalg.vec3{ 1.0, 1.0, 1.0 },
            roughness_f = 1.0,
            metallic_f  = 0.0,
+           emissive_f  = 0.0,
          }
   data.material_idxs.brick = assetm_add_material( brick_mat, "brick_mat" )
 
@@ -149,13 +164,15 @@ assetm_init :: proc()
            roughness_idx = data.texture_idxs.blank, 
            metallic_idx  = data.texture_idxs.blank, 
            normal_idx    = data.texture_idxs.blank, 
+           emissive_idx  = data.texture_idxs.blank, 
 
            uv_tile       = linalg.vec2{ 1, 1 },
            uv_offs       = linalg.vec2{ 0, 0 },
 
            tint        = linalg.vec3{ 1.0, 1.0, 1.0 },
-           roughness_f = 1.0,
+           roughness_f = 0.3,
            metallic_f  = 0.0,
+           emissive_f  = 0.0,
          }
   data.material_idxs.dirt_cube_01 = assetm_add_material( dirt_cube_mat, "dirt_cube_mat_00" )
   dirt_cube_mat.albedo_idx = data.texture_idxs.dirt_cube_02_albedo
@@ -175,6 +192,7 @@ assetm_init :: proc()
            roughness_idx = data.texture_idxs.robot_roughness, 
            metallic_idx  = data.texture_idxs.robot_metallic, 
            normal_idx    = data.texture_idxs.robot_normal, 
+           emissive_idx  = data.texture_idxs.blank, 
 
            uv_tile       = linalg.vec2{ 1, 1 },
            uv_offs       = linalg.vec2{ 0, 0 },
@@ -182,6 +200,7 @@ assetm_init :: proc()
            tint        = linalg.vec3{ 1.0, 1.0, 1.0 },
            roughness_f = 1.0,
            metallic_f  = 1.0,
+           emissive_f  = 0.0,
          }
   data.material_idxs.robot = assetm_add_material( robot_mat, "robot_char" )
 
@@ -201,6 +220,7 @@ assetm_init :: proc()
            roughness_idx = data.texture_idxs.female_roughness, 
            metallic_idx  = data.texture_idxs.female_metallic, 
            normal_idx    = data.texture_idxs.female_normal, 
+           emissive_idx  = data.texture_idxs.blank, 
 
            uv_tile       = linalg.vec2{ 1, 1 },
            uv_offs       = linalg.vec2{ 0, 0 },
@@ -208,6 +228,7 @@ assetm_init :: proc()
            tint        = linalg.vec3{ 1.0, 1.0, 1.0 },
            roughness_f = 1.0,
            metallic_f  = 1.0,
+           emissive_f  = 0.0,
          }
   data.material_idxs.female = assetm_add_material( female_char, "female_char" )
 
@@ -222,6 +243,7 @@ assetm_init :: proc()
            roughness_idx = data.texture_idxs.demon_roughness, 
            metallic_idx  = data.texture_idxs.demon_metallic, 
            normal_idx    = data.texture_idxs.demon_normal, 
+           emissive_idx  = data.texture_idxs.blank, 
 
            uv_tile       = linalg.vec2{ 1, 1 },
            uv_offs       = linalg.vec2{ 0, 0 },
@@ -229,6 +251,7 @@ assetm_init :: proc()
            tint        = linalg.vec3{ 1.0, 1.0, 1.0 },
            roughness_f = 1.0,
            metallic_f  = 1.0,
+           emissive_f  = 0.0,
          }
   data.material_idxs.demon = assetm_add_material( demon_char, "demon_char" )
   

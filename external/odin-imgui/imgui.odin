@@ -11,6 +11,14 @@ else when ODIN_OS == .Darwin  {
 		foreign import lib { "imgui_darwin_arm64.a", "system:c++" }
 	}
 }
+else when ODIN_OS == .Linux   { when ODIN_ARCH == .amd64 { foreign import lib "imgui_linux_x64.a" }     else { foreign import lib "imgui_linux_arm64.a" } }
+else when ODIN_OS == .Darwin  {
+	when ODIN_ARCH == .amd64 {
+		foreign import lib { "imgui_darwin_x64.a", "system:c++" }
+	} else {
+		foreign import lib { "imgui_darwin_arm64.a", "system:c++" }
+	}
+}
 
 CHECKVERSION :: proc() {
 	DebugCheckVersionAndDataLayout(VERSION, size_of(IO), size_of(Style), size_of(Vec2), size_of(Vec4), size_of(DrawVert), size_of(DrawIdx))

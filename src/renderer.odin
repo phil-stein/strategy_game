@@ -4,6 +4,8 @@ import        "core:log"
 import        "core:math"
 import linalg "core:math/linalg/glsl"
 import gl     "vendor:OpenGL"
+// import        "core:prof/spall"
+import tracy  "../external/odin-tracy"
 
 
 exposure  :: 1.25
@@ -11,6 +13,8 @@ exposure  :: 1.25
 
 renderer_init :: proc( loc := #caller_location )
 {
+  // spall.SCOPED_EVENT( &spall_ctx, &spall_buffer, #procedure )
+  when TRACY_ENABLE { tracy.Zone() }
   // log.debug( loc )
   gl.BindFramebuffer( gl.FRAMEBUFFER, 0 )
   gl.Viewport( 0, 0, i32(data.window_width), i32(data.window_height) )
@@ -34,6 +38,154 @@ renderer_init :: proc( loc := #caller_location )
 
 renderer_update :: proc()
 {
+  // spall.SCOPED_EVENT( &spall_ctx, &spall_buffer, #procedure )
+  when TRACY_ENABLE { tracy.Zone() }
+  renderer_update_forward()
+  // renderer_update_deferred()
+
+  { // outline
+    if data.player_chars_current >= 0
+    { renderer_draw_scene_outline( data.player_chars[data.player_chars_current].entity_idx ) }
+    else
+    {
+      framebuffer_bind( &data.fb_outline )
+      gl.Clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT ) // clear bg
+      framebuffer_unbind()
+    }
+  }
+
+  { // post fx
+    shader_use( data.post_fx_shader )
+
+    gl.Clear(gl.COLOR_BUFFER_BIT);
+    gl.Disable(gl.DEPTH_TEST);
+    gl.Disable( gl.CULL_FACE )
+
+    shader_act_set_f32( "exposure", exposure )
+    
+    shader_act_bind_texture( "tex", data.fb_lighting.buffer01 )
+    shader_act_bind_texture( "position", data.fb_deferred.buffer04 )
+    // shader_act_bind_texture( "water_tex", data.texture_arr[data.texture_idxs.brick_albedo].handle )
+
+    shader_act_bind_texture( "outline", data.fb_outline.buffer01 )
+    if data.player_chars_current >= 0
+    { 
+      shader_act_set_vec3( "outline_color", data.player_chars[data.player_chars_current].color )
+    }
+    
+
+    gl.BindVertexArray(data.quad_vao);
+    gl.DrawArrays(gl.TRIANGLES, 0, 6);
+    gl.Enable(gl.DEPTH_TEST);
+    gl.Enable( gl.CULL_FACE )
+  }
+}
+
+renderer_update_forward :: proc()
+{
+  // spall.SCOPED_EVENT( &spall_ctx, &spall_buffer, #procedure )
+  when TRACY_ENABLE { tracy.Zone() }
+
+  framebuffer_bind( &data.fb_lighting )
+  gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  camera_set_view_mat() 
+
+
+  // wireframe mode
+  if ( data.wireframe_mode_enabled == true )
+	{ 
+    gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE) 
+    gl.LineWidth( 3 )
+  }
+	else
+	{ gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL) }
+
+  shader_use( data.forward_shader )
+  for &e, idx in data.entity_arr
+  {
+    if e.dead { continue }
+    // fmt.println( "#### rendering entity[", idx, "] ####" )
+
+    mesh := assetm_get_mesh( e.mesh_idx )
+    mat := assetm_get_material( e.mat_idx )
+
+    e.model = util_make_model( e.pos, e.rot, e.scl )
+    // @TODO:
+    // e.inv_model = linalg.inverse( e.model )
+    shader_act_set_mat4( "model", &e.model[0][0] )
+    shader_act_set_mat4( "view",  &data.cam.view_mat[0][0] )
+    shader_act_set_mat4( "proj",  &data.cam.pers_mat[0][0] )
+
+
+    shader_act_bind_cube_map("irradiance_map", data.cubemap.irradiance )
+    shader_act_bind_cube_map("prefilter_map", data.cubemap.prefilter )
+    shader_act_bind_texture("brdf_lut", data.brdf_lut )
+
+    shader_act_bind_texture( "albedo_map",    assetm_get_texture( mat.albedo_idx ).handle )
+    shader_act_bind_texture( "roughness_map", assetm_get_texture( mat.roughness_idx ).handle )
+    shader_act_bind_texture( "metallic_map",  assetm_get_texture( mat.metallic_idx ).handle )
+    shader_act_bind_texture( "normal_map",    assetm_get_texture( mat.normal_idx ).handle )
+    shader_act_bind_texture( "emissive_map",  assetm_get_texture( mat.emissive_idx ).handle )
+    shader_act_set_vec3( "tint",        mat.tint )
+    shader_act_set_f32(  "roughness_f", mat.roughness_f )
+    shader_act_set_f32(  "metallic_f",  mat.metallic_f )
+    shader_act_set_f32(  "emissive_f",  mat.emissive_f )
+
+    shader_act_set_vec3( "view_pos", data.cam.pos )
+    shader_act_set_f32( "cube_map_intensity", data.cubemap.intensity )
+    
+    // shader_act_set_vec2_f( "uv_tile", 1.0, 1.0 )
+    // shader_act_set_vec2_f( "uv_offs", 0.0, 0.0 )
+    shader_act_set_vec2( "uv_tile", mat.uv_tile )
+    shader_act_set_vec2( "uv_offs", mat.uv_offs )
+
+    // -- set lights --
+    shader_act_set_i32( "dir_lights_len", 1 )
+    shader_act_set_vec3_f( "dir_lights[0].direction", 1.0, 1.0, 0.0 )
+    shader_act_set_vec3_f( "dir_lights[0].color",     1.0,  1.0, 1.0 )
+
+    shader_act_set_i32( "point_lights_len", 0 )
+    // ...
+
+
+    gl.BindVertexArray( mesh.vao )
+    gl.DrawElements( gl.TRIANGLES,             // Draw triangles.
+                     i32(mesh.indices_len),  // indices length
+                     gl.UNSIGNED_INT,          // Data type of the indices.
+                     rawptr(uintptr(0)) )      // Pointer to indices. (Not needed.)
+
+    shader_act_reset_tex_idx()
+  }
+
+  // wireframe mode
+	gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)  // skybox and screenquad dont make sense to draw using wireframe
+
+  // skybox -----------------------------------------------------------------
+  gl.DepthFunc(gl.LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
+
+  shader_use( data.skybox_shader )
+  view_no_pos := data.cam.view_mat
+  // view_no_pos[3][0] = 0.0 
+  // view_no_pos[3][1] = 0.0 
+  // view_no_pos[3][2] = 0.0 
+  util_model_set_pos( &view_no_pos, linalg.vec3{ 0.0, 0.0, 0.0 } )
+  shader_act_set_mat4( "view", &view_no_pos[0][0] )
+  shader_act_set_mat4( "proj", &data.cam.pers_mat[0][0] )
+
+  // skybox cube
+  gl.BindVertexArray(data.skybox_vao);
+  shader_act_bind_cube_map( "cube_map", data.cubemap.environment )
+  gl.DrawArrays(gl.TRIANGLES, 0, 36);
+  gl.BindVertexArray(0);
+  gl.DepthFunc(gl.LESS); // set depth function back to default
+  framebuffer_unbind()
+  
+}
+
+renderer_update_deferred :: proc()
+{
+  // spall.SCOPED_EVENT( &spall_ctx, &spall_buffer, #procedure )
+  when TRACY_ENABLE { tracy.Zone() }
   // // @TODO: @OPTIMIZATION: scuffed should not be called each frame
   // renderer_init()
 
@@ -162,45 +314,9 @@ renderer_update :: proc()
     framebuffer_unbind()
   }
 
-  { // outline
-    if data.player_chars_current >= 0
-    { renderer_draw_scene_outline( data.player_chars[data.player_chars_current].entity_idx ) }
-    else
-    {
-      framebuffer_bind( &data.fb_outline )
-      gl.Clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT ) // clear bg
-      framebuffer_unbind()
-    }
-  }
-
-  { // post fx
-    shader_use( data.post_fx_shader )
-
-    gl.Clear(gl.COLOR_BUFFER_BIT);
-    gl.Disable(gl.DEPTH_TEST);
-    gl.Disable( gl.CULL_FACE )
-
-    shader_act_set_f32( "exposure", exposure )
-    
-    shader_act_bind_texture( "tex", data.fb_lighting.buffer01 )
-    shader_act_bind_texture( "position", data.fb_deferred.buffer04 )
-    // shader_act_bind_texture( "water_tex", data.texture_arr[data.texture_idxs.brick_albedo].handle )
-
-    shader_act_bind_texture( "outline", data.fb_outline.buffer01 )
-    if data.player_chars_current >= 0
-    { 
-      shader_act_set_vec3( "outline_color", data.player_chars[data.player_chars_current].color )
-    }
-    
-
-    gl.BindVertexArray(data.quad_vao);
-    gl.DrawArrays(gl.TRIANGLES, 0, 6);
-    gl.Enable(gl.DEPTH_TEST);
-    gl.Enable( gl.CULL_FACE )
-  }
 }
 
-renderer_draw_quad :: proc( pos, scl: linalg.vec2, texture_handle: u32 )
+renderer_draw_quad :: proc( pos, scl: linalg.vec2, texture_handle: u32, tint := linalg.vec3{ 1, 1, 1 } )
 {
   gl.Disable( gl.CULL_FACE )
   gl.Disable( gl.DEPTH_TEST)
@@ -213,6 +329,7 @@ renderer_draw_quad :: proc( pos, scl: linalg.vec2, texture_handle: u32 )
   // gl.Uniform2f( gl.GetUniformLocation(data.quad_shader, "scl"), scl.x, scl.y )
   shader_act_set_vec2( "pos", pos )
   shader_act_set_vec2( "scl", scl )
+  shader_act_set_vec3( "tint", tint )
   
   gl.ActiveTexture( gl.TEXTURE0 )
   gl.BindTexture( gl.TEXTURE_2D, texture_handle )

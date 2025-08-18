@@ -7,6 +7,8 @@ import        "core:mem"
 import vmem   "core:mem/virtual"
 import linalg "core:math/linalg/glsl"
 import gl     "vendor:OpenGL"
+// import        "core:prof/spall"
+import tracy  "../external/odin-tracy"
 
 
 Debug_Draw_Call_Type :: enum
@@ -53,6 +55,9 @@ debug_draw_calls     :  [dynamic]debug_draw_call_t
 
 debug_draw_init :: proc()
 {
+  // spall.SCOPED_EVENT( &spall_ctx, &spall_buffer, #procedure )
+  when TRACY_ENABLE { tracy.Zone() }
+
   // @NOTE: idk wanted to use arena for some reason
   // if vmem.arena_init_static( &debug_draw_arena, DEBUG_DRAW_CALLS_ARENA_MAX ) != mem.Allocator_Error.None
   // { log.panic( "failed to init arena alloc" ) }
@@ -67,6 +72,9 @@ debug_draw_init :: proc()
 }
 debug_draw_update :: proc()
 {
+  // spall.SCOPED_EVENT( &spall_ctx, &spall_buffer, #procedure )
+  when TRACY_ENABLE { tracy.Zone() }
+
   // @NOTE: idk wanted to use arena for some reason
   // log.debug( "size_of(debug_draw_arena):", size_of(debug_draw_arena) )
   // log.debug( "len(debug_draw_arena):", len(debug_draw_arena) )
@@ -528,13 +536,40 @@ debug_draw_char_path :: proc( char: ^character_t )
 
     // pos := util_tile_to_pos( char.path[len(char.path) -1] )
     idx := len(char.paths_arr) -1
-    pos := util_tile_to_pos( char.paths_arr[idx][ len(char.paths_arr[idx]) -1 ] )
-    pos += linalg.vec3{ 0, 2, 0 }
+    char_wp := char.paths_arr[idx][ len(char.paths_arr[idx]) -1 ]
+    pos := util_tile_to_pos( char_wp )
+    pos += linalg.vec3{ 0, 1.5, 0 }
+
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // @TODO: store this kinda info in the tile data, so we dont need three nested for loops
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    for c in data.player_chars
+    {
+      if c.entity_idx == char.entity_idx { continue }
+
+      if c.wp.x == char_wp.x && c.wp.z == char_wp.z && c.wp.level_idx == char_wp.level_idx
+      {
+        pos += linalg.vec3{ 0, 4.5, 0 }
+        break
+      }
+
+      for p in c.paths_arr
+      {
+        for wp in p
+        {
+          if wp.x == char_wp.x && wp.z == char_wp.z && wp.level_idx == char_wp.level_idx
+          {
+            pos += linalg.vec3{ 0, 4.5, 0 }
+            break
+          }
+        }
+      }
+    }
     rot := data.entity_arr[char.entity_idx].rot
     debug_draw_mesh( data.entity_arr[char.entity_idx].mesh_idx,
                      pos, 
                      rot,
-                     data.entity_arr[char.entity_idx].scl, 
+                     data.entity_arr[char.entity_idx].scl * 0.25, 
                      // linalg.vec3{ 0, 1, 1 } )
                      char.color )
     // fmt.println( "data.entity_arr[char.entity_idx]: ", data.entity_arr[char.entity_idx] )
