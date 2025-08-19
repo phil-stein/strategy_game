@@ -228,6 +228,9 @@ data_t :: struct
     show_demo : bool,
     show_main : bool,
     style     : enum { DARK_DEFAULT, DARK_LIGHT },
+    log_arr   : [dynamic]string,
+    cmd_str_builder : str.Builder,
+    cmd_win_act     : bool,
   },  
 
   text : struct
@@ -353,9 +356,10 @@ data : data_t =
 
   editor_ui = 
   {
-    active    = true,
-    show_main = false,
-    show_demo = false,
+    active      = true,
+    show_main   = false,
+    show_demo   = false,
+    cmd_win_act = false,
   },
 
   // tile_00_str = 
@@ -387,8 +391,8 @@ data : data_t =
   "XXXXXXXXXX"+
   "XXXXXXXXXX"+
   "XXXXXXXXXX"+
-  "XXXXXXXXXX"+
-  "XXXXXXXXXX"+
+  "X.XXXXXXXX"+
+  "X.XXXXXXXX"+
   "XXXXXXXXXX"+
   "XXXXXXXXXX"+
   "XXXXXXXXXX"+
@@ -425,6 +429,8 @@ data_init :: proc()
 {
   // spall.SCOPED_EVENT( &spall_ctx, &spall_buffer, #procedure )
   when TRACY_ENABLE { tracy.Zone() }
+
+  data.editor_ui.cmd_str_builder = str.builder_make()
 
   // init .player_chars
   for &char, i in data.player_chars
@@ -613,6 +619,13 @@ data_pre_updated :: proc()
 // @NOTE: only gets called in debug mode bc. of the tracking alloc
 data_cleanup :: proc()
 {
+  delete( data.editor_ui.log_arr )
+  for &entry in data.editor_ui.log_arr
+  {
+    delete( entry )
+  }
+  str.builder_destroy( &data.editor_ui.cmd_str_builder )
+
   for &char in data.player_chars
   {
     for p in char.paths_arr
@@ -809,6 +822,6 @@ data_create_map :: proc()
   }
 // }
 
-  map_export_current( "big_honkin_level.obj" )
+  // map_export_current( "big_honkin_level.obj" )
 }
 

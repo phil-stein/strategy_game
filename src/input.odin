@@ -1,7 +1,8 @@
 package core
 
-import "core:fmt"
-import "vendor:glfw"
+import     "core:fmt"
+import str "core:strings"
+import     "vendor:glfw"
 // import "core:prof/spall"
 import tracy  "../external/odin-tracy"
 
@@ -221,6 +222,7 @@ input_init :: proc()
   when TRACY_ENABLE { tracy.Zone() }
 
   glfw.SetKeyCallback( data.window, glfw.KeyProc(input_key_callback) )
+  glfw.SetCharCallback( data.window, glfw.CharProc(input_char_callback) )
   
   glfw.SetMouseButtonCallback( data.window, glfw.MouseButtonProc(input_mouse_button_callback) )
   glfw.SetCursorPosCallback( data.window, glfw.CursorPosProc(input_mouse_pos_callback) )
@@ -256,6 +258,28 @@ input_key_callback :: proc( window: glfw.WindowHandle, keycode: int, scancode: i
   input.key_states[Key(keycode)].down    = state == glfw.PRESS || state == glfw.REPEAT 
   input.key_states[Key(keycode)].mods    = Keymod(mods)
   // if ( keycode == glfw.KEY_W ) { fmt.println( "state: ", state ) }
+}
+
+input_char_callback :: proc( window: glfw.WindowHandle, char: rune )
+{
+  // fmt.println( char )
+
+  // @TODO: this coidew should prob. be in ui.odin
+
+  if char == ':' 
+  { 
+    data.editor_ui.cmd_win_act = !data.editor_ui.cmd_win_act 
+    return 
+  }
+  
+  if data.editor_ui.cmd_win_act
+  {
+    res, err := str.write_rune( &data.editor_ui.cmd_str_builder, char )
+    if err != nil
+    {
+      fmt.println( "[ERROR]", err, ", res:", res )
+    }
+  }
 }
 
 input_mouse_button_callback :: proc( window: glfw.WindowHandle, button, action, mods: int )

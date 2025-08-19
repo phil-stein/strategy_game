@@ -24,8 +24,6 @@ font     : ^im.Font
 font_big : ^im.Font
 
 
-log_arr : [dynamic]string
-
 
 ui_init :: proc()
 {
@@ -81,7 +79,7 @@ ui_update :: proc()
   ui_tool_win()
 
   ui_cmd_log_win()
-  ui_cmd_win()
+  if data.editor_ui.cmd_win_act { ui_cmd_win() }
 
 	im.Render()
 	display_w, display_h := glfw.GetFramebufferSize(data.window)
@@ -143,11 +141,14 @@ ui_display_2_texture :: proc( name_00: cstring, w_00, h_00, hover_w_00, hover_h_
 @(TODO="hello, world! :)")
 ui_cmd_log_win :: #force_inline proc()
 {
-  if im.Begin( "log" )
+  if im.Begin( "logs" )
   {
-    for entry in log_arr
+    // for entry, idx in log_arr
+    for idx := len(data.editor_ui.log_arr) -1; idx >= 0; idx -= 1 
     {
-      c_str, err := str.clone_to_cstring( entry, context.temp_allocator )
+      // c_str, err := str.clone_to_cstring( entry, context.temp_allocator )
+      // c_str := fmt.ctprintf( "%3d | %v", idx, entry )
+      c_str := fmt.ctprintf( "%3d | %v", idx, data.editor_ui.log_arr[idx] )
       im.Text( c_str )
     }
     im.End()
@@ -155,11 +156,50 @@ ui_cmd_log_win :: #force_inline proc()
 }
 ui_cmd_win :: #force_inline proc()
 {
-  // quad_size :: linalg.vec2{ 0.25, -0.25 }
-  // renderer_draw_quad( linalg.vec2{ -0.00, -0.15 }, linalg.vec2{ 0.50, 0.20 }, data.texture_arr[data.texture_idxs.blank].handle, linalg.vec3{ 0, 0, 0 } )
-  // text_draw_string( fmt.tprintf( "cock cock" ), vec2{ -0.00, -0.15 } )
+  pos := linalg.vec2{ -0.000, -0.250 }
+  scl := linalg.vec2{  0.300,  0.055 }
+  renderer_draw_quad( pos, scl, data.texture_arr[data.texture_idxs.blank].handle, linalg.vec3{ 0.1, 0.1, 0.1 } )
+
+  txt := str.to_string( data.editor_ui.cmd_str_builder )
+  // fmt.println( "txt:", txt )
+  // text_draw_string( fmt.tprintf( "start-------------end" ), vec2{ -0.39, -0.30 } )
+  // text_draw_string( txt, vec2{ -0.39, -0.30 } )
+  str_pos := linalg.vec2{ scl.x * -1 + 0.01, pos.y - scl.y - 0.01 }
+  str_width := text_draw_string( txt, str_pos )
+  text_draw_glyph( str_pos + linalg.vec2{ str_width - 0.0045, 0 }, i32('|') )
+
+  if input.key_states[Key.ENTER].pressed
+  {
+    fmt.println( "cmd:", txt )
+    append( &data.editor_ui.log_arr, fmt.aprint( "[CMD]", txt ) )
+
+    text_split, err := str.split( txt, " ", context.temp_allocator )
+    if err != .None { log.error( "error splitting ui_cmd_win txt" ) }
+    else
+    {
+      for cmd in ui_cmd_win_commands
+      {
+        if text_split[0] == cmd.cmd_str && cmd.callback != nil
+        {
+          cmd.callback( ..text_split[1:] )
+        }
+      }
+    }
+    
+    str.builder_reset( &data.editor_ui.cmd_str_builder )
+    data.editor_ui.cmd_win_act = false
+  }
+
+  if input.key_states[Key.BACKSPACE].pressed && data.editor_ui.cmd_win_act
+  {
+    str.pop_rune( &data.editor_ui.cmd_str_builder )
+  }
 }
 
+EXPORT_NAME_LEN :: 32
+// export_name : cstring = "0123456789ABCDEF0123456789ABCDEFXXXXXXXXXX"  // 32 len str
+export_name : string = "0123456789ABCDEF0123456789ABCDEFXXXXXXXXXX"  // 32 len str
+export_name_ptr : [^]u8 = raw_data( export_name )
 ui_tool_win :: #force_inline proc()
 {
   if im.Begin( "tools" )
@@ -197,11 +237,15 @@ ui_tool_win :: #force_inline proc()
       im.EndCombo()
     }
 
+    // // EXPORT_NAME_LEN :: 32
+    // // @(static) export_name : [EXPORT_NAME_LEN]u8
+    // // export_name_ptr : [^]u8 = raw_data(export_name[:])
+    // // im.InputText( "export name:", cstring(export_name_ptr), EXPORT_NAME_LEN )
     // EXPORT_NAME_LEN :: 32
-    // @(static) export_name : [EXPORT_NAME_LEN]u8
-    // export_name_ptr : [^]u8 = raw_data(export_name[:])
+    // export_name : cstring = "0123456789ABCDEF0123456789ABCDEFXXXXXXXXXX"  // 32 len str
+    // im.InputText( "export name:", export_name, EXPORT_NAME_LEN )
     // im.InputText( "export name:", cstring(export_name_ptr), EXPORT_NAME_LEN )
-    if im.Button( "export level to big_honkin_level.obj file" )
+    if im.Button( "export level -> big_honkin_level.obj" )
     {
       // map_export_current( transmute(string)export_name )
       map_export_current( "big_honkin_level.obj" )

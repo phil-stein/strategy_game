@@ -369,49 +369,23 @@ text_draw_glyph :: proc( pos: linalg.vec2, char: i32 )
   data.text.draw_calls += 1
 }
 
-text_draw_string :: proc( str: string, pos: linalg.vec2 ) -> ( str_len: i32 )
+text_draw_string :: proc( str: string, pos: linalg.vec2 ) -> ( str_width: f32 )
 {
   _pos := pos
   c_idx : i32 = 0 
+
   for char in str
   {
     c_idx += 1
     text_draw_glyph( _pos, i32(char) )
-    // _pos.x += -6 * ( glyph_info[c_idx].x_offs / f32(data.window_width ) ) 
-    // fmt.println( "_pos.x: ", _pos.x, ", added: ", -6 * ( glyph_info[c_idx].x_offs / f32(data.window_width ) ) )
-
-    // // _pos.x += glyph_info[c_idx].width / f32(data.window_width) // * 2
-    // // _pos.x += ( glyph_info[c_idx].advance / f32(data.window_width) ) * 2
-    // // _pos.x += ( ( glyph_info[c_idx].width + ( f32(data.text_glyph_size) * 0.1 ) ) / f32(data.window_width) ) * 2
-    // @(static) use_offs : bool = false
-    // // if !use_offs
-    // // { _pos.x += ( glyph_info[c_idx].advance / f32(data.window_width) ) * 2 }
-    // // else
-    // // { _pos.x += ( ( glyph_info[c_idx].advance + glyph_info[c_idx].x_offs ) / f32(data.window_width) ) * 2 }
-    // if !use_offs
-    // { _pos.x += ( glyph_info[c_idx].advance / f32(data.window_width) ) * 2 }
-    // else
-    // { _pos.x += ( ( glyph_info[c_idx].width + glyph_info[c_idx].x_offs ) / f32(data.window_width) ) * 2 }
-    // @(static) set_frame : i32 = 0
-    // if keystates[KEY.ENTER].pressed && set_frame != data.cur_frame
-    // { 
-    //   use_offs = !use_offs; 
-    //   set_frame = data.cur_frame; 
-    //   fmt.println( "use_offset: ", use_offs ) 
-    // }
-    _pos.x += ( glyph_info[c_idx].advance / f32(data.window_width) ) * 2 
+    
+    _pos.x    += ( glyph_info[c_idx].advance / f32(data.window_width) ) * 2 
+    str_width += ( glyph_info[c_idx].advance / f32(data.window_width) ) * 2 
 
     // fmt.println( "_pos.x: ", _pos.x, ", added: ", glyph_info[c_idx].width / f32(data.window_width) * 6 )
   }
-  // text_draw_glyph( , 1 )
-  // text_draw_glyph( , 2 )
-  // text_draw_glyph( , 3 )
-  // text_draw_glyph( , 4 )
-  // text_draw_glyph( , 5 )
-  // text_draw_glyph( , 6 )
-  // text_draw_glyph( , 7 )
 
-  return i32( len(str) )
+  return str_width
 }
 
 text_bake_string :: proc( str: string, _pos: linalg.vec2 ) -> ( text_mesh: mesh_t )

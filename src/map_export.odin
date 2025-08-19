@@ -7,6 +7,19 @@ import str  "core:strings"
 import ufbx "../external/ufbx"
 
 
+map_export_write_ramp_common :: proc( sb: ^str.Builder, vert_count: int )
+{
+  str.write_string( sb, fmt.tprintf( "s 0\n" ) )
+  str.write_string( sb, fmt.tprintf( "f %v %v %v\n", 1 + vert_count, 2 + vert_count, 3 + vert_count ) )  
+  str.write_string( sb, fmt.tprintf( "f %v %v %v\n", 6 + vert_count, 5 + vert_count, 4 + vert_count ) ) 
+  str.write_string( sb, fmt.tprintf( "f %v %v %v\n", 5 + vert_count, 1 + vert_count, 4 + vert_count ) )   
+  str.write_string( sb, fmt.tprintf( "f %v %v %v\n", 6 + vert_count, 1 + vert_count, 3 + vert_count ) ) 
+  str.write_string( sb, fmt.tprintf( "f %v %v %v\n", 3 + vert_count, 5 + vert_count, 6 + vert_count ) ) 
+  str.write_string( sb, fmt.tprintf( "f %v %v %v\n", 5 + vert_count, 2 + vert_count, 1 + vert_count ) ) 
+  str.write_string( sb, fmt.tprintf( "f %v %v %v\n", 6 + vert_count, 4 + vert_count, 1 + vert_count ) ) 
+  str.write_string( sb, fmt.tprintf( "f %v %v %v\n", 3 + vert_count, 2 + vert_count, 5 + vert_count ) ) 
+}
+
 map_export_current :: proc( file_name: string  )
 {
   txt_sb := str.builder_make()
@@ -27,6 +40,7 @@ map_export_current :: proc( file_name: string  )
           {
             // do nothing
           }
+          // @TODO: the faces of all ramps are the same, could prob be done with fallthrough or some
           case Tile_Nav_Type.RAMP_FORWARD:
           {
             // v -1.000000 -1.000000 1.000000
@@ -51,15 +65,16 @@ map_export_current :: proc( file_name: string  )
             str.write_string( &txt_sb, fmt.tprintf( "v %v %v %v\n",  0.500000 + f32(x), -0.500000 + f32(level_idx),  0.500000 + f32(z) ) )
             str.write_string( &txt_sb, fmt.tprintf( "v %v %v %v\n",  0.500000 + f32(x),  0.500000 + f32(level_idx),  0.500000 + f32(z) ) )
             str.write_string( &txt_sb, fmt.tprintf( "v %v %v %v\n",  0.500000 + f32(x), -0.500000 + f32(level_idx), -0.500000 + f32(z) ) )
-            str.write_string( &txt_sb, fmt.tprintf( "s 0\n" ) )
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 1 + vert_count, 2 + vert_count, 3 + vert_count ) )  
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 6 + vert_count, 5 + vert_count, 4 + vert_count ) ) 
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 5 + vert_count, 1 + vert_count, 4 + vert_count ) )   
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 6 + vert_count, 1 + vert_count, 3 + vert_count ) ) 
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 3 + vert_count, 5 + vert_count, 6 + vert_count ) ) 
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 5 + vert_count, 2 + vert_count, 1 + vert_count ) ) 
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 6 + vert_count, 4 + vert_count, 1 + vert_count ) ) 
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 3 + vert_count, 2 + vert_count, 5 + vert_count ) ) 
+            map_export_write_ramp_common( &txt_sb, vert_count )
+            // str.write_string( &txt_sb, fmt.tprintf( "s 0\n" ) )
+            // str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 1 + vert_count, 2 + vert_count, 3 + vert_count ) )  
+            // str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 6 + vert_count, 5 + vert_count, 4 + vert_count ) ) 
+            // str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 5 + vert_count, 1 + vert_count, 4 + vert_count ) )   
+            // str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 6 + vert_count, 1 + vert_count, 3 + vert_count ) ) 
+            // str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 3 + vert_count, 5 + vert_count, 6 + vert_count ) ) 
+            // str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 5 + vert_count, 2 + vert_count, 1 + vert_count ) ) 
+            // str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 6 + vert_count, 4 + vert_count, 1 + vert_count ) ) 
+            // str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 3 + vert_count, 2 + vert_count, 5 + vert_count ) ) 
 
             vert_count += 6
           }
@@ -87,15 +102,7 @@ map_export_current :: proc( file_name: string  )
             str.write_string( &txt_sb, fmt.tprintf( "v %v %v %v\n", -0.500000 + f32(x), -0.500000 + f32(level_idx), -0.500000 + f32(z) ) )
             str.write_string( &txt_sb, fmt.tprintf( "v %v %v %v\n", -0.500000 + f32(x),  0.500000 + f32(level_idx), -0.500000 + f32(z) ) )
             str.write_string( &txt_sb, fmt.tprintf( "v %v %v %v\n", -0.500000 + f32(x), -0.500000 + f32(level_idx),  0.500000 + f32(z) ) )
-            str.write_string( &txt_sb, fmt.tprintf( "s 0\n" ) )
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 1 + vert_count, 2 + vert_count, 3 + vert_count ) )  
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 6 + vert_count, 5 + vert_count, 4 + vert_count ) ) 
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 5 + vert_count, 1 + vert_count, 4 + vert_count ) )   
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 6 + vert_count, 1 + vert_count, 3 + vert_count ) ) 
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 3 + vert_count, 5 + vert_count, 6 + vert_count ) ) 
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 5 + vert_count, 2 + vert_count, 1 + vert_count ) ) 
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 6 + vert_count, 4 + vert_count, 1 + vert_count ) ) 
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 3 + vert_count, 2 + vert_count, 5 + vert_count ) ) 
+            map_export_write_ramp_common( &txt_sb, vert_count )
 
             vert_count += 6
           }
@@ -123,15 +130,7 @@ map_export_current :: proc( file_name: string  )
             str.write_string( &txt_sb, fmt.tprintf( "v %v %v %v\n",  0.500000 + f32(x), -0.500000 + f32(level_idx), -0.500000 + f32(z) ) )
             str.write_string( &txt_sb, fmt.tprintf( "v %v %v %v\n",  0.500000 + f32(x),  0.500000 + f32(level_idx), -0.500000 + f32(z) ) )
             str.write_string( &txt_sb, fmt.tprintf( "v %v %v %v\n", -0.500000 + f32(x), -0.500000 + f32(level_idx), -0.500000 + f32(z) ) )
-            str.write_string( &txt_sb, fmt.tprintf( "s 0\n" ) )
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 1 + vert_count, 2 + vert_count, 3 + vert_count ) )  
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 6 + vert_count, 5 + vert_count, 4 + vert_count ) ) 
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 5 + vert_count, 1 + vert_count, 4 + vert_count ) )   
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 6 + vert_count, 1 + vert_count, 3 + vert_count ) ) 
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 3 + vert_count, 5 + vert_count, 6 + vert_count ) ) 
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 5 + vert_count, 2 + vert_count, 1 + vert_count ) ) 
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 6 + vert_count, 4 + vert_count, 1 + vert_count ) ) 
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 3 + vert_count, 2 + vert_count, 5 + vert_count ) ) 
+            map_export_write_ramp_common( &txt_sb, vert_count )
 
             vert_count += 6
           }
@@ -159,15 +158,7 @@ map_export_current :: proc( file_name: string  )
             str.write_string( &txt_sb, fmt.tprintf( "v %v %v %v\n", -0.500000 + f32(x), -0.500000 + f32(level_idx),  0.500000 + f32(z) ) )
             str.write_string( &txt_sb, fmt.tprintf( "v %v %v %v\n", -0.500000 + f32(x),  0.500000 + f32(level_idx),  0.500000 + f32(z) ) )
             str.write_string( &txt_sb, fmt.tprintf( "v %v %v %v\n",  0.500000 + f32(x), -0.500000 + f32(level_idx),  0.500000 + f32(z) ) )
-            str.write_string( &txt_sb, fmt.tprintf( "s 0\n" ) )
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 1 + vert_count, 2 + vert_count, 3 + vert_count ) )  
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 6 + vert_count, 5 + vert_count, 4 + vert_count ) ) 
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 5 + vert_count, 1 + vert_count, 4 + vert_count ) )   
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 6 + vert_count, 1 + vert_count, 3 + vert_count ) ) 
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 3 + vert_count, 5 + vert_count, 6 + vert_count ) ) 
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 5 + vert_count, 2 + vert_count, 1 + vert_count ) ) 
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 6 + vert_count, 4 + vert_count, 1 + vert_count ) ) 
-            str.write_string( &txt_sb, fmt.tprintf( "f %v %v %v\n", 3 + vert_count, 2 + vert_count, 5 + vert_count ) ) 
+            map_export_write_ramp_common( &txt_sb, vert_count )
 
             vert_count += 6
           }

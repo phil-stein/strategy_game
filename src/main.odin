@@ -513,6 +513,7 @@ main :: proc()
   debug_timer_stop()  // ui_init()
 	
   debug_timer_stop() // init
+  append( &data.editor_ui.log_arr, fmt.aprint( "init finished" ) )
 
   // ---- main loop ----
   for main_loop_idx := 0; !window_should_close(); main_loop_idx += 1
