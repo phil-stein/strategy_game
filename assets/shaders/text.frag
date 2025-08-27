@@ -6,6 +6,7 @@ out vec4 FragColor;
 uniform sampler2D glyph_texture;
 uniform vec3 color;
 uniform bool solid;
+uniform float alpha;
 
 void main() 
 {
@@ -13,6 +14,6 @@ void main()
   if ( solid )
   { FragColor = vec4(color.rgb, 1.0); }
   else
-  { FragColor = vec4(color.rgb, texture(glyph_texture, inUV).r); }
+  { FragColor = vec4(color.rgb, texture(glyph_texture, inUV).r * alpha); }
   // FragColor = vec4( inUV.xy, 0.0, 1.0 );
 }

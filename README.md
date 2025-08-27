@@ -62,7 +62,7 @@ use combo moves to extend your playable chars abilities/moveset with the other p
         - [ ] curves
       - [X] limit the amount of moves chaned together in one turn
     - [ ] turns
-    - [.] differrent tile types
+    - [ ] differrent tile types
       - [X] regular
       - [X] slopes
       - [ ] ladders / climable
@@ -73,8 +73,9 @@ use combo moves to extend your playable chars abilities/moveset with the other p
       - [X] select between player_chars
       - [X] use mouse-picking when setting the path
   * graphics
-    - [ ] vulkan or bgfx ?
-    - [ ] __make renderer forward not defferred__
+    - [ ] vulkan, bgfx or google filament ?
+    - [ ] make google filament wrapper
+    - [X] __make renderer forward not defferred__
       - [ ] transparency
       - [ ] graphic effects
         - [ ] ambient occlusion

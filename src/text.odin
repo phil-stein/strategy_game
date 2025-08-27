@@ -301,7 +301,7 @@ text_load_glyph :: proc( font_name: string, char: rune, scale: f32 )
 
 }
 
-text_draw_glyph :: proc( pos: linalg.vec2, char: i32 ) 
+text_draw_glyph :: proc( pos: linalg.vec2, char: i32, color := linalg.vec3{ 1, 1, 1 }, alpha : f32 = 1.0 ) 
 {
   // Calculate projection matrix.
   render_rect_w , render_rect_h : f32
@@ -353,7 +353,9 @@ text_draw_glyph :: proc( pos: linalg.vec2, char: i32 )
   // y_offs += ( glyph_info[char].y_offs ) * (f32(1) / f32(len(ATLAS_CHARS)) )
   // shader_act_set_vec2_f( "offs",  glyph_info[char].x_offs, y_offs )
   shader_act_set_f32( "offs", y_offs )
-  shader_act_set_vec3_f( "color", 1, 1, 1 )
+  // shader_act_set_vec3_f( "color", 1, 1, 1 )
+  shader_act_set_vec3( "color", color )
+  shader_act_set_f32( "alpha", alpha )
   // fmt.println( "ratio: ", f32(1) / f32(len(ATLAS_CHARS)) )
   shader_act_set_bool( "solid", data.text.draw_solid )
   // log.debug( "data.text.draw_solid:", data.text.draw_solid )
@@ -369,7 +371,7 @@ text_draw_glyph :: proc( pos: linalg.vec2, char: i32 )
   data.text.draw_calls += 1
 }
 
-text_draw_string :: proc( str: string, pos: linalg.vec2 ) -> ( str_width: f32 )
+text_draw_string :: proc( str: string, pos: linalg.vec2, color := linalg.vec3{ 1, 1, 1 }, alpha : f32 = 1.0 ) -> ( str_width: f32, str_len: int )
 {
   _pos := pos
   c_idx : i32 = 0 
@@ -377,7 +379,7 @@ text_draw_string :: proc( str: string, pos: linalg.vec2 ) -> ( str_width: f32 )
   for char in str
   {
     c_idx += 1
-    text_draw_glyph( _pos, i32(char) )
+    text_draw_glyph( _pos, i32(char), color, alpha )
     
     _pos.x    += ( glyph_info[c_idx].advance / f32(data.window_width) ) * 2 
     str_width += ( glyph_info[c_idx].advance / f32(data.window_width) ) * 2 
@@ -385,7 +387,7 @@ text_draw_string :: proc( str: string, pos: linalg.vec2 ) -> ( str_width: f32 )
     // fmt.println( "_pos.x: ", _pos.x, ", added: ", glyph_info[c_idx].width / f32(data.window_width) * 6 )
   }
 
-  return str_width
+  return str_width, len(str)
 }
 
 text_bake_string :: proc( str: string, _pos: linalg.vec2 ) -> ( text_mesh: mesh_t )
