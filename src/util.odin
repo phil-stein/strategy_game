@@ -1,5 +1,6 @@
 package core 
 
+import        "core:fmt"
 import        "core:math"
 import linalg "core:math/linalg/glsl"
 
@@ -172,3 +173,18 @@ util_tile_to_pos :: #force_inline proc( tile: waypoint_t ) -> ( pos: linalg.vec3
          }
 }
 
+
+// @DOC: example mouse inside rect 
+//  x := ( input.mouse_x / f32(data.window_width) )
+//  y := 1 - ( input.mouse_y / f32(data.window_height) )
+//  inside := util_point_in_rect( linalg.vec2{ x, y }, (pos +1) * 0.5, scl )
+util_point_in_rect :: #force_inline proc( point, rect_pos, rect_scl: linalg.vec2 ) -> ( inside: bool )
+{
+  // fmt.println( "rect_pos:", rect_pos, "rect_scl:", rect_scl )
+  inside = !( point.x > ( rect_pos.x + ( rect_scl.x * 0.5 ) ) || 
+              point.x < ( rect_pos.x - ( rect_scl.x * 0.5 ) ) ) &&
+           !( point.y > ( rect_pos.y + ( rect_scl.y * 0.5 ) ) || 
+              point.y < ( rect_pos.y - ( rect_scl.y * 0.5 ) ) ) 
+
+  return inside
+}

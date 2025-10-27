@@ -156,8 +156,13 @@ ui_cmd_log_win :: #force_inline proc()
 }
 ui_cmd_win :: #force_inline proc()
 {
+  fmt.println( "0.055 | data.window_height:", data.window_height, ", data.text.glyph_size:", data.text.glyph_size, "data.window_height / data.text.glyph_size:", f32(data.window_height) / f32(data.text.glyph_size) )
+  // scl_y := f32(data.window_height) / f32(data.text.glyph_size -5) * 0.001
+  scl_y := f32(data.text.glyph_size *2) / f32(data.window_height)
+  fmt.println( "f32(data.window_height) / f32(data.text.glyph_size -5) * 0.001",  )
+
   pos := linalg.vec2{ -0.000, -0.250 }
-  scl := linalg.vec2{  0.300,  0.055 }
+  scl := linalg.vec2{  0.300,  scl_y/* 0.055 */ }
   renderer_draw_quad( pos, scl, data.texture_arr[data.texture_idxs.blank].handle, linalg.vec3{ 0.1, 0.1, 0.1 } )
 
   txt := str.to_string( data.editor_ui.cmd_str_builder )
@@ -165,34 +170,43 @@ ui_cmd_win :: #force_inline proc()
   // text_draw_string( fmt.tprintf( "start-------------end" ), vec2{ -0.39, -0.30 } )
   // text_draw_string( txt, vec2{ -0.39, -0.30 } )
   str_pos := linalg.vec2{ scl.x * -1 + 0.01, pos.y - scl.y - 0.01 }
-  str_width := text_draw_string( txt, str_pos )
+  str_width, _ := text_draw_string( txt, str_pos )
   text_draw_glyph( str_pos + linalg.vec2{ str_width - 0.0045, 0 }, i32('|') )
 
   if input.key_states[Key.ENTER].pressed
   {
     fmt.println( "cmd:", txt )
-    append( &data.editor_ui.log_arr, fmt.aprint( "[CMD]", txt ) )
+    // append( &data.editor_ui.log_arr, fmt.aprint( "[CMD]", txt ) )
 
     text_split, err := str.split( txt, " ", context.temp_allocator )
     if err != .None { log.error( "error splitting ui_cmd_win txt" ) }
     else
     {
+      found := false
       for cmd in ui_cmd_win_commands
       {
         if text_split[0] == cmd.cmd_str && cmd.callback != nil
         {
           cmd.callback( ..text_split[1:] )
+          found = true
+          break
         }
       }
+      if !found { ui_cmd_set_text( fmt.tprint( text_split[0], "<- not a command | see :help" ), duration=2.5, color=linalg.vec3{ 1, 0.25, 0.25 } ) }
+      
+      // @TODO: save entered cmd here and make up/down arrow keys cycle through last entered cmds
     }
     
     str.builder_reset( &data.editor_ui.cmd_str_builder )
     data.editor_ui.cmd_win_act = false
   }
-
-  if input.key_states[Key.BACKSPACE].pressed && data.editor_ui.cmd_win_act
+  else if input.key_states[Key.BACKSPACE].pressed && data.editor_ui.cmd_win_act
   {
     str.pop_rune( &data.editor_ui.cmd_str_builder )
+  }
+  else if input.key_states[Key.ESCAPE].pressed && data.editor_ui.cmd_win_act
+  {
+    data.editor_ui.cmd_win_act = false
   }
 }
 

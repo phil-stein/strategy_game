@@ -383,7 +383,7 @@ main :: proc()
 
   when EDITOR
   { 
-    if ( !window_create( 0.75, 0.75, 0.05, 0.05, "title", Window_Type.MINIMIZED, vsync=false ) ) 
+    if ( !window_create( 0.75, 0.75, 0.05, 0.05, "8===D", Window_Type.MINIMIZED, vsync=false ) ) 
     { log.panic( "ERROR: failed to create window\n" ) }
   } 
   else 
@@ -531,7 +531,8 @@ main :: proc()
     data_pre_updated()
     debug_timer_stop() // data_pre_updated()
 
-    if ( input.key_states[Key.ESCAPE].pressed )
+    // if ( input.key_states[Key.ESCAPE].pressed )
+    if input.key_states[Key.F1].pressed 
     { break }
 
     if ( input.key_states[Key.TAB].pressed )
@@ -596,7 +597,11 @@ main :: proc()
       if input.key_states[Key.BACKSPACE].pressed && input.key_states[Key.LEFT_CONTROL].down
       { data.editor_ui.show_main = !data.editor_ui.show_main }
       // { data.editor_ui.active = !data.editor_ui.active }
-      if data.editor_ui.active { ui_update() }
+      if data.editor_ui.active 
+      { 
+        ui_update() 
+        ui_cmd_update()
+      }
       debug_timer_stop() // ui_update()
     }
     

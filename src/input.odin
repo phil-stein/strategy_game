@@ -264,7 +264,10 @@ input_char_callback :: proc( window: glfw.WindowHandle, char: rune )
 {
   // fmt.println( char )
 
-  // @TODO: this coidew should prob. be in ui.odin
+  // @TODO: this code should prob. be in ui.odin
+
+  // non ascii chars
+  if char < 0 || char > 127 { return }
 
   if char == ':' 
   { 
