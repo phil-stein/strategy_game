@@ -55,9 +55,7 @@ assetm_init :: proc()
 
   data.text.baked_shader = shader_make( #load( "../assets/shaders/text_baked.vert", string ),
                                         #load( "../assets/shaders/text.frag",       string ), "text_baked_shader" )
-  
    
-  data.fb_deferred   = framebuffer_create_gbuffer( 1 ) 
   data.fb_lighting   = framebuffer_create_hdr()
   data.fb_outline    = framebuffer_create_single_channel_f( 1 )
   data.fb_mouse_pick = framebuffer_create_single_channel_f( 4 ) // @TODO: use size_divisor
