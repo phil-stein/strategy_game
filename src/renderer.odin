@@ -18,7 +18,7 @@ renderer_init :: proc( loc := #caller_location )
   // log.debug( loc )
 
   gl.BindFramebuffer( gl.FRAMEBUFFER, 0 )
-  gl.ViewWQport( 0, 0, i32(data.window_width), i32(data.window_height) )
+  gl.Viewport( 0, 0, i32(data.window_width), i32(data.window_height) )
   gl.Enable( gl.DEPTH_TEST )
   // gl.FrontFace( gl.CCW )
   gl.Enable( gl.CULL_FACE )
