@@ -110,8 +110,8 @@ text_make_atlas :: proc( font_name: string, glyph_size: i32, loc := #caller_loca
 
   // Load .ttf file into buffer.
   ttf_buffer :: [1<<23] u8 // Assumes a .ttf file of under 8MB.
-  fontdata, succ := os.read_entire_file_from_filename( font_name, context.temp_allocator ) // @TODO: @OPTIMIZATION: use context.temp_allocator, kept crashing on laptop, figure out why, also use this in all funtions where capable
-  if !succ 
+  fontdata, err := os.read_entire_file_from_path( font_name, context.temp_allocator ) // @TODO: @OPTIMIZATION: use context.temp_allocator, kept crashing on laptop, figure out why, also use this in all funtions where capable
+  if err != os.ERROR_NONE 
   {
     log.error("ERROR: Couldn't load font at: ", font_name )
     os.exit(1)
@@ -243,8 +243,8 @@ text_load_glyph :: proc( font_name: string, char: rune, scale: f32 )
 
   // Load .ttf file into buffer.
   ttf_buffer :: [1<<23] u8 // Assumes a .ttf file of under 8MB.
-  fontdata, succ := os.read_entire_file(font_name)
-  if !succ 
+  fontdata, err := os.read_entire_file_from_path( font_name, context.allocator )
+  if err != os.ERROR_NONE 
   {
     log.panic("ERROR: Couldn't load font at: ", font_name )
   }

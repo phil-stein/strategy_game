@@ -26,8 +26,8 @@ assetio_convert_texture :: proc( path: string )
   // spall.SCOPED_EVENT( &spall_ctx, &spall_buffer, #procedure )
   when TRACY_ENABLE { tracy.Zone() }
 
-  image_file_bytes, ok := os.read_entire_file( str.concatenate( []string{ TEXTURES_PATH_START, path}, context.temp_allocator ) ) 
-  if !ok 
+  image_file_bytes, err1 := os.read_entire_file_from_path( str.concatenate( []string{ TEXTURES_PATH_START, path}, context.temp_allocator ), context.allocator ) 
+  if err1 != os.ERROR_NONE
   {
     // Print error to stderr and exit with errorcode
     fmt.eprintln("could not read texture file: ", path)
@@ -108,7 +108,9 @@ assetio_convert_texture :: proc( path: string )
   path_conv  = str.concatenate( []string{ TEXTURES_PATH_START, path_conv }, context.temp_allocator )
   fmt.println( "path_conv: ", path_conv )
 
-  os.write_entire_file(  path_conv, conv_data )
+  err2 := os.write_entire_file_from_bytes(  path_conv, conv_data )
+  if err2 != os.ERROR_NONE
+  { fmt.eprintln( "[ERROR] writing file" ) }
   // fmt.println( "wrote file" )
 }
 assetio_load_texture :: proc( path: string, srgb: bool, tint:= [3]f32{ 1, 1, 1 } ) -> ( assetm_idx: int )
@@ -135,14 +137,14 @@ assetio_load_texture :: proc( path: string, srgb: bool, tint:= [3]f32{ 1, 1, 1 }
     // @TODO: when .png edited
   }
 
-  bytes, ok := os.read_entire_file_from_filename( path_conv, context.allocator )
-  defer delete( bytes, context.allocator )
-  if !ok 
+  bytes, err := os.read_entire_file_from_path( path_conv, context.allocator )
+  if err != os.ERROR_NONE 
   {
     // Print error to stderr and exit with errorcode
-    fmt.eprintln("could not read texture file: ", path)
+    fmt.eprintln("[ERROR] could not read texture file: ", path)
     os.exit(1)
   }
+  defer delete( bytes, context.allocator )
 
   // for i := 0; i < math.min( 20, len(bytes) ); i += 4 
   // {
@@ -309,7 +311,9 @@ assetio_convert_mesh :: proc( path: string )
   path_conv  = str.concatenate( []string{ MESH_PATH_START, path_conv, MESH_EXTENSIONS }, context.temp_allocator )
   fmt.println( "path_conv: ", path_conv )
 
-  os.write_entire_file(  path_conv, conv_data )
+  err := os.write_entire_file_from_bytes(  path_conv, conv_data )
+  if err != os.ERROR_NONE
+  { fmt.eprintln( "[ERROR] write file failed" ); return }
 }
 
 assetio_load_mesh :: proc( path: string ) -> ( assetm_idx: int )
@@ -336,9 +340,9 @@ assetio_load_mesh :: proc( path: string ) -> ( assetm_idx: int )
     // @TODO: when .mesh edited
   }
 
-  bytes, ok := os.read_entire_file_from_filename( path_conv, context.allocator )
+  bytes, err := os.read_entire_file_from_path( path_conv, context.allocator )
   defer delete( bytes, context.allocator )
-  if !ok 
+  if err != os.ERROR_NONE 
   {
     // Print error to stderr and exit with errorcode
     fmt.eprintln("could not read texture file: ", path)
@@ -352,7 +356,7 @@ assetio_load_mesh :: proc( path: string ) -> ( assetm_idx: int )
   pos          += 4
 
   indices := make( []u32, indices_len )
-  defer delete( indices )
+  defer delete  ( indices )
   for i in 0 ..< indices_len
   {
     indices[i] = u32( int(bytes[pos +3]) + (int(bytes[pos +2]) << 8) + (int(bytes[pos +1]) << 16) + (int(bytes[pos +0]) << 24) )

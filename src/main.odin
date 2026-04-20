@@ -81,7 +81,8 @@ Default_Console_Logger_Opts :: log.Options {
 create_console_logger :: proc(lowest := log.Level.Debug, opt := Default_Console_Logger_Opts, ident := "") -> log.Logger 
 {
 	data := new(log.File_Console_Logger_Data)
-	data.file_handle = os.INVALID_HANDLE
+	// data.file_handle = os.INVALID_HANDLE
+	data.file_handle = nil 
 	data.ident = ident
 	return log.Logger{file_console_logger_proc, data, lowest, opt}
 }
@@ -102,8 +103,8 @@ level_headers := [?]string{
 @(private="file")
 file_console_logger_proc :: proc(logger_data: rawptr, level: log.Level, text: string, options: log.Options, location := #caller_location) {
 	data := cast(^log.File_Console_Logger_Data)logger_data
-	h: os.Handle = os.stdout if level <= log.Level.Error else os.stderr
-	if data.file_handle != os.INVALID_HANDLE 
+	h: ^os.File = os.stdout if level <= log.Level.Error else os.stderr
+	if data.file_handle != nil 
   {
 		h = data.file_handle
 	}
@@ -125,7 +126,7 @@ file_console_logger_proc :: proc(logger_data: rawptr, level: log.Level, text: st
 	if .Thread_Id in options {
 		// NOTE(Oskar): not using context.thread_id here since that could be
 		// incorrect when replacing context for a thread.
-		fmt.sbprintf(&buf, "[{}] ", os.current_thread_id())
+		fmt.sbprintf(&buf, "[{}] ", os.get_current_thread_id())
 	}
 
 	if data.ident != "" {
@@ -510,6 +511,7 @@ main :: proc()
 
   debug_timer_static_start( "ui_init()" ) 
   ui_init()
+  ui_cmd_init()
   debug_timer_stop()  // ui_init()
 	
   debug_timer_stop() // init
@@ -651,8 +653,8 @@ make_texture :: proc( path: string, srgb: bool, tint:= [3]f32{ 1, 1, 1 } ) -> ( 
 {
   // Load image at compile time
   // image_file_bytes := #load( "../assets/texture_01.png" )
-  image_file_bytes, ok := os.read_entire_file( path, context.allocator )
-  if( !ok ) 
+  image_file_bytes, err1 := os.read_entire_file( path, context.allocator )
+  if err1 != os.ERROR_NONE 
   {
     // Print error to stderr and exit with errorcode
     fmt.eprintln("could not read texture file: ", path)

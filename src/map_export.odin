@@ -212,6 +212,6 @@ map_export_current :: proc( file_name: string  )
   }
 
   txt := str.to_string( txt_sb )
-  ok := os.write_entire_file( file_name, transmute([]byte)txt )
-  if !ok { log.error( "failed writing level to file" ) } 
+  err := os.write_entire_file( file_name, transmute([]byte)txt )
+  if err != os.ERROR_NONE { log.error( "failed writing level to file" ) } 
 }

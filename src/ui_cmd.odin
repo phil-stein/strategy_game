@@ -37,9 +37,13 @@ ui_cmd_win_commands := [?]ui_cmd_t{
 
 show_help_win := false
 txt_win_timer : f32 = 0.0
-txt_win_sb := str.builder_make()
+txt_win_sb : str.Builder
 txt_win_color := linalg.vec3{ 1, 1, 1 }
 
+ui_cmd_init :: proc()
+{
+  txt_win_sb = str.builder_make()
+}
 
 ui_cmd_update :: proc()
 {
@@ -97,7 +101,7 @@ ui_cmd_update :: proc()
 
     scl_x := math.max( 0.25, TEXT_SIZE_X * f32(help_win_max_str_len) )
     scl_y := TEXT_LINE_HEIGHT * ( len(ui_cmd_win_commands) +3 ) * 0.5
-    pos := linalg.vec2{ 0.000, 0.0 /* 0.450 */ }
+    pos := linalg.vec2{ 0.000, 0.25 /* 0.450 */ }
     scl := linalg.vec2{ scl_x/* 0.500 */, scl_y /* 0.350 */ }
     renderer_draw_quad( pos, scl, data.texture_arr[data.texture_idxs.blank].handle, linalg.vec3{ 0.1, 0.1, 0.1 } )
 
